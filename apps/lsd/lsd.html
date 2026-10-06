@@ -97,15 +97,23 @@
       color: var(--muted);
     }
     .pause {
+      width: 44px;
       height: 44px;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 0 12px;
+      justify-content: center;
+      padding: 0;
       border-radius: 6px;
       border: 1px solid var(--border);
       background: var(--surface);
+      color: inherit;
     }
+    .pause svg {
+      width: 20px;
+      height: 20px;
+      display: block;
+    }
+    .pause svg[hidden] { display: none; }
     .err {
       position: absolute;
       top: 112px;
@@ -473,8 +481,14 @@
       <p class="eyebrow" id="scene-label">Scene 1 · Ball</p>
     </div>
     <div class="tools">
-      <button class="pause" type="button" id="full" aria-pressed="false">Full screen</button>
-      <button class="pause" type="button" id="pause" aria-pressed="false">Pause</button>
+      <button class="pause" type="button" id="full" aria-pressed="false" aria-label="Full screen">
+        <svg data-icon="enter" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect width="10" height="8" x="7" y="8" rx="1"/></svg>
+        <svg data-icon="exit" hidden xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+      </button>
+      <button class="pause" type="button" id="pause" aria-pressed="false" aria-label="Pause">
+        <svg data-icon="pause" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>
+        <svg data-icon="play" hidden xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+      </button>
     </div>
   </header>
   <p class="err" id="err" role="alert" hidden></p>
@@ -509,7 +523,7 @@
         <button type="button" class="section-title" id="toggle-feedback" aria-pressed="true">Feedback</button>
         <div class="grid" id="sliders"></div>
       </section>
-      <p class="note">Click the image to hide the panels. Click it again, or press Enter, to bring them back. Keys 1–9 switch scenes, 0 is noise, N is sparse noise, T is text, C is circuits, O is orbits. Key I brings the opening image back. S saves a set. Arrow keys move between saved sets.</p>
+      <p class="note">Click the image to hide the panels. Click it again, or press Enter, to bring them back. Keys 1–9 switch scenes, 0 is noise, N is sparse noise, T is text, C is circuits, O is orbits, K is checks. Key I brings the opening image back. S saves a set. Arrow keys move between saved sets.</p>
     </section>
   </div>
   <script>
@@ -604,6 +618,11 @@
         setScene(14);
         return;
       }
+      if (event.key === "k" || event.key === "K") {
+        event.preventDefault();
+        setScene(15);
+        return;
+      }
       if (event.key === "s" || event.key === "S") {
         event.preventDefault();
         document.getElementById("set-save").click();
@@ -625,14 +644,13 @@
     };
     const LOOK = {
       trail: 2.1, zoom: -0.16, fieldZoom: 1, tunnelZoom: 1, dirX: 0, dirY: 0, tiltX: 0, tiltY: 0, tiltZ: 0, distort: 0, height: 0, bulge: 0, emboss: 0,
-      spin: 0.1, chroma: 0, hue: 0.22, speed: 0.38, waves: 2, kaleido: 0, tiles: 0, blend: 0, fgBlend: 1, gain: 0.99, light: 1, size: 1, psize: 1, bgRotate: 0,
+      spin: 0.1, chroma: 0, hue: 0.22, speed: 0.38, waves: 2, kaleido: 0, tiles: 0, blend: 0, fgBlend: 1, gain: 0.99, light: 1, size: 1, psize: 1, amount: 1, alpha: 1, bgRotate: 0,
     };
     const TILE_LABELS = ["Off", "2H", "2V", "4", "6", "8", "9", "12", "16", "20", "25", "30", "36"];
     const SLIDERS = [
       ["trail", "Trail", 0.25, 30, 0.05, (v) => v.toFixed(1) + "s"],
       ["zoom", "Pull", -1.6, 1.6, 0.01, (v) => (v > 0 ? "+" : "") + v.toFixed(2)],
       ["fieldZoom", "Zoom", 0.4, 2.5, 0.01, (v) => v.toFixed(2) + "×"],
-      ["tunnelZoom", "Tunnel", 0.5, 6, 0.01, (v) => v.toFixed(2) + "×"],
       ["dirX", "X", -1, 1, 0.01, (v) => v.toFixed(2)],
       ["dirY", "Y", -1, 1, 0.01, (v) => v.toFixed(2)],
       ["spin", "Drift", -1.4, 1.4, 0.01, (v) => v.toFixed(2)],
@@ -645,9 +663,12 @@
       ["emboss", "Emboss", -1, 1, 0.01, (v) => (v < -0.005 ? "Deboss " + Math.abs(v).toFixed(2) : v > 0.005 ? "Emboss " + v.toFixed(2) : "Flat")],
       ["chroma", "RGB", 0, 0.03, 0.0005, (v) => (v < 0.00025 ? "Off" : v.toFixed(3))],
       ["size", "Scale", 0.2, 3, 0.01, (v) => v.toFixed(2) + "×"],
+      ["tunnelZoom", "Zoom", 0.5, 6, 0.01, (v) => v.toFixed(2) + "×"],
       ["psize", "Psize", 0.2, 3, 0.01, (v) => v.toFixed(2) + "×"],
+      ["amount", "Amount", 0.25, 2, 0.01, (v) => v.toFixed(2) + "×"],
       ["hue", "Hue", 0, 2.5, 0.01, (v) => v.toFixed(2)],
       ["light", "Light", 0, 1, 0.01, (v) => (v < 0.005 ? "Dark" : v > 0.995 ? "Light" : v.toFixed(2))],
+      ["alpha", "Alpha", 0, 1, 0.01, (v) => (v < 0.005 ? "Clear" : v > 0.995 ? "Solid" : v.toFixed(2))],
       ["speed", "Speed", 0.08, 1.2, 0.01, (v) => v.toFixed(2)],
       ["waves", "Waves", 0.5, 6, 0.5, (v) => v.toFixed(1)],
       ["kaleido", "Kaleido", 0, 12, 1, (v) => (v < 1 ? "Off" : String(Math.round(v)))],
@@ -665,7 +686,7 @@
     const chips = document.getElementById("chips");
     const sliders = document.getElementById("sliders");
     const foregroundSliders = document.getElementById("foreground-sliders");
-    const FOREGROUND_SLIDERS = new Set(["size", "psize", "light", "speed", "waves", "kaleido", "tiles"]);
+    const FOREGROUND_SLIDERS = new Set(["size", "tunnelZoom", "psize", "amount", "light", "alpha", "speed", "waves", "kaleido", "tiles"]);
     const BACKGROUND_SLIDERS = new Set(["bgRotate"]);
     const inputs = {};
     let blendSelect;
@@ -693,6 +714,7 @@
         [12, "Sparse", "Scene 12, the same static with only one in sixteen specks. Key N"],
         [13, "Circuits", "Scene 13, light pulses travel along a dark circuit. Key C"],
         [14, "Orbits", "Scene 14, five orbs with darker cores and particles orbiting them in 3D. Key O"],
+        [15, "Checks", "Scene 15, a black and white checker plane that warps and ripples. Scale sets the number of checks, Waves sets the ripples. Key K"],
       ];
       for (const [id, label, help] of scenes) {
         const button = document.createElement("button");
@@ -725,8 +747,8 @@
     const STUCCO_N = 56;
     const TEXT_N = 160;
     const STUCCO_HUES = [0.07, 0.11, 0.03, 0.96, 0.22, 0.55, 0.13];
-    const PARTICLE_N = 160;
-    const sparks = Array.from({ length: SPARK_N }, () => ({
+    const PARTICLE_N = 256;
+    const sparks = Array.from({ length: Math.min(PARTICLE_N, SPARK_N * 2) }, () => ({
       x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, hue: 0, r: 3,
     }));
     const birds = [];
@@ -737,6 +759,34 @@
     let flockTime = 0;
     let panelHidden = false;
 
+    function particleCount(base) {
+      return Math.max(1, Math.min(PARTICLE_N, Math.round(base * state.amount)));
+    }
+
+    function gridLayout() {
+      let per = Math.max(1, Math.round(GRID_PER * state.amount));
+      while (GRID_LINES * per * 2 > PARTICLE_N && per > 1) per -= 1;
+      return { per, count: GRID_LINES * per * 2 };
+    }
+
+    function circuitBudget() {
+      let pulses = Math.max(4, Math.round(CIRCUIT_PULSES * state.amount));
+      let traces = Math.max(CIRCUIT_ROUTES.length, Math.round(CIRCUIT_TRACES * state.amount));
+      if (pulses + traces > PARTICLE_N) {
+        const fit = PARTICLE_N / (pulses + traces);
+        pulses = Math.max(4, Math.floor(pulses * fit));
+        traces = Math.max(CIRCUIT_ROUTES.length, PARTICLE_N - pulses);
+      }
+      const counts = circuitLens.map((length) => Math.max(1, Math.floor(traces * length / circuitTotal)));
+      const counted = counts.reduce((sum, n) => sum + n, 0);
+      counts[counts.length - 1] += traces - counted;
+      return { pulses, traces, counts, total: pulses + traces };
+    }
+
+    function orbitMoons() {
+      return Math.max(4, Math.min(Math.floor(PARTICLE_N / ORBIT_BODIES) - 2, Math.round(ORBIT_MOONS * state.amount)));
+    }
+
     function spawnBurst() {
       const aspect = Math.max(0.5, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
       const cx = 0.14 + Math.random() * 0.72;
@@ -744,7 +794,8 @@
       const hue = Math.random();
       const count = 15 + Math.floor(Math.random() * 6);
       let left = count;
-      for (let i = 0; i < sparks.length && left > 0; i++) {
+      const slots = particleCount(SPARK_N);
+      for (let i = 0; i < slots && left > 0; i++) {
         const spark = sparks[i];
         if (spark.life > 0) continue;
         const flash = left === count;
@@ -770,7 +821,9 @@
         spawnBurst();
         burstIn = 0.4 + Math.random() * 0.95;
       }
-      for (const spark of sparks) {
+      const slots = particleCount(SPARK_N);
+      for (let i = 0; i < slots; i++) {
+        const spark = sparks[i];
         if (spark.life <= 0) continue;
         spark.vy -= 0.52 * dt * rate;
         spark.x += spark.vx * dt * rate;
@@ -782,8 +835,9 @@
     function writeSparks() {
       const aspect = Math.max(0.5, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
       const wiggle = state.scene === 2;
+      const slots = particleCount(SPARK_N);
       for (let i = 0; i < PARTICLE_N; i++) {
-        const spark = i < SPARK_N ? sparks[i] : null;
+        const spark = i < slots ? sparks[i] : null;
         const life = spark && spark.life > 0 && spark.max > 0 ? spark.life / spark.max : 0;
         let x = spark ? spark.x : 0;
         let y = spark ? spark.y : 0;
@@ -831,7 +885,20 @@
       const aliR = 0.085;
       const cohR = 0.15;
       const maxSpeed = 0.26;
-      const n = birds.length;
+      const n = particleCount(FLOCK_N);
+      const hue0 = birds[0] ? birds[0].hue : Math.random();
+      while (birds.length < n) {
+        const i = birds.length;
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 0.1;
+        birds.push({
+          x: 0.5 + Math.cos(angle) * dist * 0.7,
+          y: 0.52 + Math.sin(angle) * dist,
+          vx: Math.cos(angle) * 0.06,
+          vy: Math.sin(angle) * 0.06,
+          hue: hue0 + (i / FLOCK_N) * 0.42,
+        });
+      }
       let cx0 = 0;
       let cy0 = 0;
       let hvx = 0;
@@ -988,7 +1055,10 @@
       const cr = Math.cos(roll);
       const sr = Math.sin(roll);
       const aspect = Math.max(0.5, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
-      for (const star of stars) {
+      while (stars.length < particleCount(STAR_N)) stars.push(spawnStar(true));
+      const n = particleCount(STAR_N);
+      for (let i = 0; i < n; i++) {
+        const star = stars[i];
         star.z -= speed * step;
         if (star.z < 0.05) Object.assign(star, spawnStar(false));
         const x1 = star.x * cy + star.z * sy;
@@ -1026,9 +1096,18 @@
     const cube = [];
     let cubeTime = 0;
 
+    function cubeEdgeCount() {
+      return Math.max(2, Math.min(Math.floor(PARTICLE_N / 12), Math.round(CUBE_EDGE * state.amount)));
+    }
+
+    function cubeCount() {
+      return 12 * cubeEdgeCount();
+    }
+
     function resetCube() {
       cube.length = 0;
-      for (let i = 0; i < CUBE_N; i++) cube.push({ px: 0.5, py: 0.5, size: 2, hue: 0, bright: 1 });
+      const slots = 12 * Math.floor(PARTICLE_N / 12);
+      for (let i = 0; i < slots; i++) cube.push({ px: 0.5, py: 0.5, size: 2, hue: 0, bright: 1 });
       cubeTime = 0;
     }
 
@@ -1069,11 +1148,12 @@
       });
       const aspect = Math.max(0.5, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
       let n = 0;
+      const edgeCount = cubeEdgeCount();
       for (let e = 0; e < CUBE_EDGES.length; e++) {
         const a = spun[CUBE_EDGES[e][0]];
         const b = spun[CUBE_EDGES[e][1]];
-        for (let i = 0; i < CUBE_EDGE; i++) {
-          const t = CUBE_EDGE === 1 ? 0 : i / (CUBE_EDGE - 1);
+        for (let i = 0; i < edgeCount; i++) {
+          const t = edgeCount === 1 ? 0 : i / (edgeCount - 1);
           const x = a[0] + (b[0] - a[0]) * t;
           const y = a[1] + (b[1] - a[1]) * t;
           const z = a[2] + (b[2] - a[2]) * t;
@@ -1092,7 +1172,8 @@
     }
 
     function writeCube() {
-      for (let i = 0; i < CUBE_N; i++) {
+      const count = cubeCount();
+      for (let i = 0; i < count; i++) {
         const point = cube[i];
         if (!point) {
           sparkData[i * 4 + 3] = 0;
@@ -1139,8 +1220,18 @@
       const rate = Math.max(0.2, state.speed / 0.38);
       const step = dt * rate;
       flameTime += step;
+      const count = particleCount(FLAME_N);
+      while (embers.length < count) {
+        const ember = {};
+        spawnEmber(ember);
+        ember.age = Math.random() * ember.max;
+        ember.y = 0.05 + (ember.age / ember.max) * 0.72;
+        ember.life = 1 - ember.age / ember.max;
+        embers.push(ember);
+      }
       const aspect = Math.max(0.5, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
-      for (const ember of embers) {
+      for (let i = 0; i < count; i++) {
+        const ember = embers[i];
         if (ember.home == null) ember.home = ember.x;
         ember.age += step;
         if (ember.age >= ember.max || ember.y > 0.97) {
@@ -1161,7 +1252,8 @@
     }
 
     function writeFlame() {
-      for (let i = 0; i < FLAME_N; i++) {
+      const count = particleCount(FLAME_N);
+      for (let i = 0; i < count; i++) {
         const ember = embers[i];
         if (!ember) {
           sparkData[i * 4 + 3] = 0;
@@ -1205,8 +1297,15 @@
       const rate = Math.max(0.2, state.speed / 0.38);
       const step = dt * rate;
       snowTime += step;
+      const count = particleCount(SNOW_N);
+      while (flakes.length < count) {
+        const flake = {};
+        spawnFlake(flake, true);
+        flakes.push(flake);
+      }
       const aspect = Math.max(0.5, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
-      for (const flake of flakes) {
+      for (let i = 0; i < count; i++) {
+        const flake = flakes[i];
         flake.y += flake.vy * step;
         const drift = Math.sin(snowTime * flake.freq + flake.phase) * flake.swing;
         flake.x += (drift / aspect) * step;
@@ -1217,7 +1316,8 @@
     }
 
     function writeSnow() {
-      for (let i = 0; i < SNOW_N; i++) {
+      const count = particleCount(SNOW_N);
+      for (let i = 0; i < count; i++) {
         const flake = flakes[i];
         if (!flake) {
           sparkData[i * 4 + 3] = 0;
@@ -1254,13 +1354,16 @@
       const cr = Math.cos(rot);
       const sr = Math.sin(rot);
       const aspect = Math.max(0.5, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
-      for (let i = 0; i < GRID_N; i++) {
-        const horizontal = i < GRID_LINES * GRID_PER;
-        const local = horizontal ? i : i - GRID_LINES * GRID_PER;
-        const line = Math.floor(local / GRID_PER);
-        const slot = local - line * GRID_PER;
+      const layout = gridLayout();
+      const per = layout.per;
+      const gridCount = layout.count;
+      for (let i = 0; i < gridCount; i++) {
+        const horizontal = i < GRID_LINES * per;
+        const local = horizontal ? i : i - GRID_LINES * per;
+        const line = Math.floor(local / per);
+        const slot = local - line * per;
         const dir = line % 2 === 0 ? 1 : -1;
-        const along = wrap01(slot / GRID_PER + time * dir * (0.07 + line * 0.006));
+        const along = wrap01(slot / per + time * dir * (0.07 + line * 0.006));
         const across = (line + 0.5) / GRID_LINES;
         const u = horizontal ? along : across;
         const v = horizontal ? across : along;
@@ -1343,9 +1446,12 @@
         return [0.5 + (xr * 0.98) / aspect, 0.5 + yr * 0.98];
       };
       let index = 0;
+      const budget = circuitBudget();
+      const pulses = budget.pulses;
+      const counts = budget.counts;
       for (let routeIndex = 0; routeIndex < CIRCUIT_ROUTES.length; routeIndex++) {
         const route = CIRCUIT_ROUTES[routeIndex];
-        const count = circuitCounts[routeIndex];
+        const count = counts[routeIndex];
         const length = circuitLens[routeIndex];
         for (let i = 0; i < count; i++) {
           const point = pointOnRoute(route, ((i + 0.5) / count) * length);
@@ -1358,8 +1464,8 @@
           index += 1;
         }
       }
-      const perRoute = CIRCUIT_PULSES / CIRCUIT_ROUTES.length;
-      for (let i = 0; i < CIRCUIT_PULSES; i++) {
+      const perRoute = pulses / CIRCUIT_ROUTES.length;
+      for (let i = 0; i < pulses; i++) {
         const routeIndex = i % CIRCUIT_ROUTES.length;
         const slot = Math.floor(i / CIRCUIT_ROUTES.length);
         const dir = routeIndex % 2 === 0 ? 1 : -1;
@@ -1428,7 +1534,8 @@
         const core = 15 + body.near * 12;
         put(body, core, 0.95, hue);
         put(body, core * 0.68, -0.62, hue + 0.04);
-        for (let m = 0; m < ORBIT_MOONS; m++) {
+        const moons = orbitMoons();
+        for (let m = 0; m < moons; m++) {
           const radius = 0.2 + (m % 5) * 0.05;
           const theta = time * (0.9 + (m % 4) * 0.32) + m * 0.73 + b * 0.4;
           const incl = ((m % 3) - 1) * 0.62;
@@ -1476,7 +1583,16 @@
       const rate = Math.max(0.2, state.speed / 0.38);
       const step = dt * rate;
       stuccoTime += step;
-      for (const blob of blobs) {
+      const count = particleCount(STUCCO_N);
+      while (blobs.length < count) {
+        const blob = {};
+        spawnBlob(blob);
+        blob.age = Math.random() * blob.max;
+        blob.life = Math.sin((blob.age / blob.max) * Math.PI) * blob.sign;
+        blobs.push(blob);
+      }
+      for (let i = 0; i < count; i++) {
+        const blob = blobs[i];
         blob.age += step;
         if (blob.age >= blob.max) spawnBlob(blob);
         const t = blob.age / blob.max;
@@ -1488,7 +1604,8 @@
 
     function writeStucco() {
       const turn = stuccoTime * 0.018;
-      for (let i = 0; i < STUCCO_N; i++) {
+      const count = particleCount(STUCCO_N);
+      for (let i = 0; i < count; i++) {
         const blob = blobs[i];
         if (!blob) {
           sparkData[i * 4 + 3] = 0;
@@ -1603,8 +1720,9 @@
       }
       glyphBounds = { u0, v0, u1, v1 };
       const points = hits.length / 2;
-      const jump = points / TEXT_N;
-      for (let i = 0; i < TEXT_N; i++) {
+      const samples = Math.min(PARTICLE_N, TEXT_N * 2);
+      const jump = points / samples;
+      for (let i = 0; i < samples; i++) {
         const index = Math.min(points - 1, Math.floor(i * jump));
         glyphs.push({
           u: hits[index * 2],
@@ -1641,8 +1759,9 @@
       } else form = 1 - smooth01((p - 0.68) / 0.32);
       const loose = 1 - form;
       const aspect = Math.max(0.5, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
-      for (let i = 0; i < TEXT_N; i++) {
-        const glyph = glyphs[i];
+      const count = Math.min(glyphs.length, particleCount(TEXT_N));
+      for (let i = 0; i < count; i++) {
+        const glyph = glyphs[Math.min(glyphs.length - 1, Math.floor(i * glyphs.length / count))];
         if (!glyph) {
           sparkData[i * 4 + 3] = 0;
           continue;
@@ -1699,7 +1818,7 @@
       ["Lime", [0.4, 0.7, 0.2], [0.3, 0.3, 0.1], [1, 2, 0], [0.2, 0.3, 0.1]],
       ["Prism", [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [3, 2, 1], [0, 0.33, 0.67]],
     ].map(([name, a, b, c, d]) => ({ name, a, b, c, d }));
-    const scenePalettes = { 1: 0, 2: 4, 3: 1, 4: 5, 5: 0, 6: 2, 7: 1, 8: 3, 9: 6, 10: 0, 11: 4, 12: 5, 13: 6, 14: 18 };
+    const scenePalettes = { 1: 0, 2: 4, 3: 1, 4: 5, 5: 0, 6: 2, 7: 1, 8: 3, 9: 6, 10: 0, 11: 4, 12: 5, 13: 6, 14: 18, 15: 0 };
     let paletteSelectReady = false;
 
     function paletteCss(palette) {
@@ -1767,13 +1886,13 @@
 
     function snapshotPalettes() {
       const out = {};
-      for (let id = 1; id <= 14; id++) out[id] = scenePalettes[id];
+      for (let id = 1; id <= 15; id++) out[id] = scenePalettes[id];
       return out;
     }
 
     function applyPalettes(next) {
       if (!next || typeof next !== "object") return;
-      for (let id = 1; id <= 14; id++) {
+      for (let id = 1; id <= 15; id++) {
         const index = Math.round(Number(next[id] != null ? next[id] : next[String(id)]));
         if (!Number.isFinite(index)) continue;
         scenePalettes[id] = Math.min(PALETTES.length - 1, Math.max(0, index));
@@ -1783,7 +1902,7 @@
 
     function setScene(n) {
       state.scene = n;
-      const titles = { 1: "Scene 1 · Ball", 2: "Scene 2 · Fireworks", 3: "Scene 3 · Flock", 4: "Scene 4 · Stars", 5: "Scene 5 · Cube", 6: "Scene 6 · Flame", 7: "Scene 7 · Snow", 8: "Scene 8 · Grid", 9: "Scene 9 · Stucco", 10: "Scene 10 · Noise", 11: "Scene 11 · Text", 12: "Scene 12 · Sparse", 13: "Scene 13 · Circuits", 14: "Scene 14 · Orbits" };
+      const titles = { 1: "Scene 1 · Ball", 2: "Scene 2 · Fireworks", 3: "Scene 3 · Flock", 4: "Scene 4 · Stars", 5: "Scene 5 · Cube", 6: "Scene 6 · Flame", 7: "Scene 7 · Snow", 8: "Scene 8 · Grid", 9: "Scene 9 · Stucco", 10: "Scene 10 · Noise", 11: "Scene 11 · Text", 12: "Scene 12 · Sparse", 13: "Scene 13 · Circuits", 14: "Scene 14 · Orbits", 15: "Scene 15 · Checks" };
       sceneLabel.textContent = titles[n] || titles[1];
       if (n === 2) {
         spawnBurst();
@@ -2248,8 +2367,10 @@
     const fullBtn = document.getElementById("full");
     function syncFull() {
       const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      fullBtn.textContent = on ? "Exit" : "Full screen";
       fullBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      fullBtn.setAttribute("aria-label", on ? "Exit full screen" : "Full screen");
+      fullBtn.querySelector('[data-icon="enter"]').toggleAttribute("hidden", on);
+      fullBtn.querySelector('[data-icon="exit"]').toggleAttribute("hidden", !on);
     }
     fullBtn.addEventListener("click", () => {
       const root = document.documentElement;
@@ -2654,7 +2775,7 @@
       const fgBlend = Number(incoming.fgBlend);
       values.fgBlend = Number.isFinite(fgBlend) ? Math.min(BLENDS.length - 1, Math.max(0, Math.round(fgBlend))) : 1;
       const sceneNumber = Math.round(Number(raw.scene));
-      const scene = sceneNumber >= 1 && sceneNumber <= 14 ? sceneNumber : 1;
+      const scene = sceneNumber >= 1 && sceneNumber <= 15 ? sceneNumber : 1;
       const oscIn = raw.oscillators && typeof raw.oscillators === "object" ? raw.oscillators : raw.osc;
       const osc = {};
       if (oscIn && typeof oscIn === "object") {
@@ -2930,8 +3051,10 @@
 
     pauseBtn.addEventListener("click", () => {
       state.paused = !state.paused;
-      pauseBtn.textContent = state.paused ? "Play" : "Pause";
       pauseBtn.setAttribute("aria-pressed", state.paused ? "true" : "false");
+      pauseBtn.setAttribute("aria-label", state.paused ? "Play" : "Pause");
+      pauseBtn.querySelector('[data-icon="pause"]').toggleAttribute("hidden", state.paused);
+      pauseBtn.querySelector('[data-icon="play"]').toggleAttribute("hidden", !state.paused);
     });
     window.addEventListener("keydown", onKey);
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -2983,8 +3106,8 @@ uniform float uBgOn;
 uniform float uFgOn;
 uniform float uFbOn;
 uniform int uSparkCount;
-uniform vec4 uSparks[160];
-uniform float uSparkHue[160];
+uniform sampler2D uSparksTex;
+uniform float uCubeEdge;
 uniform vec2 uBallPx;
 uniform float uRadius;
 uniform float uSquash;
@@ -2994,6 +3117,7 @@ uniform vec3 uPalB;
 uniform vec3 uPalC;
 uniform vec3 uPalD;
 uniform float uLight;
+uniform float uAlpha;
 uniform float uSize;
 uniform float uPsize;
 uniform float uEnergy;
@@ -3190,6 +3314,8 @@ vec3 blendMode(vec3 base, vec3 src, float mode) {
   return max(base, src);
 }
 vec3 compositeFg(vec3 base, vec3 glow, vec3 shade, float mode) {
+  glow *= uAlpha;
+  shade *= uAlpha;
   vec3 src = max(glow, 0.0);
   float cover = clamp(max(src.r, max(src.g, src.b)), 0.0, 1.0);
   vec3 next = mode < 0.5 ? mix(base, src, cover) : mode < 1.5 ? base + src : mix(base, blendMode(base, src, mode), cover);
@@ -3199,8 +3325,14 @@ void deposit(vec3 term, inout vec3 glow, inout vec3 shade) {
   glow += max(term, vec3(0.0));
   shade += max(-term, vec3(0.0));
 }
+vec4 sparkAt(int i) {
+  return texelFetch(uSparksTex, ivec2(i, 0), 0);
+}
+float hueAt(int i) {
+  return texelFetch(uSparksTex, ivec2(i, 1), 0).r;
+}
 void accumSpark(int i, vec2 px, float ink, inout vec3 fgGlow, inout vec3 fgShade) {
-  vec4 sp = uSparks[i];
+  vec4 sp = sparkAt(i);
   float life = sp.w;
   if (abs(life) <= 0.001) return;
   vec2 placed = (sp.xy - 0.5) * uSize + 0.5;
@@ -3213,10 +3345,10 @@ void accumSpark(int i, vec2 px, float ink, inout vec3 fgGlow, inout vec3 fgShade
   float core = smoothstep(rad, rad * 0.2, dist);
   float reach = rad * 3.1;
   float glow = exp(-0.5 * d2 / (reach * reach));
-  vec3 spark = palette(fract(uSparkHue[i]));
+  vec3 spark = palette(fract(hueAt(i)));
   deposit(spark * (core * 1.2 + glow * 0.62) * life * ink, fgGlow, fgShade);
   if (uScene > 4.5 && uScene < 5.5) {
-    float along = mod(float(i), 12.0) * uWaves * 0.55 + uWavePhase + floor(float(i) / 12.0) * 0.7;
+    float along = mod(float(i), max(uCubeEdge, 1.0)) * uWaves * 0.55 + uWavePhase + floor(float(i) / max(uCubeEdge, 1.0)) * 0.7;
     vec2 shift = vec2(cos(along), sin(along)) * (uWaves * 4.5);
     vec2 shadeAt = delta - shift;
     float sd2 = dot(shadeAt, shadeAt);
@@ -3241,6 +3373,11 @@ void accumSpark(int i, vec2 px, float ink, inout vec3 fgGlow, inout vec3 fgShade
       fgShade += vec3(score * 1.25 + sglow * 0.42) * abs(life);
     }
   }
+}
+float checksMask(vec2 uv) {
+  vec2 fw = max(fwidth(uv), vec2(0.0001));
+  vec2 i = 2.0 * (abs(fract((uv - 0.5 * fw) * 0.5) - 0.5) - abs(fract((uv + 0.5 * fw) * 0.5) - 0.5)) / fw;
+  return 0.5 - 0.5 * i.x * i.y;
 }
 void main() {
   vec2 viewUv = symmetry(vUv);
@@ -3288,11 +3425,36 @@ void main() {
     if (ink < 0.0) grain = -grain;
     float mag = abs(ink);
     float show = uScene > 11.5 ? step(hash12(cell + frame * vec2(3.17, 19.13) + 40.0), 0.0625) : 1.0;
-    float amount = abs(grain) * 0.25 * mag * show;
+    float amount = abs(grain) * 0.25 * mag * show * uAlpha;
     if (grain >= 0.0) col = mix(col, vec3(1.15), amount);
     else col = mix(col, vec3(0.0), amount);
   }
-  if (uScene < 1.5) {
+  if (uScene > 14.5 && uScene < 15.5) {
+    vec2 p = viewUv - 0.5;
+    p.x *= uResolution.x / max(uResolution.y, 1.0);
+    float t = uNoiseTime;
+    float amp = uWaves * 0.04;
+    p.x += sin(p.y * 1.6 + t * 0.42) * amp * 1.7;
+    p.y += cos(p.x * 1.25 - t * 0.33) * amp * 1.7;
+    p += vec2(
+      sin(p.y * 6.5 + t * 1.15) + 0.4 * sin(p.y * 13.0 - t * 1.8),
+      cos(p.x * 5.8 - t * 0.95) + 0.4 * cos(p.x * 12.0 + t * 1.55)
+    ) * amp;
+    float ripple = sin(length(p) * 8.0 - t * 1.35);
+    p += p * ripple * amp * 0.85;
+    float cells = max(uSize, 0.05) * 8.0;
+    float white = checksMask(p * cells);
+    vec3 tone = clamp(palette(fract(t * 0.035)), 0.0, 1.0);
+    vec3 glow = tone * white;
+    vec3 shade = vec3(1.0 - white);
+    if (ink < 0.0) {
+      vec3 swap = glow;
+      glow = shade;
+      shade = swap;
+    }
+    float mag = abs(ink);
+    col = shoulder(compositeFg(col, glow * mag, shade * mag, uFgBlend));
+  } else if (uScene < 1.5) {
     vec2 ballPx = (uBallPx - uResolution * 0.5) * uSize + uResolution * 0.5;
     vec2 scale = vec2(1.0 + 0.5 * uSquash, max(0.58, 1.0 - 0.32 * uSquash));
     float spanReach = uRadius * max(scale.x, scale.y) * uSize;
@@ -3301,8 +3463,9 @@ void main() {
     if (dot(fromBall, fromBall) <= reach * reach) {
     vec3 fgGlow = vec3(0.0);
     vec3 fgShade = vec3(0.0);
-    for (int i = 0; i < 64; i++) {
-      vec4 sp = uSparks[i];
+    for (int i = 0; i < 128; i++) {
+      if (i >= uSparkCount) break;
+      vec4 sp = sparkAt(i);
       float rad = sp.z * uSize * uPsize;
       vec2 delta = px - (ballPx + sp.xy * uSize);
       float d2 = dot(delta, delta);
@@ -3313,7 +3476,7 @@ void main() {
       float core = smoothstep(rad, rad * 0.22, dist);
       float glowReach = rad * 2.5;
       float glow = exp(-0.5 * d2 / (glowReach * glowReach));
-      vec3 spark = palette(fract(uSparkHue[i]));
+      vec3 spark = palette(fract(hueAt(i)));
       deposit(spark * (core * 1.15 + glow * 0.5) * mix(0.32, 1.0, depth) * ink, fgGlow, fgShade);
     }
     vec2 q = (px - ballPx) / (uRadius * scale * uSize);
@@ -3332,8 +3495,8 @@ void main() {
     uint head = texelFetch(uBins, ivec2(0, cellId), 0).r;
     vec3 fgGlow = vec3(0.0);
     vec3 fgShade = vec3(0.0);
-    if (head == 255u) {
-      for (int i = 0; i < 160; i++) {
+    if (head == 65535u) {
+      for (int i = 0; i < 256; i++) {
         if (i >= uSparkCount) break;
         accumSpark(i, px, ink, fgGlow, fgShade);
       }
@@ -3480,8 +3643,8 @@ void main() {
           fgOn: gl.getUniformLocation(feedback, "uFgOn"),
           fbOn: gl.getUniformLocation(feedback, "uFbOn"),
           sparkCount: gl.getUniformLocation(feedback, "uSparkCount"),
-          sparks: gl.getUniformLocation(feedback, "uSparks"),
-          sparkHue: gl.getUniformLocation(feedback, "uSparkHue"),
+          bins: gl.getUniformLocation(feedback, "uBins"),
+          sparksTex: gl.getUniformLocation(feedback, "uSparksTex"),
           ballPx: gl.getUniformLocation(feedback, "uBallPx"),
           radius: gl.getUniformLocation(feedback, "uRadius"),
           squash: gl.getUniformLocation(feedback, "uSquash"),
@@ -3491,6 +3654,7 @@ void main() {
           palC: gl.getUniformLocation(feedback, "uPalC"),
           palD: gl.getUniformLocation(feedback, "uPalD"),
           light: gl.getUniformLocation(feedback, "uLight"),
+          alpha: gl.getUniformLocation(feedback, "uAlpha"),
           size: gl.getUniformLocation(feedback, "uSize"),
           psize: gl.getUniformLocation(feedback, "uPsize"),
           energy: gl.getUniformLocation(feedback, "uEnergy"),
@@ -3506,6 +3670,7 @@ void main() {
           bgPlane: gl.getUniformLocation(feedback, "uBgPlane"),
           bgRotate: gl.getUniformLocation(feedback, "uBgRotate"),
           waves: gl.getUniformLocation(feedback, "uWaves"),
+          cubeEdge: gl.getUniformLocation(feedback, "uCubeEdge"),
           wavePhase: gl.getUniformLocation(feedback, "uWavePhase"),
           binCount: gl.getUniformLocation(feedback, "uBinCount"),
           binSize: gl.getUniformLocation(feedback, "uBinSize"),
@@ -3563,8 +3728,8 @@ void main() {
         const BIN_ROWS = 10;
         const BIN_CAP = 40;
         const BIN_CELLS = BIN_COLS * BIN_ROWS;
-        const binData = new Uint8Array(BIN_CELLS * BIN_CAP);
-        const binCounts = new Uint8Array(BIN_CELLS);
+        const binData = new Uint16Array(BIN_CELLS * BIN_CAP);
+        const binCounts = new Uint16Array(BIN_CELLS);
         const binTex = gl.createTexture();
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, binTex);
@@ -3572,20 +3737,33 @@ void main() {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, BIN_CAP, BIN_CELLS, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, binData);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16UI, BIN_CAP, BIN_CELLS, 0, gl.RED_INTEGER, gl.UNSIGNED_SHORT, binData);
+        const sparkTexData = new Float32Array(PARTICLE_N * 8);
+        const sparkTex = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE3);
+        gl.bindTexture(gl.TEXTURE_2D, sparkTex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, PARTICLE_N, 2, 0, gl.RGBA, gl.FLOAT, sparkTexData);
         gl.activeTexture(gl.TEXTURE0);
 
         function sparkCountFor(scene) {
-          if (scene === 4) return STAR_N;
-          if (scene === 5) return CUBE_N;
-          if (scene === 6) return FLAME_N;
-          if (scene === 7) return SNOW_N;
-          if (scene === 8) return GRID_N;
-          if (scene === 9) return STUCCO_N;
-          if (scene === 10 || scene === 11 || scene === 12) return TEXT_N;
-          if (scene === 13) return CIRCUIT_N;
-          if (scene === 14) return ORBIT_N;
-          return SPARK_N;
+          if (scene === 1) return particleCount(64);
+          if (scene === 2) return particleCount(SPARK_N);
+          if (scene === 3) return particleCount(FLOCK_N);
+          if (scene === 4) return particleCount(STAR_N);
+          if (scene === 5) return cubeCount();
+          if (scene === 6) return particleCount(FLAME_N);
+          if (scene === 7) return particleCount(SNOW_N);
+          if (scene === 8) return gridLayout().count;
+          if (scene === 9) return particleCount(STUCCO_N);
+          if (scene === 10 || scene === 11 || scene === 12) return Math.min(glyphs.length, particleCount(TEXT_N));
+          if (scene === 13) return circuitBudget().total;
+          if (scene === 14) return ORBIT_BODIES * (2 + orbitMoons());
+          if (scene === 15) return 0;
+          return particleCount(SPARK_N);
         }
 
         function buildBins(count) {
@@ -3614,9 +3792,9 @@ void main() {
                 const cell = cy * BIN_COLS + cx;
                 const used = binCounts[cell];
                 const base = cell * BIN_CAP;
-                if (used === 255 || used >= BIN_CAP) {
-                  binCounts[cell] = 255;
-                  binData[base] = 255;
+                if (used === 65535 || used >= BIN_CAP) {
+                  binCounts[cell] = 65535;
+                  binData[base] = 65535;
                   continue;
                 }
                 binData[base + used] = i + 1;
@@ -3626,7 +3804,7 @@ void main() {
           }
           gl.activeTexture(gl.TEXTURE2);
           gl.bindTexture(gl.TEXTURE_2D, binTex);
-          gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, BIN_CAP, BIN_CELLS, gl.RED_INTEGER, gl.UNSIGNED_BYTE, binData);
+          gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, BIN_CAP, BIN_CELLS, gl.RED_INTEGER, gl.UNSIGNED_SHORT, binData);
           gl.activeTexture(gl.TEXTURE0);
         }
 
@@ -3678,6 +3856,7 @@ void main() {
         let ballSpin = 0;
         let terrainTime = 0;
         let noiseTime = 0;
+        let checksTime = 0;
         const ball = { x: 0.1, y: 0.5 };
 
         function makeTarget(w, h) {
@@ -3778,8 +3957,9 @@ void main() {
           const margin = 0.86;
           const scale = Math.min((margin * aspect) / inkAspect, margin);
           const cover = Math.min(2.6, Math.max(0.85, scale / 0.34));
-          for (let i = 0; i < TEXT_N; i++) {
-            const glyph = glyphs[i];
+          const count = Math.min(glyphs.length, particleCount(TEXT_N));
+          for (let i = 0; i < count; i++) {
+            const glyph = glyphs.length ? glyphs[Math.min(glyphs.length - 1, Math.floor(i * glyphs.length / count))] : null;
             if (!glyph || fade < 0.025) {
               sparkData[i * 4 + 3] = 0;
               continue;
@@ -3866,9 +4046,10 @@ void main() {
           const tumble = ballSpin * 0.37;
           const ca = Math.cos(tumble);
           const sa = Math.sin(tumble);
-          for (let i = 0; i < 64; i++) {
+          const n = particleCount(64);
+          for (let i = 0; i < n; i++) {
             const fi = i + 0.5;
-            const y = 1 - fi / 32;
+            const y = 1 - fi / (n * 0.5);
             const ring = Math.sqrt(Math.max(0, 1 - y * y));
             const theta = 2.39996323 * fi + ballSpin;
             const px3 = ring * Math.cos(theta);
@@ -3917,7 +4098,7 @@ void main() {
           gl.uniform1f(fu.embossAmt, state.emboss * dt);
           gl.uniform1f(fu.embossAspect, embossAspect);
           gl.uniform1f(fu.terrainTime, terrainTime);
-          gl.uniform1f(fu.noiseTime, noiseTime);
+          gl.uniform1f(fu.noiseTime, state.scene === 15 ? checksTime : noiseTime);
           gl.uniform1f(fu.spin, state.spin * dt);
           gl.uniform1f(fu.chroma, state.chroma);
           gl.uniform1f(fu.hue, state.hue * dt);
@@ -3932,7 +4113,7 @@ void main() {
           gl.uniform1f(fu.fgOn, layers.foreground ? 1 : 0);
           gl.uniform1f(fu.fbOn, layers.feedback ? 1 : 0);
           gl.uniform1f(fu.scene, state.scene);
-          gl.uniform1i(fu.sparkCount, state.scene === 4 ? STAR_N : state.scene === 5 ? CUBE_N : state.scene === 6 ? FLAME_N : state.scene === 7 ? SNOW_N : state.scene === 8 ? GRID_N : state.scene === 9 ? STUCCO_N : state.scene === 10 || state.scene === 11 || state.scene === 12 ? TEXT_N : state.scene === 13 ? CIRCUIT_N : state.scene === 14 ? ORBIT_N : SPARK_N);
+          gl.uniform1i(fu.sparkCount, sparkCountFor(state.scene));
           writeSparks();
           if (state.scene === 1) writeBall(radius, pathHue);
           if (state.scene === 3) writeFlock();
@@ -3946,16 +4127,21 @@ void main() {
           if (state.scene === 14) writeOrbits();
           if (state.scene === 10 || state.scene === 12) writeSpinText();
           if (state.scene === 11) writeText();
-          if (state.scene !== 1) foldSparks(tile);
-          if (state.scene !== 1) buildBins(sparkCountFor(state.scene));
+          if (state.scene !== 1 && state.scene !== 15) foldSparks(tile);
+          if (state.scene !== 1 && state.scene !== 15) buildBins(sparkCountFor(state.scene));
           gl.activeTexture(gl.TEXTURE2);
           gl.bindTexture(gl.TEXTURE_2D, binTex);
           gl.uniform1i(fu.bins, 2);
           gl.uniform2f(fu.binCount, BIN_COLS, BIN_ROWS);
           gl.uniform2f(fu.binSize, width / BIN_COLS, height / BIN_ROWS);
           gl.activeTexture(gl.TEXTURE0);
-          gl.uniform4fv(fu.sparks, sparkData);
-          gl.uniform1fv(fu.sparkHue, sparkHue);
+          sparkTexData.set(sparkData, 0);
+          for (let i = 0; i < PARTICLE_N; i++) sparkTexData[PARTICLE_N * 4 + i * 4] = sparkHue[i];
+          gl.activeTexture(gl.TEXTURE3);
+          gl.bindTexture(gl.TEXTURE_2D, sparkTex);
+          gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, PARTICLE_N, 2, gl.RGBA, gl.FLOAT, sparkTexData);
+          gl.uniform1i(fu.sparksTex, 3);
+          gl.activeTexture(gl.TEXTURE0);
           const ballAt = foldPoint(ball.x, ball.y, tile);
           gl.uniform2f(fu.ballPx, ballAt[0] * width, ballAt[1] * height);
           gl.uniform1f(fu.radius, radius);
@@ -3967,6 +4153,7 @@ void main() {
           gl.uniform3fv(fu.palC, pal.c);
           gl.uniform3fv(fu.palD, pal.d);
           gl.uniform1f(fu.light, state.light);
+          gl.uniform1f(fu.alpha, state.alpha);
           gl.uniform1f(fu.size, state.size);
           gl.uniform1f(fu.psize, state.psize);
           gl.uniform4f(fu.bgTL, background.tl.r, background.tl.g, background.tl.b, background.tl.a);
@@ -3984,6 +4171,7 @@ void main() {
           gl.uniform4f(fu.bgPlane, background.plane.r, background.plane.g, background.plane.b, background.plane.a);
           gl.uniform1f(fu.bgRotate, state.bgRotate * Math.PI / 180);
           gl.uniform1f(fu.waves, state.waves);
+          gl.uniform1f(fu.cubeEdge, cubeEdgeCount());
           gl.uniform1f(fu.wavePhase, cubeTime * 1.7);
           gl.uniform1f(fu.energy, state.energy);
           gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -3996,6 +4184,11 @@ void main() {
           gl.drawArrays(gl.TRIANGLES, 0, 6);
           gl.bindVertexArray(null);
           write = 1 - write;
+        }
+
+        function stepChecks(dt) {
+          const rate = Math.max(0.2, state.speed / 0.38);
+          checksTime += dt * rate;
         }
 
         function frame(now) {
@@ -4019,6 +4212,7 @@ void main() {
               else if (state.scene === 11) stepText(1 / 60);
               else if (state.scene === 13) stepCircuit(1 / 60);
               else if (state.scene === 14) stepOrbits(1 / 60);
+              else if (state.scene === 15) stepChecks(1 / 60);
               else stepBall(1 / 60);
               draw(1 / 60);
             }
@@ -4044,6 +4238,7 @@ void main() {
             else if (state.scene === 11) stepText(dt);
             else if (state.scene === 13) stepCircuit(dt);
             else if (state.scene === 14) stepOrbits(dt);
+            else if (state.scene === 15) stepChecks(dt);
             else stepBall(dt);
             draw(dt);
           } else {
