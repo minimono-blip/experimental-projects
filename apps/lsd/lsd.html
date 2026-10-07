@@ -644,7 +644,7 @@
     };
     const LOOK = {
       trail: 2.1, zoom: -0.16, fieldZoom: 1, tunnelZoom: 1, dirX: 0, dirY: 0, tiltX: 0, tiltY: 0, tiltZ: 0, distort: 0, height: 0, bulge: 0, emboss: 0,
-      spin: 0.1, chroma: 0, hue: 0.22, speed: 0.38, waves: 2, kaleido: 0, tiles: 0, blend: 0, fgBlend: 1, gain: 0.99, light: 1, size: 1, psize: 1, amount: 1, alpha: 1, bgRotate: 0,
+      spin: 0.1, chroma: 0, hue: 0.22, speed: 0.38, waves: 2, kaleido: 0, tiles: 0, blend: 0, fgBlend: 1, gain: 0.99, light: 1, size: 1, psize: 1, amount: 1, alpha: 1, bgRotate: 0, bgAlpha: 1,
     };
     const TILE_LABELS = ["Off", "2H", "2V", "4", "6", "8", "9", "12", "16", "20", "25", "30", "36"];
     const SLIDERS = [
@@ -674,6 +674,7 @@
       ["kaleido", "Kaleido", 0, 12, 1, (v) => (v < 1 ? "Off" : String(Math.round(v)))],
       ["tiles", "Tiles", 0, 12, 1, (v) => TILE_LABELS[Math.round(v)] || "Off"],
       ["bgRotate", "Rotate", -180, 180, 1, (v) => Math.round(v) + "°"],
+      ["bgAlpha", "Alpha", 0, 1, 0.01, (v) => (v < 0.005 ? "Clear" : v > 0.995 ? "Solid" : v.toFixed(2))],
       ["gain", "Intensity", 0, 2.5, 0.01, (v) => v.toFixed(2)],
     ];
     const BLENDS = ["Normal", "Add", "Screen", "Multiply", "Difference", "Lighten"];
@@ -687,7 +688,7 @@
     const sliders = document.getElementById("sliders");
     const foregroundSliders = document.getElementById("foreground-sliders");
     const FOREGROUND_SLIDERS = new Set(["size", "tunnelZoom", "psize", "amount", "light", "alpha", "speed", "waves", "kaleido", "tiles"]);
-    const BACKGROUND_SLIDERS = new Set(["bgRotate"]);
+    const BACKGROUND_SLIDERS = new Set(["bgRotate", "bgAlpha"]);
     const inputs = {};
     let blendSelect;
     let fgBlendSelect;
@@ -1990,6 +1991,8 @@
     bgReset.addEventListener("click", () => {
       setMix = null;
       bgPalette = null;
+      bgShader = 0;
+      bgShaderSelect.value = "0";
       background.plane = { r: 0, g: 0, b: 0, a: 0 };
       for (const [key] of CORNERS) background[key] = { r: 0, g: 0, b: 0, a: 0 };
       paintBgPalette();
@@ -2038,12 +2041,36 @@
     bgPaletteName.textContent = "Palette";
     bgPaletteLabel.append(bgPaletteName);
     bgPaletteRow.append(bgPaletteLabel, bgMenu);
+    const bgShaderRow = document.createElement("div");
+    bgShaderRow.className = "palette-row";
+    const bgShaderLabel = document.createElement("span");
+    bgShaderLabel.className = "row";
+    const bgShaderName = document.createElement("span");
+    bgShaderName.textContent = "Shader";
+    bgShaderLabel.append(bgShaderName);
+    const BG_SHADERS = ["None", "Tunnel", "Motion blur", "Z invert", "R tunnel", "Squares", "Octograms", "Cube waves", "Base warp", "Creation", "Beauty", "Mystify", "Raymarch B", "Clouds", "Universe", "Worley", "Flame"];
+    let bgShader = 0;
+    const bgShaderSelect = document.createElement("select");
+    bgShaderSelect.className = "blend";
+    bgShaderSelect.setAttribute("aria-label", "Background pixel shader");
+    BG_SHADERS.forEach((text, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = text;
+      bgShaderSelect.appendChild(option);
+    });
+    bgShaderSelect.addEventListener("change", () => {
+      bgShader = Math.max(0, Math.min(BG_SHADERS.length - 1, Number(bgShaderSelect.value) || 0));
+      setMix = null;
+      if (setIndex >= 0 && sets[setIndex] && sets[setIndex].background) sets[setIndex].background.shader = bgShader;
+    });
+    bgShaderRow.append(bgShaderLabel, bgShaderSelect);
     const bgTools = document.createElement("div");
     bgTools.className = "bg-tools";
     const bgSliders = document.createElement("div");
     bgSliders.className = "grid";
     bgTools.append(picks, bgReset);
-    bgRow.append(bgName, bgPaletteRow, bgTools, bgSliders);
+    bgRow.append(bgName, bgPaletteRow, bgShaderRow, bgTools, bgSliders);
     messageForm.after(bgRow);
 
     function setBgPalette(index) {
@@ -2747,6 +2774,7 @@
     function snapshotBackground() {
       const out = {
         palette: bgPalette,
+        shader: bgShader,
         plane: { r: background.plane.r, g: background.plane.g, b: background.plane.b, a: background.plane.a },
       };
       for (const [key] of CORNERS) out[key] = { r: background[key].r, g: background[key].g, b: background[key].b, a: background[key].a };
@@ -2757,6 +2785,11 @@
       for (const [key] of CORNERS) background[key] = readCorner(next && next[key]);
       if (next && next.plane) background.plane = readCorner(next.plane);
       if (next && Object.prototype.hasOwnProperty.call(next, "palette")) bgPalette = next.palette;
+      if (next && Object.prototype.hasOwnProperty.call(next, "shader")) {
+        const index = Math.round(Number(next.shader));
+        bgShader = Number.isFinite(index) ? Math.max(0, Math.min(BG_SHADERS.length - 1, index)) : 0;
+        bgShaderSelect.value = String(bgShader);
+      }
       paintBgPalette();
       paintSwatches();
       if (colorKey && !colorPanel.hidden) paintColor();
@@ -2803,6 +2836,10 @@
       if (Object.prototype.hasOwnProperty.call(rawBg, "palette")) {
         const index = rawBg.palette == null ? null : Math.round(Number(rawBg.palette));
         backgroundSet.palette = index == null || !Number.isFinite(index) ? null : Math.min(PALETTES.length - 1, Math.max(0, index));
+      }
+      if (Object.prototype.hasOwnProperty.call(rawBg, "shader")) {
+        const index = Math.round(Number(rawBg.shader));
+        backgroundSet.shader = Number.isFinite(index) ? Math.max(0, Math.min(BG_SHADERS.length - 1, index)) : 0;
       }
       const extra = {};
       for (const [key, value] of Object.entries(raw)) {
@@ -3014,6 +3051,7 @@
           };
         }
         if (Object.prototype.hasOwnProperty.call(target.background, "palette")) next.palette = target.background.palette;
+        if (Object.prototype.hasOwnProperty.call(target.background, "shader")) next.shader = target.background.shader;
         applyBackground(next);
       }
       if (u >= 1) {
@@ -3081,6 +3119,7 @@ in vec2 vUv;
 out vec4 fragColor;
 uniform sampler2D uPrev;
 uniform sampler2D uEmboss;
+uniform sampler2D uCloud;
 uniform float uEmbossAmt;
 uniform float uEmbossAspect;
 uniform vec2 uResolution;
@@ -3132,6 +3171,9 @@ uniform vec3 uBgPalC;
 uniform vec3 uBgPalD;
 uniform vec4 uBgPlane;
 uniform float uBgRotate;
+uniform float uBgAlpha;
+uniform float uBgShader;
+uniform float uBgTime;
 uniform float uWaves;
 uniform float uWavePhase;
 
@@ -3379,6 +3421,630 @@ float checksMask(vec2 uv) {
   vec2 i = 2.0 * (abs(fract((uv - 0.5 * fw) * 0.5) - 0.5) - abs(fract((uv + 0.5 * fw) * 0.5) - 0.5)) / fw;
   return 0.5 - 0.5 * i.x * i.y;
 }
+vec3 bgTunnel(vec2 fragCoord) {
+  vec2 p = (2.0 * fragCoord - uResolution.xy) / uResolution.y;
+  p = rot(p, uBgRotate);
+  float a = atan(p.y, p.x);
+  vec2 p2 = p * p;
+  vec2 p4 = p2 * p2;
+  vec2 p8 = p4 * p4;
+  float r = max(pow(max(p8.x + p8.y, 0.0), 0.125), 0.0001);
+  vec2 uv = vec2(0.3 / r + 0.2 * uBgTime, a / 3.1415927);
+  vec2 uv2 = vec2(uv.x, atan(p.y, abs(p.x)) / 3.1415927);
+  vec3 tun = textureGrad(uPrev, fract(uv), dFdx(uv2), dFdy(uv2)).rgb;
+  return tun * r;
+}
+vec3 bgDeform(vec2 p, float t) {
+  t *= 2.0;
+  p += 0.5 * sin(t * vec2(1.1, 1.3) + vec2(0.0, 0.5));
+  float a = atan(p.y, p.x);
+  float r = length(p);
+  float s = max(r * (1.0 + 0.5 * cos(t * 1.7)), 0.0001);
+  vec2 uv = 0.1 * t + 0.05 * p.yx + 0.05 * vec2(cos(t + a * 2.0), sin(t + a * 2.0)) / s;
+  return texture(uPrev, fract(0.5 * uv)).rgb;
+}
+vec3 bgMotion(vec2 fragCoord) {
+  vec2 q = fragCoord / uResolution.xy;
+  vec2 p = rot(-1.0 + 2.0 * q, uBgRotate);
+  vec3 sum = vec3(0.0);
+  for (int i = 0; i < 20; i++) {
+    float t = uBgTime + float(i) * 0.0035;
+    sum += bgDeform(p, t);
+  }
+  sum /= 20.0;
+  return pow(max(sum, vec3(0.0)), vec3(0.6, 0.7, 0.8));
+}
+vec3 bgZInvert(vec2 fragCoord) {
+  vec2 p = rot((-uResolution.xy + 2.0 * fragCoord) / uResolution.x, uBgRotate);
+  float r = max(length(p), 0.0001);
+  float a = atan(p.y, p.x) + sin(2.0 * r) - 3.0 * cos(2.0 + 0.1 * uBgTime);
+  vec2 uv = vec2(cos(a), sin(a)) / r;
+  uv += 10.0 * cos(vec2(0.6, 0.3) + vec2(0.1, 0.13) * uBgTime);
+  return r * texture(uPrev, fract(uv * 0.25)).rgb;
+}
+vec3 bgRTunnel(vec2 fragCoord) {
+  vec2 p = rot((-uResolution.xy + 2.0 * fragCoord) / uResolution.y, uBgRotate) * 0.75;
+  float a = atan(p.y, p.x);
+  float r = max(length(p), 0.0001);
+  a += sin(0.5 * r - 0.5 * uBgTime);
+  float h = 0.5 + 0.5 * cos(9.0 * a);
+  float s = smoothstep(0.4, 0.5, h);
+  vec2 uv = vec2(uBgTime + 1.0 / (r + 0.1 * s), 3.0 * a / 3.1416);
+  vec3 col = texture(uPrev, fract(uv)).rgb;
+  float ao = smoothstep(0.0, 0.3, h) - smoothstep(0.5, 1.0, h);
+  col *= 1.0 - 0.6 * ao * r;
+  return col * r;
+}
+float sqRand(vec2 co) {
+  return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+float sqNoise(vec2 p) {
+  p *= 2.8;
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(sqRand(i), sqRand(i + vec2(1.0, 0.0)), u.x),
+             mix(sqRand(i + vec2(0.0, 1.0)), sqRand(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float sqFbm(vec2 uv) {
+  uv *= 5.0;
+  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+  float f = 0.5 * sqNoise(uv); uv = m * uv;
+  f += 0.25 * sqNoise(uv); uv = m * uv;
+  f += 0.125 * sqNoise(uv); uv = m * uv;
+  f += 0.0625 * sqNoise(uv);
+  return 0.5 + 0.5 * f;
+}
+vec3 sqField(vec2 uv) {
+  float velocity = uBgTime / 1.6;
+  float intensity = sin(uv.x * 3.0 + velocity * 2.0) * 1.1 + 1.5;
+  uv.y -= 2.0;
+  vec2 bp = uv + vec2(-2.0, 0.0);
+  uv *= 0.6;
+  uv += sqFbm(vec2(uv.x * 0.5 - velocity * 0.03, uv.y)) * 0.1;
+  float rz = sqFbm(uv * 0.9 + vec2(velocity * 0.35, 0.0));
+  rz *= dot(bp * intensity, bp) + 1.2;
+  return sqrt(abs(vec3(0.01, 0.16, 0.42) / max(0.02, 0.1 - rz)));
+}
+float sqRect(vec2 uv, vec2 pos, float width, float height, float blur) {
+  vec2 d = (vec2(width, height) + 0.01) * 0.5 - abs(uv - pos);
+  d = smoothstep(vec2(0.0), vec2(max(blur, 0.0001)), d);
+  return d.x * d.y;
+}
+vec3 bgSquares(vec2 fragCoord) {
+  vec2 uv = fragCoord / uResolution.xy * 2.0 - 1.0;
+  uv.x *= uResolution.x / max(uResolution.y, 1.0);
+  uv = rot(uv, uBgRotate);
+  vec3 color = sqField(uv) * (2.0 - abs(uv.y * 2.0));
+  float velX = -uBgTime / 8.0;
+  float velY = uBgTime / 10.0;
+  const float minSize = 0.03;
+  const float maxSize = 0.05;
+  for (int i = 0; i < 60; i++) {
+    float index = float(i) / 60.0;
+    float rnd = sqRand(vec2(index));
+    vec2 pos = vec2(fract(velX * rnd + index) * 4.0 - 2.0, sin(index * rnd * 1000.0 + velY) * 0.5);
+    float z = maxSize * rnd + minSize;
+    vec2 uvRot = rot(uv - pos + z * 0.5, -(float(i) + uBgTime * 0.5)) + pos + z * 0.5;
+    float rect = sqRect(uvRot, pos, z, z, (maxSize + minSize - z) * 0.5);
+    color += vec3(0.01, 0.26, 0.57) * rect * z / maxSize;
+  }
+  return color;
+}
+float octSdBox(vec3 p, vec3 b) {
+  vec3 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+float octBox(vec3 pos, float scale) {
+  pos *= scale;
+  return -octSdBox(pos, vec3(0.4, 0.4, 0.1)) / 1.5;
+}
+float octBoxSet(vec3 pos, float time) {
+  vec3 origin = pos;
+  float scale = 2.0 - abs(sin(time * 0.4)) * 1.5;
+  pos.y += sin(time * 0.4) * 2.5;
+  pos.xy = rot(pos.xy, -0.8);
+  float box1 = octBox(pos, scale);
+  pos = origin;
+  pos.y -= sin(time * 0.4) * 2.5;
+  pos.xy = rot(pos.xy, -0.8);
+  float box2 = octBox(pos, scale);
+  pos = origin;
+  pos.x += sin(time * 0.4) * 2.5;
+  pos.xy = rot(pos.xy, -0.8);
+  float box3 = octBox(pos, scale);
+  pos = origin;
+  pos.x -= sin(time * 0.4) * 2.5;
+  pos.xy = rot(pos.xy, -0.8);
+  float box4 = octBox(pos, scale);
+  pos = origin;
+  pos.xy = rot(pos.xy, -0.8);
+  float box5 = octBox(pos, 0.5) * 6.0;
+  float box6 = octBox(origin, 0.5) * 6.0;
+  return max(max(max(max(max(box1, box2), box3), box4), box5), box6);
+}
+vec3 bgOctograms(vec2 fragCoord) {
+  vec2 p = (fragCoord * 2.0 - uResolution) / min(uResolution.x, uResolution.y);
+  p = rot(p, uBgRotate);
+  float time = uBgTime;
+  vec3 ro = vec3(0.0, -0.2, time * 4.0);
+  vec3 ray = normalize(vec3(p, 1.5));
+  ray.xy = rot(ray.xy, -sin(time * 0.03) * 5.0);
+  ray.yz = rot(ray.yz, -sin(time * 0.05) * 0.2);
+  float t = 0.1;
+  float ac = 0.0;
+  for (int i = 0; i < 99; i++) {
+    vec3 pos = ro + ray * t;
+    pos = mod(pos - 2.0, 4.0) - 2.0;
+    float d = octBoxSet(pos, time - float(i) * 0.01);
+    d = max(abs(d), 0.01);
+    ac += exp(-d * 23.0);
+    t += d * 0.55;
+  }
+  vec3 col = vec3(ac * 0.02);
+  col += vec3(0.0, 0.2 * abs(sin(time)), 0.5 + sin(time) * 0.2);
+  float fade = clamp(1.0 - t * (0.02 + 0.02 * sin(time)), 0.0, 1.0);
+  return col * fade;
+}
+mat2 waveRot(float a) {
+  vec4 c = cos(a + vec4(0.0, 11.0, 33.0, 0.0));
+  return mat2(c.x, c.y, c.z, c.w);
+}
+float cubeSdf(vec3 q) {
+  q = abs(q);
+  return max(q.x, max(q.y, q.z));
+}
+vec3 bgCubeWaves(vec2 fragCoord) {
+  float t = uBgTime;
+  vec3 D = normalize(vec3((fragCoord + fragCoord - uResolution.xy) / uResolution.y, -9.0));
+  vec3 p = vec3(0.0, 0.0, 7.0);
+  vec3 M = vec3(0.1, 0.04, 0.0) * cos(0.3 * t + vec3(0.0, 11.0, 0.0)) + vec3(0.0, 0.2, 0.0);
+  vec3 O = vec3(1.0);
+  float l = 9.0;
+  for (int i = 0; i < 200; i++) {
+    if (!(p.z > -1.0 && O.x > 0.0 && l > 0.002)) break;
+    l = 9.0;
+    vec3 q = p;
+    q.xz *= waveRot(-6.3 * M.x + uBgRotate);
+    q.yz *= waveRot(0.5 - 6.3 * M.y);
+    q *= 7.0;
+    vec3 id = round(q);
+    vec3 r = fract(q + 0.5) - 0.5;
+    l = min(l, cubeSdf(r) - 0.2 + 0.2 * sin(2.0 * length(id) + 2.0 * t));
+    l = max(l, cubeSdf(q) - 3.5);
+    p += 0.3 * l / 7.0 * D;
+    O -= 0.005;
+  }
+  if (p.z < -1.0) O = vec3(0.0);
+  O *= O * O * O * vec3(0.6, 0.8, 1.0) * 2.0;
+  return max(O, vec3(0.0));
+}
+float bwRed(float x) {
+  if (x < 0.0) return 54.0 / 255.0;
+  if (x < 20049.0 / 82979.0) return (829.79 * x + 54.51) / 255.0;
+  return 1.0;
+}
+float bwGreen(float x) {
+  if (x < 20049.0 / 82979.0) return 0.0;
+  if (x < 327013.0 / 810990.0) return (8546482679670.0 / 10875673217.0 * x - 2064961390770.0 / 10875673217.0) / 255.0;
+  if (x <= 1.0) return (103806720.0 / 483977.0 * x + 19607415.0 / 483977.0) / 255.0;
+  return 1.0;
+}
+float bwBlue(float x) {
+  if (x < 0.0) return 54.0 / 255.0;
+  if (x < 7249.0 / 82979.0) return (829.79 * x + 54.51) / 255.0;
+  if (x < 20049.0 / 82979.0) return 127.0 / 255.0;
+  if (x < 327013.0 / 810990.0) return (792.02249341361393720147485376583 * x - 64.364790735602331034989206222672) / 255.0;
+  return 1.0;
+}
+float bwRand(vec2 n) {
+  return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+}
+float bwNoise(vec2 p) {
+  vec2 ip = floor(p);
+  vec2 u = fract(p);
+  u = u * u * (3.0 - 2.0 * u);
+  float res = mix(mix(bwRand(ip), bwRand(ip + vec2(1.0, 0.0)), u.x),
+                   mix(bwRand(ip + vec2(0.0, 1.0)), bwRand(ip + vec2(1.0, 1.0)), u.x), u.y);
+  return res * res;
+}
+float bwFbm(vec2 p) {
+  const mat2 mtx = mat2(0.80, 0.60, -0.60, 0.80);
+  float f = 0.0;
+  f += 0.500000 * bwNoise(p + uBgTime); p = mtx * p * 2.02;
+  f += 0.031250 * bwNoise(p); p = mtx * p * 2.01;
+  f += 0.250000 * bwNoise(p); p = mtx * p * 2.03;
+  f += 0.125000 * bwNoise(p); p = mtx * p * 2.01;
+  f += 0.062500 * bwNoise(p); p = mtx * p * 2.04;
+  f += 0.015625 * bwNoise(p + sin(uBgTime));
+  return f / 0.96875;
+}
+float bwPattern(vec2 p) {
+  return bwFbm(p + bwFbm(p + bwFbm(p)));
+}
+vec3 bgBaseWarp(vec2 fragCoord) {
+  vec2 uv = fragCoord / uResolution.x;
+  vec2 mid = uResolution.xy * 0.5 / uResolution.x;
+  uv = rot(uv - mid, uBgRotate) + mid;
+  float shade = clamp(bwPattern(uv), 0.0, 1.0);
+  if (uBgPalOn > 0.5) return clamp(bgPaletteColor(shade), 0.0, 1.0);
+  return vec3(bwRed(shade), bwGreen(shade), bwBlue(shade));
+}
+vec3 bgCreation(vec2 fragCoord) {
+  vec3 c = vec3(0.0);
+  float l = 1.0;
+  float z = uBgTime;
+  for (int i = 0; i < 3; i++) {
+    vec2 p = fragCoord / uResolution.xy;
+    vec2 uv = p;
+    p -= 0.5;
+    p.x *= uResolution.x / max(uResolution.y, 1.0);
+    p = rot(p, uBgRotate);
+    z += 0.07;
+    l = max(length(p), 0.0001);
+    uv += p / l * (sin(z) + 1.0) * abs(sin(l * 9.0 - z - z));
+    c[i] = 0.01 / max(length(mod(uv, 1.0) - 0.5), 0.001);
+  }
+  return c / l;
+}
+vec3 beautyColor(float t) {
+  if (uBgPalOn > 0.5) return bgPaletteColor(t);
+  return vec3(0.5) + vec3(0.5) * cos(6.28318 * (t + vec3(0.263, 0.416, 0.557)));
+}
+vec3 bgBeauty(vec2 fragCoord) {
+  vec2 uv = (fragCoord * 2.0 - uResolution.xy) / max(uResolution.y, 1.0);
+  uv = rot(uv, uBgRotate);
+  vec2 uv0 = uv;
+  vec3 finalColor = vec3(0.0);
+  for (int i = 0; i < 4; i++) {
+    uv = fract(uv * 1.5) - 0.5;
+    float d = length(uv) * exp(-length(uv0));
+    vec3 col = beautyColor(length(uv0) + float(i) * 0.4 + uBgTime * 0.4);
+    d = sin(d * 8.0 + uBgTime) / 8.0;
+    d = abs(d);
+    d = pow(0.01 / max(d, 0.0001), 1.2);
+    finalColor += col * d;
+  }
+  return finalColor;
+}
+float mystPing(float t) {
+  return abs(fract(t) * 2.0 - 1.0);
+}
+vec2 mystCorner(float n, float time) {
+  float a = fract(n * 0.37);
+  float b = fract(n * 0.73 + 0.2);
+  return vec2(
+    mystPing(time * (0.11 + a * 0.17) + a),
+    mystPing(time * (0.09 + b * 0.15) + b * 1.7)
+  );
+}
+float mystLine(vec2 p, vec2 a, vec2 b) {
+  vec2 aspect = vec2(uResolution.x / max(uResolution.y, 1.0), 1.0);
+  vec2 pa = (p - a) * aspect;
+  vec2 ba = (b - a) * aspect;
+  float h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.00001), 0.0, 1.0);
+  return length(pa - ba * h);
+}
+vec3 bgMystify(vec2 fragCoord) {
+  vec2 uv = fragCoord / uResolution.xy;
+  vec2 p = uv - 0.5;
+  p.x *= uResolution.x / max(uResolution.y, 1.0);
+  p = rot(p, uBgRotate);
+  p.x /= uResolution.x / max(uResolution.y, 1.0);
+  p += 0.5;
+  vec3 col = texture(uPrev, uv).rgb * 0.94;
+  float time = uBgTime * 0.35;
+  for (int s = 0; s < 2; s++) {
+    for (int h = 0; h < 6; h++) {
+      float ht = time - float(h) * 0.045;
+      float fade = 1.0 - float(h) / 6.0;
+      float base = float(s) * 4.0;
+      vec2 c0 = mystCorner(base, ht);
+      vec2 c1 = mystCorner(base + 1.0, ht);
+      vec2 c2 = mystCorner(base + 2.0, ht);
+      vec2 c3 = mystCorner(base + 3.0, ht);
+      float d = min(min(mystLine(p, c0, c1), mystLine(p, c1, c2)), min(mystLine(p, c2, c3), mystLine(p, c3, c0)));
+      float line = smoothstep(0.004, 0.001, d) * fade;
+      float hueT = fract(ht * 0.05 + float(s) * 0.37);
+      vec3 ink = uBgPalOn > 0.5
+        ? bgPaletteColor(hueT)
+        : 0.55 + 0.45 * cos(6.28318 * (hueT + vec3(0.0, 0.33, 0.67)));
+      col += ink * line;
+    }
+  }
+  return col;
+}
+float rbMap(vec3 p) {
+  vec3 n = vec3(0.0, 1.0, 0.0);
+  float k1 = 1.9;
+  float k2 = (sin(p.x * k1) + sin(p.z * k1)) * 0.8;
+  float k3 = (sin(p.y * k1) + sin(p.z * k1)) * 0.8;
+  float w1 = 4.0 - dot(abs(p), normalize(n)) + k2;
+  float w2 = 4.0 - dot(abs(p), normalize(n.yzx)) + k3;
+  float s1 = length(mod(p.xy + vec2(sin((p.z + p.x) * 2.0) * 0.3, cos((p.z + p.x) * 1.0) * 0.5), 2.0) - 1.0) - 0.2;
+  float s2 = length(mod(0.5 + p.yz + vec2(sin((p.z + p.x) * 2.0) * 0.3, cos((p.z + p.x) * 1.0) * 0.3), 2.0) - 1.0) - 0.2;
+  return min(w1, min(w2, min(s1, s2)));
+}
+vec3 bgRaymarchB(vec2 fragCoord) {
+  float time = uBgTime;
+  vec2 uv = (fragCoord / uResolution.xy) * 2.0 - 1.0;
+  uv.x *= uResolution.x / max(uResolution.y, 1.0);
+  uv = rot(uv, uBgRotate);
+  vec3 dir = normalize(vec3(uv, 1.0));
+  dir.xz = rot(dir.xz, time * 0.23);
+  dir = dir.yzx;
+  dir.xz = rot(dir.xz, time * 0.2);
+  dir = dir.yzx;
+  vec3 pos = vec3(0.0, 0.0, time);
+  float t = 0.0;
+  float tt = 0.0;
+  for (int i = 0; i < 100; i++) {
+    tt = rbMap(pos + dir * t);
+    if (tt < 0.001) break;
+    t += tt * 0.45;
+  }
+  vec3 ip = pos + dir * t;
+  float light = max(0.0, rbMap(ip - 0.1) - tt);
+  vec3 col = 0.05 * t + abs(dir) * sqrt(vec3(max(t * 0.1, 0.0))) + light;
+  if (uBgPalOn > 0.5) {
+    float shade = clamp(t * 0.08 + light * 0.35, 0.0, 1.0);
+    vec3 pal = bgPaletteColor(shade);
+    col = pal * (0.2 + light * 3.0) + pal * sqrt(max(t * 0.1, 0.0));
+  }
+  float fade = clamp(1.0 / max(t * t * t * t, 0.0001), 0.0, 1.0);
+  return col * fade;
+}
+float clNoise(vec3 x) {
+  vec3 p = floor(x);
+  vec3 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  vec2 uv = (p.xy + vec2(37.0, 239.0) * p.z) + f.xy;
+  vec2 rg = textureLod(uCloud, (uv + 0.5) / 256.0, 0.0).yx;
+  return mix(rg.x, rg.y, f.z) * 2.0 - 1.0;
+}
+float clMap(vec3 p, int oct) {
+  vec3 q = p - vec3(0.0, 0.1, 1.0) * uBgTime;
+  float f = 0.0;
+  float a = 0.5;
+  f += a * clNoise(q);
+  if (oct >= 2) { q *= 2.02; a *= 0.5; f += a * clNoise(q); }
+  if (oct >= 3) { q *= 2.03; a *= 0.5; f += a * clNoise(q); }
+  if (oct >= 4) { q *= 2.01; a *= 0.5; f += a * clNoise(q); }
+  if (oct >= 5) { q *= 2.02; a *= 0.5; f += a * clNoise(q); }
+  return clamp(1.5 - p.y - 2.0 + 1.75 * f, 0.0, 1.0);
+}
+mat3 clCamera(vec3 ro, vec3 ta, float cr) {
+  vec3 cw = normalize(ta - ro);
+  vec3 cp = vec3(sin(cr), cos(cr), 0.0);
+  vec3 cu = normalize(cross(cw, cp));
+  vec3 cv = normalize(cross(cu, cw));
+  return mat3(cu, cv, cw);
+}
+vec4 clMarch(vec3 ro, vec3 rd, vec3 bgcol) {
+  vec4 sum = vec4(0.0);
+  float t = 0.05 * fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  vec3 sundir = vec3(-0.7071, 0.0, -0.7071);
+  for (int i = 0; i < 140; i++) {
+    vec3 pos = ro + t * rd;
+    if (pos.y < -3.0 || pos.y > 2.0 || sum.a > 0.99) break;
+    int oct = i < 40 ? 5 : i < 80 ? 4 : i < 110 ? 3 : 2;
+    float den = clMap(pos, oct);
+    if (den > 0.01) {
+      float dif = clamp((den - clMap(pos + 0.3 * sundir, oct)) / 0.6, 0.0, 1.0);
+      vec3 lin = vec3(1.0, 0.6, 0.3) * dif + vec3(0.91, 0.98, 1.05);
+      vec3 rgb = mix(vec3(1.0, 0.95, 0.8), vec3(0.25, 0.3, 0.35), den) * lin;
+      rgb = mix(rgb, bgcol, 1.0 - exp(-0.003 * t * t));
+      float a = den * 0.4;
+      rgb *= a;
+      sum += vec4(rgb, a) * (1.0 - sum.a);
+    }
+    t += max(0.06, 0.05 * t);
+  }
+  return clamp(sum, 0.0, 1.0);
+}
+vec3 bgClouds(vec2 fragCoord) {
+  vec2 p = (2.0 * fragCoord - uResolution.xy) / uResolution.y;
+  float yaw = uBgTime * 0.12 + uBgRotate;
+  float my = 0.42 + 0.06 * sin(uBgTime * 0.05);
+  vec3 ro = 4.0 * normalize(vec3(sin(yaw), 0.8 * my, cos(yaw))) - vec3(0.0, 0.1, 0.0);
+  vec3 ta = vec3(0.0, -1.0, 0.0);
+  mat3 ca = clCamera(ro, ta, 0.07 * cos(0.25 * uBgTime));
+  vec3 rd = ca * normalize(vec3(p, 1.5));
+  vec3 sundir = vec3(-0.7071, 0.0, -0.7071);
+  float sun = clamp(dot(sundir, rd), 0.0, 1.0);
+  vec3 col = vec3(0.6, 0.71, 0.75) - rd.y * 0.2 * vec3(1.0, 0.5, 1.0) + 0.075;
+  col += 0.2 * vec3(1.0, 0.6, 0.1) * pow(sun, 8.0);
+  vec4 res = clMarch(ro, rd, col);
+  col = col * (1.0 - res.w) + res.xyz;
+  col += vec3(0.2, 0.08, 0.04) * pow(sun, 3.0);
+  return col;
+}
+float uniN21(vec2 p) {
+  vec3 a = fract(vec3(p.xyx) * vec3(213.897, 653.453, 253.098));
+  a += dot(a, a.yzx + 79.76);
+  return fract((a.x + a.y) * a.z);
+}
+vec2 uniPos(vec2 id, vec2 offs, float t) {
+  float n = uniN21(id + offs);
+  float n1 = fract(n * 10.0);
+  float n2 = fract(n * 100.0);
+  float a = t + n;
+  return offs + vec2(sin(a * n1), cos(a * n2)) * 0.4;
+}
+float uniDfLine(vec2 a, vec2 b, vec2 p) {
+  vec2 pa = p - a;
+  vec2 ba = b - a;
+  float h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.00001), 0.0, 1.0);
+  return length(pa - ba * h);
+}
+float uniLine(vec2 a, vec2 b, vec2 uv) {
+  float d = uniDfLine(a, b, uv);
+  float d2 = length(a - b);
+  float fade = smoothstep(1.5, 0.5, d2);
+  fade += smoothstep(0.05, 0.02, abs(d2 - 0.75));
+  return smoothstep(0.04, 0.01, d) * fade;
+}
+float uniLayer(vec2 st, float n, float t) {
+  vec2 id = floor(st) + n;
+  st = fract(st) - 0.5;
+  vec2 p[9];
+  int idx = 0;
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      p[idx++] = uniPos(id, vec2(float(x), float(y)), t);
+    }
+  }
+  float m = 0.0;
+  float sparkle = 0.0;
+  for (int i = 0; i < 9; i++) {
+    m += uniLine(p[4], p[i], st);
+    float d = length(st - p[i]);
+    float s = 0.005 / max(d * d, 0.00001);
+    s *= smoothstep(1.0, 0.7, d);
+    float pulse = sin((fract(p[i].x) + fract(p[i].y) + t) * 5.0) * 0.4 + 0.6;
+    pulse = pow(max(pulse, 0.0), 20.0);
+    sparkle += s * pulse;
+  }
+  m += uniLine(p[1], p[3], st);
+  m += uniLine(p[1], p[5], st);
+  m += uniLine(p[7], p[5], st);
+  m += uniLine(p[7], p[3], st);
+  float sPhase = (sin(t + n) + sin(t * 0.1)) * 0.25 + 0.5;
+  sPhase += pow(sin(t * 0.1) * 0.5 + 0.5, 50.0) * 5.0;
+  return m + sparkle * sPhase;
+}
+vec3 bgUniverse(vec2 fragCoord) {
+  vec2 uv = (fragCoord - uResolution.xy * 0.5) / uResolution.y;
+  float t = uBgTime * 0.1;
+  vec2 st = rot(uv, t + uBgRotate);
+  vec2 drift = 0.18 * vec2(sin(uBgTime * 0.07), cos(uBgTime * 0.05));
+  float m = 0.0;
+  for (int i = 0; i < 4; i++) {
+    float fi = float(i) / 4.0;
+    float z = fract(t + fi);
+    float size = mix(15.0, 1.0, z);
+    float fade = smoothstep(0.0, 0.6, z) * smoothstep(1.0, 0.8, z);
+    m += fade * uniLayer(st * size - drift * z, fi, uBgTime);
+  }
+  float fft = 0.35 + 0.25 * sin(uBgTime * 0.3);
+  float glow = -uv.y * fft * 2.0;
+  float s = sin(t);
+  vec3 baseCol = vec3(s, cos(t * 0.4), -sin(t * 0.24)) * 0.4 + 0.6;
+  vec3 col = baseCol * m + baseCol * glow;
+  col *= 1.0 - dot(uv, uv);
+  return max(col, vec3(0.0));
+}
+vec3 wyPcg3(vec3 v) {
+  uvec3 u = floatBitsToUint(v);
+  u = u * uint(1664525) + uint(1013904223);
+  u.x += u.y * u.z;
+  u.y += u.z * u.x;
+  u.z += u.x * u.y;
+  u ^= u >> uint(16);
+  u.x += u.y * u.z;
+  u.y += u.z * u.x;
+  u.z += u.x * u.y;
+  return (1.0 / 4294967296.0) * vec3(u);
+}
+vec3 wyTurbulence(vec3 r, float time) {
+  const float phi = 1.61803398875;
+  float t = time + r.z;
+  vec2 c = t * mix(vec2(phi), vec2(2.0 * phi), r.xy);
+  return vec3(
+    sin(t) * sin(c.x) * sin(c.y),
+    sin(phi * t) * sin(c.x) * cos(c.y),
+    sin(phi * phi * t) * cos(c.x)
+  );
+}
+vec3 wyTurbPos(vec3 intPos, vec3 offset, float time) {
+  vec3 cell = intPos + offset;
+  vec3 r = wyPcg3(cell);
+  return cell + r + 0.5 * wyTurbulence(r, time);
+}
+float wyNoise(vec3 pos, float time, float cellCount) {
+  vec3 scaled = cellCount * pos;
+  vec3 ip = floor(scaled);
+  float minDist = 2.0 * cellCount;
+  for (int x = -1; x <= 1; x++) {
+    for (int y = -1; y <= 1; y++) {
+      for (int z = -1; z <= 1; z++) {
+        vec3 d = wyTurbPos(ip, vec3(float(x), float(y), float(z)), time) - scaled;
+        minDist = min(minDist, dot(d, d));
+      }
+    }
+  }
+  return sqrt(minDist);
+}
+vec3 wySpin(vec3 spin, vec3 pos, vec3 center) {
+  float cx = cos(spin.x), sx = sin(spin.x);
+  float cy = cos(spin.y), sy = sin(spin.y);
+  float cz = cos(spin.z), sz = sin(spin.z);
+  mat3 mx = mat3(1.0, 0.0, 0.0, 0.0, cx, sx, 0.0, -sx, cx);
+  mat3 my = mat3(cy, 0.0, sy, 0.0, 1.0, 0.0, -sy, 0.0, cy);
+  mat3 mz = mat3(cz, sz, 0.0, -sz, cz, 0.0, 0.0, 0.0, 1.0);
+  return center + mz * my * mx * (pos - center);
+}
+float wyHeight(vec2 uv, vec2 center, float radius) {
+  float dist2 = dot(uv - center, uv - center);
+  float radius2 = radius * radius;
+  return dist2 < radius2 ? sqrt(radius2 - dist2) : -1.0;
+}
+vec3 bgWorley(vec2 fragCoord) {
+  vec2 uv = fragCoord / uResolution.x;
+  vec2 center = 0.5 * vec2(1.0, uResolution.y / uResolution.x);
+  float height = wyHeight(uv, center, 0.25);
+  if (height < 0.0) return vec3(0.0);
+  vec3 spin = uBgTime * vec3(0.0, 0.5, 1.0);
+  spin.y += uBgRotate;
+  vec3 pos = wySpin(spin, vec3(uv, height), vec3(center, 0.0));
+  float noise = wyNoise(pos, uBgTime, 32.0);
+  vec3 color = vec3(noise / 1.41421356) * height / 0.25;
+  return pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
+}
+float flNoise(vec3 p) {
+  vec3 i = floor(p);
+  vec4 a = dot(i, vec3(1.0, 57.0, 21.0)) + vec4(0.0, 57.0, 21.0, 78.0);
+  vec3 f = cos((p - i) * 3.14159265) * -0.5 + 0.5;
+  a = mix(sin(cos(a) * a), sin(cos(1.0 + a) * (1.0 + a)), f.x);
+  a.xy = mix(a.xz, a.yw, f.y);
+  return mix(a.x, a.y, f.z);
+}
+float flSphere(vec3 p, vec4 spr) {
+  return length(spr.xyz - p) - spr.w;
+}
+float flFlame(vec3 p) {
+  float d = flSphere(p * vec3(1.0, 0.5, 1.0), vec4(0.0, -1.0, 0.0, 1.0));
+  return d + (flNoise(p + vec3(0.0, uBgTime * 2.0, 0.0)) + flNoise(p * 3.0) * 0.5) * 0.25 * p.y;
+}
+float flScene(vec3 p) {
+  return min(100.0 - length(p), abs(flFlame(p)));
+}
+vec4 flMarch(vec3 org, vec3 dir) {
+  float d = 0.0;
+  float glow = 0.0;
+  float eps = 0.02;
+  vec3 p = org;
+  bool glowed = false;
+  for (int i = 0; i < 64; i++) {
+    d = flScene(p) + eps;
+    p += d * dir;
+    if (d > eps) {
+      if (flFlame(p) < 0.0) glowed = true;
+      if (glowed) glow = float(i) / 64.0;
+    }
+  }
+  return vec4(p, glow);
+}
+vec3 bgFlame(vec2 fragCoord) {
+  vec2 v = -1.0 + 2.0 * fragCoord.xy / uResolution.xy;
+  v.x *= uResolution.x / max(uResolution.y, 1.0);
+  v = rot(v, uBgRotate);
+  vec3 org = vec3(0.0, -2.0, 4.0);
+  vec3 dir = normalize(vec3(v.x * 1.6, -v.y, -1.5));
+  vec4 p = flMarch(org, dir);
+  vec3 col = mix(vec3(1.0, 0.5, 0.1), vec3(0.1, 0.5, 1.0), p.y * 0.02 + 0.4);
+  return mix(vec3(0.0), col, pow(max(p.w * 2.0, 0.0), 4.0));
+}
 void main() {
   vec2 viewUv = symmetry(vUv);
   vec2 uv = uBulge != 0.0 ? bulgeWarp(viewUv, uBulge) : viewUv;
@@ -3410,7 +4076,29 @@ void main() {
   bgUv += 0.5;
   vec4 bg = mix(mix(uBgBL, uBgBR, bgUv.x), mix(uBgTL, uBgTR, bgUv.x), bgUv.y);
   if (uBgPalOn > 0.5) bg = vec4(clamp(bgPaletteColor(bgUv.x) * uBgPlane.rgb, 0.0, 1.0), uBgPlane.a);
-  if (uBgOn > 0.5 && bg.a > 0.0) {
+  if (uBgOn > 0.5 && uBgShader > 0.5) {
+    vec3 tun = bgTunnel(gl_FragCoord.xy);
+    if (uBgShader > 1.5 && uBgShader < 2.5) tun = bgMotion(gl_FragCoord.xy);
+    else if (uBgShader > 2.5 && uBgShader < 3.5) tun = bgZInvert(gl_FragCoord.xy);
+    else if (uBgShader > 3.5 && uBgShader < 4.5) tun = bgRTunnel(gl_FragCoord.xy);
+    else if (uBgShader > 4.5 && uBgShader < 5.5) tun = bgSquares(gl_FragCoord.xy);
+    else if (uBgShader > 5.5 && uBgShader < 6.5) tun = bgOctograms(gl_FragCoord.xy);
+    else if (uBgShader > 6.5 && uBgShader < 7.5) tun = bgCubeWaves(gl_FragCoord.xy);
+    else if (uBgShader > 7.5 && uBgShader < 8.5) tun = bgBaseWarp(gl_FragCoord.xy);
+    else if (uBgShader > 8.5 && uBgShader < 9.5) tun = bgCreation(gl_FragCoord.xy);
+    else if (uBgShader > 9.5 && uBgShader < 10.5) tun = bgBeauty(gl_FragCoord.xy);
+    else if (uBgShader > 10.5 && uBgShader < 11.5) tun = bgMystify(gl_FragCoord.xy);
+    else if (uBgShader > 11.5 && uBgShader < 12.5) tun = bgRaymarchB(gl_FragCoord.xy);
+    else if (uBgShader > 12.5 && uBgShader < 13.5) tun = bgClouds(gl_FragCoord.xy);
+    else if (uBgShader > 13.5 && uBgShader < 14.5) tun = bgUniverse(gl_FragCoord.xy);
+    else if (uBgShader > 14.5 && uBgShader < 15.5) tun = bgWorley(gl_FragCoord.xy);
+    else if (uBgShader > 15.5) tun = bgFlame(gl_FragCoord.xy);
+    if (bg.a > 0.0 && !(uBgPalOn > 0.5 && ((uBgShader > 7.5 && uBgShader < 8.5) || uBgShader > 9.5))) {
+      vec3 bgRgb = -log(max(1.0 - clamp(bg.rgb, 0.0, 0.985), 0.001)) / 1.5;
+      tun = mix(tun, bgRgb, bg.a);
+    }
+    col = mix(col, tun, uBgAlpha);
+  } else if (uBgOn > 0.5 && bg.a > 0.0) {
     vec3 bgRgb = -log(max(1.0 - clamp(bg.rgb, 0.0, 0.985), 0.001)) / 1.5;
     col = mix(col, bgRgb, bg.a);
   }
@@ -3617,6 +4305,7 @@ void main() {
 
         const fu = {
           prev: gl.getUniformLocation(feedback, "uPrev"),
+          cloud: gl.getUniformLocation(feedback, "uCloud"),
           resolution: gl.getUniformLocation(feedback, "uResolution"),
           zoom: gl.getUniformLocation(feedback, "uZoom"),
           spin: gl.getUniformLocation(feedback, "uSpin"),
@@ -3669,6 +4358,9 @@ void main() {
           bgPalD: gl.getUniformLocation(feedback, "uBgPalD"),
           bgPlane: gl.getUniformLocation(feedback, "uBgPlane"),
           bgRotate: gl.getUniformLocation(feedback, "uBgRotate"),
+          bgAlpha: gl.getUniformLocation(feedback, "uBgAlpha"),
+          bgShader: gl.getUniformLocation(feedback, "uBgShader"),
+          bgTime: gl.getUniformLocation(feedback, "uBgTime"),
           waves: gl.getUniformLocation(feedback, "uWaves"),
           cubeEdge: gl.getUniformLocation(feedback, "uCubeEdge"),
           wavePhase: gl.getUniformLocation(feedback, "uWavePhase"),
@@ -3747,6 +4439,17 @@ void main() {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, PARTICLE_N, 2, 0, gl.RGBA, gl.FLOAT, sparkTexData);
+        const cloudNoise = new Uint8Array(256 * 256 * 4);
+        for (let i = 0; i < cloudNoise.length; i++) cloudNoise[i] = (Math.random() * 256) | 0;
+        const cloudTex = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE4);
+        gl.bindTexture(gl.TEXTURE_2D, cloudTex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 256, 0, gl.RGBA, gl.UNSIGNED_BYTE, cloudNoise);
+        gl.activeTexture(gl.TEXTURE0);
         gl.activeTexture(gl.TEXTURE0);
 
         function sparkCountFor(scene) {
@@ -3857,6 +4560,7 @@ void main() {
         let terrainTime = 0;
         let noiseTime = 0;
         let checksTime = 0;
+        let bgShaderTime = 0;
         const ball = { x: 0.1, y: 0.5 };
 
         function makeTarget(w, h) {
@@ -4141,6 +4845,10 @@ void main() {
           gl.bindTexture(gl.TEXTURE_2D, sparkTex);
           gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, PARTICLE_N, 2, gl.RGBA, gl.FLOAT, sparkTexData);
           gl.uniform1i(fu.sparksTex, 3);
+          gl.activeTexture(gl.TEXTURE4);
+          gl.bindTexture(gl.TEXTURE_2D, cloudTex);
+          gl.uniform1i(fu.cloud, 4);
+          gl.activeTexture(gl.TEXTURE0);
           gl.activeTexture(gl.TEXTURE0);
           const ballAt = foldPoint(ball.x, ball.y, tile);
           gl.uniform2f(fu.ballPx, ballAt[0] * width, ballAt[1] * height);
@@ -4170,6 +4878,10 @@ void main() {
           }
           gl.uniform4f(fu.bgPlane, background.plane.r, background.plane.g, background.plane.b, background.plane.a);
           gl.uniform1f(fu.bgRotate, state.bgRotate * Math.PI / 180);
+          gl.uniform1f(fu.bgAlpha, state.bgAlpha);
+          bgShaderTime += dt * Math.max(0.2, state.speed / 0.38);
+          gl.uniform1f(fu.bgShader, bgShader);
+          gl.uniform1f(fu.bgTime, bgShaderTime);
           gl.uniform1f(fu.waves, state.waves);
           gl.uniform1f(fu.cubeEdge, cubeEdgeCount());
           gl.uniform1f(fu.wavePhase, cubeTime * 1.7);
