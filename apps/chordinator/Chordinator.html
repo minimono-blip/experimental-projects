@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chordinator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" />
+<style>
+  :root {
+    --ink: #e7f0fa;
+    --muted: #c5d6ea;
+    --ivory: #f6f3ec;
+    --ebony: #141618;
+    --gold: #e4cf6a;
+    --font: "Source Sans 3", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    color: var(--ink);
+    background: #102f4b;
+    overflow: hidden;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  .app {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background:
+      radial-gradient(1200px 400px at 50% -10%, rgba(255,255,255,.08), transparent 50%),
+      linear-gradient(180deg, #1a4e78 0%, #143f64 38%, #102f4b 100%);
+  }
+  .metal {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 14px;
+    background: linear-gradient(180deg, #f4f6f8, #c5ccd3 46%, #aeb6be);
+    color: #243140;
+    box-shadow: inset 0 1px 0 #fff, 0 2px 0 #8d949c;
+    flex-shrink: 0;
+  }
+  .wordmark { font-weight: 700; letter-spacing: .04em; font-size: 1.15rem; }
+  .instrument { margin-left: 8px; font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #5c6b7c; }
+  .now { margin: 0; flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .formula { margin-left: 8px; font-weight: 600; color: #3e5168; font-size: .8rem; }
+  .actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .pill, .nudge button, .size-btn, .inv button, .tabbar button, .tonic-btn {
+    border: 0;
+  }
+  .pill {
+    border-radius: 999px;
+    padding: 6px 12px;
+    background: linear-gradient(180deg, #eef1f4, #b4bcc4);
+    color: #243140;
+    font-weight: 700;
+    font-size: .85rem;
+    box-shadow: inset 0 1px 0 #fff, 0 1px 0 #8d949c;
+  }
+  .pill.on { background: linear-gradient(180deg, #f3e7a6, #d2b44a); color: #2c2610; }
+  .sizes, .nudge, .inv, .tools { display: flex; gap: 4px; align-items: center; }
+  .size-label { font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #3e5168; margin-right: 2px; }
+  .size-label.light { color: #d5e6f8; }
+  .size-btn {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(180deg, #3d6244, #1d3324);
+    color: #d7f0d4; font-weight: 700;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 1px 2px rgba(0,0,0,.35);
+  }
+  .size-btn.on { background: linear-gradient(180deg, #c6ee98, #5eae49); color: #10240e; }
+  .nudge button {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(180deg, #eef1f4, #b4bcc4);
+    color: #243140; font-size: 1.1rem; font-weight: 700;
+    box-shadow: inset 0 1px 0 #fff, 0 1px 0 #8d949c;
+  }
+  .keywell {
+    flex-shrink: 0;
+    padding: 10px 16px 0;
+    background: linear-gradient(180deg, #9aa1a8 0%, #4e555c 7px, #23272c 8px, #121416 100%);
+    box-shadow: inset 0 12px 16px rgba(0,0,0,.35);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .keybed {
+    --white-h: 168px;
+    --black-h: 104px;
+    --white-w: 42px;
+    --black-w: 24px;
+    position: relative;
+    display: flex;
+    height: calc(var(--white-h) + 18px);
+    margin: 0 auto;
+    user-select: none;
+    touch-action: none;
+  }
+  .keybed.mini {
+    --white-h: 52px;
+    --black-h: 32px;
+    height: calc(var(--white-h) + 8px);
+    margin: 0;
+  }
+  .wkey, .bkey { position: relative; padding: 0; background: transparent; flex: 0 0 var(--white-w); width: var(--white-w); height: var(--white-h); }
+  .bkey { position: absolute; top: 0; z-index: 2; flex: none; width: var(--black-w); height: var(--black-h); }
+  .keyface {
+    position: absolute; inset: 0; border-radius: 0 0 7px 7px; pointer-events: none;
+    transition: transform 80ms cubic-bezier(.2,.7,.3,1), box-shadow 80ms cubic-bezier(.2,.7,.3,1), filter 80ms linear;
+  }
+  .wkey .keyface {
+    background: linear-gradient(180deg, #fff 0%, var(--ivory) 62%, #e4ddd0 100%);
+    box-shadow: inset 0 1px 0 #fff, inset -2px 0 3px rgba(0,0,0,.06), inset 0 -12px 14px rgba(90,70,40,.06), 0 8px 0 #c4bcae, 0 12px 14px rgba(0,0,0,.35);
+  }
+  .keyface::after {
+    content: ""; position: absolute; left: 10%; right: 10%; top: 4px; height: 36%; border-radius: 4px;
+    background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,0));
+  }
+  .wkey .keyface.scale { background: linear-gradient(180deg, #d7ebff, #8eb8e6 58%, #6ea3d6); }
+  .wkey .keyface.chord { background: linear-gradient(180deg, #fff4c2, #e4cf6a 55%, #c9a83a); }
+  .wkey .keyface.tonic { background: linear-gradient(180deg, #f3fad8, #b7dc7c 46%, #79b84e); }
+  .wkey .keyface.down {
+    transform: translateY(7px); filter: brightness(.96);
+    box-shadow: inset 0 4px 7px rgba(0,0,0,.18), 0 1px 0 #b3ab9c, 0 2px 4px rgba(0,0,0,.28);
+  }
+  .keybed.mini .wkey .keyface.down { transform: translateY(4px); }
+  .bkey .keyface {
+    border-radius: 0 0 4px 4px;
+    background: linear-gradient(180deg, #5a616b 0%, #2a2e34 12%, var(--ebony) 42%, #070809);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45), inset 0 -8px 8px rgba(0,0,0,.55), 1px 7px 6px rgba(0,0,0,.5);
+  }
+  .bkey .keyface.scale { background: linear-gradient(180deg, #8eafd4, #35557e 16%, #1a2c44 48%, #0d1724); }
+  .bkey .keyface.chord { background: linear-gradient(180deg, #f0d56a, #8a6d22 18%, #3a3014 50%, #1a160c); }
+  .bkey .keyface.tonic { background: linear-gradient(180deg, #d4ee9a, #4f8a32 18%, #1d3a16 52%, #10180e); }
+  .bkey .keyface.down { transform: translateY(5px); box-shadow: inset 0 5px 7px rgba(0,0,0,.6), 1px 1px 2px rgba(0,0,0,.45); }
+  .keyface.locked { filter: saturate(.35) brightness(.78); }
+  .key-name { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: .78rem; font-weight: 700; color: #2c3440; text-shadow: 0 1px 0 rgba(255,255,255,.4); }
+  .bkey .key-name { color: #e6ebf2; bottom: 6px; font-size: .68rem; text-shadow: none; }
+  .key-flag {
+    position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%);
+    background: linear-gradient(#f6eba0, #e2c64a); color: #3d3410;
+    font-size: .68rem; font-weight: 700; padding: 1px 6px 2px; border-radius: 2px; box-shadow: 0 1px 0 #b79a2e;
+  }
+  .key-flag::before {
+    content: ""; position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+    border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 4px solid #f6eba0;
+  }
+  .hint { margin: 0; padding: 6px 16px 8px; font-size: .8rem; color: var(--muted); flex-shrink: 0; }
+  .tabbar { display: none; gap: 6px; padding: 0 12px 8px; }
+  .tabbar button { flex: 1; border-radius: 999px; padding: 8px 10px; background: rgba(0,0,0,.2); color: var(--ink); font-weight: 700; }
+  .tabbar button.on { background: var(--gold); color: #2c2610; }
+  .deck { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1.1fr) minmax(260px, 1fr); }
+  .col { min-height: 0; display: flex; flex-direction: column; padding: 10px 12px 12px; overflow: hidden; background: linear-gradient(180deg, rgba(10,30,50,.2), rgba(0,0,0,.12)); }
+  .col + .col { box-shadow: inset 1px 0 0 rgba(255,255,255,.08); }
+  .col-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .col-head h2, .recent-title { margin: 0; font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #d5e6f8; }
+  .col-head span { font-size: .75rem; color: var(--muted); }
+  .tonic-row, .scale-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tonic-row { margin-bottom: 8px; }
+  .tonic-btn, .scale-btn, .chord-btn, .degree-play, .recent-play {
+    border: 0; background: transparent; color: var(--ink); text-align: left; font-family: inherit;
+  }
+  .tonic-btn { min-width: 32px; height: 28px; border-radius: 4px; background: rgba(0,0,0,.22); font-weight: 700; }
+  .tonic-btn.in { outline: 1px solid rgba(142,184,230,.7); }
+  .tonic-btn.on { background: linear-gradient(#f3fad8, #79b84e); color: #10240e; }
+  .scale-grid { overflow: auto; min-height: 0; align-content: flex-start; }
+  .scale-btn { width: calc(50% - 2px); padding: 5px 8px; border-radius: 4px; font-size: .86rem; }
+  .scale-btn.on, .chord-btn.on { background: linear-gradient(90deg, #f3e7a4, #d5e48a); color: #1d3344; font-weight: 700; }
+  .chord-scroll, .triad-scroll { min-height: 0; overflow: auto; }
+  .chord-grid { columns: 2; column-gap: 8px; }
+  .chord-btn { break-inside: avoid; display: flex; width: 100%; justify-content: space-between; padding: 4px 8px; border-radius: 4px; font-size: .86rem; }
+  .tools { justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .inv button { border-radius: 999px; padding: 4px 10px; background: rgba(0,0,0,.22); color: var(--ink); font-size: .78rem; font-weight: 700; }
+  .inv button.on { background: var(--gold); color: #2c2610; }
+  .degree-card, .recent-card { display: grid; gap: 2px 8px; padding: 6px 4px 8px; border-radius: 8px; margin-bottom: 4px; }
+  .degree-play, .recent-play { display: flex; gap: 8px; align-items: baseline; padding: 0; font-weight: 700; }
+  .degree { color: #d5e6f8; font-size: .78rem; }
+  .mini-scroll { max-width: 100%; overflow: hidden; }
+  .recent-title { margin: 14px 0 6px; }
+  .empty { color: var(--muted); font-size: .85rem; }
+  @media (max-width: 900px) {
+    .metal, .actions { flex-wrap: wrap; }
+    .now { display: none; }
+    .keybed { --white-h: 132px; --black-h: 82px; }
+    .tabbar { display: flex; }
+    .deck { display: block; }
+    .col { display: none; height: 100%; }
+    .col.show { display: flex; }
+    body { overflow: hidden; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="metal">
+    <div><span class="wordmark">Chordinator</span><span class="instrument">Piano</span></div>
+    <p class="now" id="now"></p>
+    <div class="actions">
+      <button type="button" class="pill on" id="inkey" aria-pressed="true">In key</button>
+      <button type="button" class="pill" id="sustain" aria-pressed="false">Sustain</button>
+      <div class="sizes" id="octaves" role="group" aria-label="Keyboard octaves"><span class="size-label">Octaves</span></div>
+      <div class="nudge">
+        <button type="button" id="oct-down" aria-label="Lower octave">‹</button>
+        <button type="button" id="oct-up" aria-label="Raise octave">›</button>
+      </div>
+    </div>
+  </header>
+  <div class="keywell" id="well"><div class="keybed" id="main" data-kind="main"></div></div>
+  <p class="hint">Drag across the keys to play a run. ‹ › or < > shift the keyboard by one octave. A S D F play from the note now on the left. Space toggles sustain. A click on a small keyboard plays its chord; a drag plays only that chord’s notes. Replaying a recent chord does not add another one.</p>
+  <div class="tabbar" id="tabs"></div>
+  <div class="deck">
+    <section class="col" id="col-scales"></section>
+    <section class="col" id="col-chords"></section>
+    <section class="col show" id="col-triads"></section>
+  </div>
+</div>
+<script>
+const SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const FLAT = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+const LETTER_SHARP = ["C","C","D","D","E","F","F","G","G","A","A","B"];
+const LETTER_FLAT = ["C","D","D","E","E","F","G","G","A","A","B","B"];
+const WHITE = new Set([0,2,4,5,7,9,11]);
+const SHAPES = [
+  ["5",[0,7]],["Major",[0,4,7]],["Minor",[0,3,7]],["dim",[0,3,6]],["Aug",[0,4,8]],
+  ["Sus 2",[0,2,7]],["Sus 4",[0,5,7]],["6",[0,4,7,9]],["min 6",[0,3,7,9]],
+  ["Maj 7",[0,4,7,11]],["7",[0,4,7,10]],["min 7",[0,3,7,10]],["m7♭5",[0,3,6,10]],
+  ["dim 7",[0,3,6,9]],["add 9",[0,2,4,7]],["min add 9",[0,2,3,7]],["6 add 9",[0,2,4,7,9]],
+  ["Maj 9",[0,2,4,7,11]],["9",[0,2,4,7,10]],["min 9",[0,2,3,7,10]],["7♭9",[0,1,4,7,10]],
+  ["7♯9",[0,3,4,7,10]],["7♯11",[0,4,6,7,10]],["Maj 7♯11",[0,4,6,7,11]],["11",[0,2,4,5,7,10]],
+  ["min 11",[0,2,3,5,7,10]],["Maj 13",[0,2,4,7,9,11]],["13",[0,2,4,7,9,10]]
+].map(([suffix, intervals]) => ({ suffix, intervals }));
+const SHAPE_NAME = new Map(SHAPES.map((s) => [s.intervals.join(","), s.suffix]));
+const SCALES = [
+  ["major","Major (Ionian)",[0,2,4,5,7,9,11],"core"],
+  ["nat-min","Natural Minor (Aeolian)",[0,2,3,5,7,8,10],"core"],
+  ["harm-min","Harmonic Minor",[0,2,3,5,7,8,11],"core"],
+  ["mel-min","Melodic Minor",[0,2,3,5,7,9,11],"core"],
+  ["dorian","Dorian",[0,2,3,5,7,9,10],"core"],
+  ["phrygian","Phrygian",[0,1,3,5,7,8,10],"core"],
+  ["lydian","Lydian",[0,2,4,6,7,9,11],"core"],
+  ["mixolydian","Mixolydian",[0,2,4,5,7,9,10],"core"],
+  ["locrian","Locrian",[0,1,3,5,6,8,10],"core"],
+  ["penta-maj","Pentatonic Major",[0,2,4,7,9],"core"],
+  ["penta-min","Pentatonic Minor",[0,3,5,7,10],"core"],
+  ["blues","Blues",[0,3,5,6,7,10],"core"],
+  ["whole","Whole Tone",[0,2,4,6,8,10],"core"],
+  ["chromatic","Chromatic",[0,1,2,3,4,5,6,7,8,9,10,11],"core"],
+  ["japanese","Japanese",[0,2,3,7,8],"color"],
+  ["chinese","Chinese",[0,4,6,7,11],"color"],
+  ["hindu","Hindu",[0,2,4,5,7,8,10],"color"],
+  ["oriental","Oriental",[0,1,4,5,6,9,10],"color"],
+  ["enigmatic","Enigmatic",[0,1,4,6,8,10,11],"color"],
+  ["neap-maj","Neapolitan Major",[0,1,3,5,7,9,11],"color"],
+  ["neap-min","Neapolitan Minor",[0,1,3,5,7,8,11],"color"],
+  ["pelog","Pelog",[0,1,3,7,8],"color"],
+  ["prometheus","Prometheus",[0,2,4,6,9,10],"color"],
+  ["prom-neap","Prometheus Neapolitan",[0,1,4,6,9,10],"color"],
+  ["six-sym","Six Tone Symmetrical",[0,1,4,5,8,9],"color"],
+  ["super-loc","Super Locrian",[0,1,3,4,6,8,10],"color"],
+  ["lyd-min","Lydian Minor",[0,2,4,6,7,8,10],"color"],
+  ["lyd-dim","Lydian Diminished",[0,2,3,6,7,9,11],"color"],
+  ["lyd-aug","Lydian Augmented",[0,2,4,6,8,9,11],"color"],
+  ["nine","Nine Tone Scale",[0,2,3,4,6,7,8,9,11],"color"],
+  ["aux-dim","Auxiliary Diminished",[0,2,3,5,6,8,9,11],"color"],
+  ["aux-aug","Auxiliary Augmented",[0,2,4,6,8,10],"color"],
+  ["aux-dim-blues","Auxiliary Diminished Blues",[0,1,3,4,6,7,9,10],"color"],
+  ["maj-loc","Major Locrian",[0,2,4,5,6,8,10],"color"],
+  ["overtone","Overtone",[0,2,4,6,7,9,10],"color"],
+  ["romanian","Romanian Minor",[0,2,3,6,7,9,10],"color"],
+  ["spanish","Spanish Gypsy",[0,1,4,5,7,8,10],"color"],
+  ["hung-maj","Hungarian Major",[0,3,4,6,7,9,10],"color"],
+  ["hung-min","Hungarian Minor",[0,2,3,6,7,8,11],"color"],
+  ["dim-half","Dim half",[0,1,3,4,6,7,9,10],"color"],
+  ["dim-whole","Dim whole",[0,2,3,5,6,8,9,11],"color"],
+  ["double-harm","Double Harmonic",[0,1,4,5,7,8,11],"color"],
+  ["eight-spanish","Eight Tone Spanish",[0,1,3,4,5,6,8,10],"color"],
+  ["leading-wt","Leading Whole Tone",[0,2,4,6,8,10,11],"color"],
+  ["penta-neutral","Pentatonic Neutral",[0,2,5,7,10],"color"]
+].map(([id, name, intervals, group]) => ({ id, name, intervals, group }));
+const KEY_OFFSET = { a:0,w:1,s:2,e:3,d:4,f:5,t:6,g:7,y:8,h:9,u:10,j:11,k:12,o:13,l:14,p:15,";":16,"'":17 };
+const INV = ["Root","1st","2nd","3rd"];
+const PIANO_LOW = 21, PIANO_HIGH = 108;
+
+const pcOf = (n) => ((n % 12) + 12) % 12;
+const isWhite = (m) => WHITE.has(pcOf(m));
+const noteName = (pc, flats) => (flats ? FLAT : SHARP)[pcOf(pc)];
+const scalePcs = (tonic, intervals) => intervals.map((i) => (tonic + i) % 12);
+function preferFlats(pcs) {
+  const score = (flats) => new Set(pcs.map((pc) => (flats ? LETTER_FLAT : LETTER_SHARP)[pc])).size;
+  return score(true) > score(false);
+}
+function stepPattern(intervals) {
+  const steps = [];
+  for (let i = 0; i < intervals.length; i++) {
+    const a = intervals[i], b = intervals[(i + 1) % intervals.length];
+    steps.push((b - a + 12) % 12 || 12);
+  }
+  return steps.join("-");
+}
+function relIntervals(pcs) {
+  const root = pcs[0] ?? 0;
+  return [...pcs].map((pc) => (pc - root + 12) % 12).sort((a, b) => a - b);
+}
+function chordSuffix(pcs) {
+  const rel = relIntervals(pcs);
+  const named = SHAPE_NAME.get(rel.join(","));
+  if (named) return named;
+  const s = new Set(rel);
+  const third = s.has(3) ? "min" : s.has(4) ? "Maj" : s.has(2) ? "sus2" : s.has(5) ? "sus4" : "";
+  const fifth = s.has(6) ? "♭5" : s.has(8) ? "♯5" : "";
+  const seventh = s.has(11) ? "Maj7" : s.has(10) ? "7" : s.has(9) ? "6" : "";
+  const ninth = s.has(1) ? "♭9" : s.has(3) && s.has(4) ? "♯9" : s.has(2) && seventh ? "9" : "";
+  return [third, fifth, seventh, ninth].filter(Boolean).join(" ") || "chord";
+}
+function romanFor(index, pcs) {
+  const base = ["I","II","III","IV","V","VI","VII"][index] ?? String(index + 1);
+  const rel = new Set(relIntervals(pcs));
+  const dim = rel.has(3) && rel.has(6) && !rel.has(7);
+  const minor = rel.has(3) && !rel.has(4);
+  const aug = rel.has(4) && rel.has(8);
+  let r = minor || dim ? base.toLowerCase() : base;
+  if (dim) r += "°";
+  else if (aug) r += "+";
+  return r;
+}
+function chordsInScale(tonic, intervals, maxNotes) {
+  const allowed = new Set(scalePcs(tonic, intervals));
+  const out = [];
+  for (const step of intervals) {
+    const root = (tonic + step) % 12;
+    for (const shape of SHAPES) {
+      if (shape.intervals.length > maxNotes) continue;
+      const pcs = shape.intervals.map((i) => (root + i) % 12);
+      if (!pcs.every((pc) => allowed.has(pc))) continue;
+      out.push({ id: root + ":" + shape.suffix, root, suffix: shape.suffix, pcs });
+    }
+  }
+  return out;
+}
+function degreeChords(tonic, intervals, maxNotes) {
+  if (intervals.length === 7) {
+    const stack = Math.min(maxNotes, 7);
+    const flats = preferFlats(scalePcs(tonic, intervals));
+    const chords = [];
+    for (let i = 0; i < 7; i++) {
+      const pcs = [];
+      for (let k = 0; k < stack; k++) {
+        const pc = (tonic + intervals[(i + 2 * k) % 7]) % 12;
+        if (!pcs.includes(pc)) pcs.push(pc);
+      }
+      chords.push({
+        id: "deg-" + i + "-" + stack,
+        degree: romanFor(i, pcs),
+        name: noteName(pcs[0] ?? tonic, flats) + " " + chordSuffix(pcs),
+        pcs
+      });
+    }
+    return chords;
+  }
+  const allowed = new Set(scalePcs(tonic, intervals));
+  const flats = preferFlats([...allowed]);
+  const prefer = ["Major","Minor","dim","Aug","Sus 4","Sus 2","5","7","min 7","Maj 7","add 9"];
+  return intervals.map((step, i) => {
+    const root = (tonic + step) % 12;
+    const shape = SHAPES.filter((s) => s.intervals.length <= maxNotes).find((s) => prefer.includes(s.suffix) && s.intervals.every((n) => allowed.has((root + n) % 12))) || SHAPES[0];
+    const pcs = shape.intervals.map((n) => (root + n) % 12);
+    return { id: "deg-" + i + "-" + shape.suffix, degree: ["I","II","III","IV","V","VI","VII"][i] || String(i + 1), name: noteName(root, flats) + " " + shape.suffix, pcs };
+  });
+}
+function voiceChord(pcs, inversion, low = 60) {
+  if (!pcs.length) return [];
+  const inv = ((inversion % pcs.length) + pcs.length) % pcs.length;
+  const order = [...pcs.slice(inv), ...pcs.slice(0, inv)];
+  const midis = [];
+  let cursor = low;
+  for (const pc of order) {
+    let m = cursor;
+    while (m % 12 !== pc) m += 1;
+    if (midis.length && m <= midis[midis.length - 1]) {
+      m = midis[midis.length - 1] + 1;
+      while (m % 12 !== pc) m += 1;
+    }
+    midis.push(m);
+    cursor = m + 1;
+  }
+  return midis;
+}
+function keysForRange(start, octaves) {
+  const end = start + octaves * 12;
+  const whites = [], blacks = [];
+  let whiteIndex = -1;
+  for (let m = start; m <= end; m++) {
+    if (isWhite(m)) { whiteIndex += 1; whites.push({ midi: m, after: whiteIndex }); }
+    else if (m < end) blacks.push({ midi: m, after: whiteIndex });
+  }
+  return { whites, blacks };
+}
+
+const piano = (() => {
+  let ctx, master, pedal = false, seq = 0;
+  const voices = new Map(), holders = new Map(), sustained = new Set(), life = new Map();
+  let lifeSeq = 0;
+  const listeners = new Set();
+  function emit() { const snap = new Set(holders.keys()); for (const fn of listeners) fn(snap); }
+  function ensure() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    if (!ctx) {
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.9;
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -14; comp.knee.value = 18; comp.ratio.value = 3.2; comp.attack.value = 0.004; comp.release.value = 0.18;
+      master.connect(comp); comp.connect(ctx.destination);
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return true;
+  }
+  function stop(midi) {
+    const voice = voices.get(midi);
+    if (!voice) return;
+    voice.release();
+    voices.delete(midi);
+    life.delete(midi);
+  }
+  function start(midi) {
+    if (!ctx || !master) return;
+    const now = ctx.currentTime;
+    const freq = 440 * 2 ** ((midi - 69) / 12);
+    const velocity = 0.78 + Math.random() * 0.14;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(velocity, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(velocity * 0.72, now + 0.09);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.Q.value = 0.6;
+    const open = Math.min(7200, 1400 + freq * 3);
+    filter.frequency.setValueAtTime(open, now);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(freq * 2, 900), now + 0.45);
+    filter.connect(gain); gain.connect(master);
+    const oscs = [];
+    [1,2,3,4,5,6].forEach((partial, i) => {
+      const f = freq * partial;
+      if (f >= ctx.sampleRate * 0.475) return;
+      const osc = ctx.createOscillator();
+      osc.type = i < 3 ? "sine" : "triangle";
+      osc.frequency.value = f;
+      osc.detune.value = i === 0 ? 0 : i % 2 === 0 ? -4 : 5;
+      const g = ctx.createGain();
+      const amps = [1, 0.38, 0.16, 0.07, 0.035, 0.02];
+      g.gain.setValueAtTime(Math.max(0.0001, amps[i] * (1 / (1 + partial * 0.15))), now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(0.35, 2.4 - partial * 0.32 + (midi < 52 ? 0.8 : 0)));
+      osc.connect(g); g.connect(filter); osc.start(now); oscs.push(osc);
+    });
+    const noiseLen = Math.floor(ctx.sampleRate * 0.03);
+    const buffer = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < noiseLen; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / noiseLen);
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const ng = ctx.createGain();
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 900;
+    ng.gain.setValueAtTime(velocity * 0.22, now);
+    ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+    noise.connect(hp); hp.connect(ng); ng.connect(gain); noise.start(now);
+    const token = ++lifeSeq;
+    life.set(midi, token);
+    voices.set(midi, { release() {
+      const t = ctx.currentTime;
+      try {
+        gain.gain.cancelScheduledValues(t);
+        gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+      } catch (e) {}
+      const when = t + 0.18;
+      for (const osc of oscs) { try { osc.stop(when); } catch (e) {} }
+      try { noise.stop(when); } catch (e) {}
+    }});
+    const decay = Math.max(0.8, 2.6 - (midi - 48) * 0.02);
+    setTimeout(() => { if (life.get(midi) === token && !(holders.get(midi)?.size)) stop(midi); }, decay * 1000);
+  }
+  function hold(midi, holder) {
+    if (!ensure()) return;
+    let set = holders.get(midi);
+    const was = !!set && set.size > 0;
+    if (!set) holders.set(midi, set = new Set());
+    set.add(holder);
+    if (!was) { sustained.delete(midi); if (voices.has(midi)) stop(midi); start(midi); }
+    emit();
+  }
+  function release(midi, holder) {
+    const set = holders.get(midi);
+    if (!set || !set.delete(holder)) return;
+    if (!set.size) {
+      holders.delete(midi);
+      if (pedal) sustained.add(midi);
+      else stop(midi);
+    }
+    emit();
+  }
+  function releaseHolder(holder) {
+    for (const midi of [...holders.keys()]) release(midi, holder);
+  }
+  return {
+    subscribe(fn) { listeners.add(fn); fn(new Set(holders.keys())); return () => listeners.delete(fn); },
+    hold, release, releaseHolder,
+    setPedal(on) {
+      pedal = on;
+      if (!on) for (const midi of [...sustained]) { sustained.delete(midi); if (!holders.get(midi)?.size) stop(midi); }
+      emit();
+    },
+    playStrike(midis, ms = 380) {
+      const id = "c" + (++seq);
+      for (const midi of midis) hold(midi, id);
+      setTimeout(() => releaseHolder(id), ms);
+    },
+    panic() {
+      holders.clear(); sustained.clear();
+      for (const midi of [...voices.keys()]) stop(midi);
+      emit();
+    },
+    releaseDisallowed(ok) {
+      for (const midi of [...holders.keys()]) if (!ok(midi)) releaseHolderMidi(midi);
+      for (const midi of [...sustained]) if (!ok(midi)) { sustained.delete(midi); stop(midi); }
+      emit();
+    }
+  };
+  function releaseHolderMidi(midi) {
+    holders.delete(midi);
+    if (!pedal) stop(midi);
+    else sustained.add(midi);
+  }
+})();
+
+const state = {
+  tonic: 0, scaleId: "major", size: 3, span: 3, inversion: 0,
+  restrict: true, sustain: false, startMidi: 48,
+  selectedId: null, hoverId: null, recent: [], tab: "triads"
+};
+const pressed = new Set();
+const $ = (id) => document.getElementById(id);
+const mainBed = $("main");
+const pointers = new Map();
+piano.subscribe((snap) => { pressed.clear(); for (const n of snap) pressed.add(n); syncMainDown(); });
+
+function scale() { return SCALES.find((s) => s.id === state.scaleId) || SCALES[0]; }
+function maxStart() { return Math.max(PIANO_LOW, PIANO_HIGH - state.span * 12); }
+function clampStart() { state.startMidi = Math.min(maxStart(), Math.max(PIANO_LOW, state.startMidi)); }
+function previewChord() {
+  const chords = chordsInScale(state.tonic, scale().intervals, state.size);
+  return chords.find((c) => c.id === state.hoverId) || chords.find((c) => c.id === state.selectedId) || null;
+}
+
+function buildBed(bed, opts) {
+  const { start, octaves, whiteW, names, flag, lit, chordPcs, scaleSet, restrict, playPcs } = opts;
+  const { whites, blacks } = keysForRange(start, octaves);
+  const blackW = Math.round(whiteW * 0.56);
+  bed.style.setProperty("--white-w", whiteW + "px");
+  bed.style.setProperty("--black-w", blackW + "px");
+  bed.style.width = whites.length * whiteW + "px";
+  const center = start + (octaves * 12) / 2;
+  let flagMidi = -1;
+  if (flag) {
+    let best = Infinity;
+    for (const key of whites) {
+      if (pcOf(key.midi) !== state.tonic) continue;
+      const dist = Math.abs(key.midi - center);
+      if (dist < best) { best = dist; flagMidi = key.midi; }
+    }
+  }
+  const flats = preferFlats(scalePcs(state.tonic, scale().intervals));
+  bed.innerHTML = "";
+  const playable = (midi) => {
+    if (playPcs) return playPcs.has(pcOf(midi));
+    return !restrict || scaleSet.has(pcOf(midi));
+  };
+  const add = (key, black) => {
+    const el = document.createElement("div");
+    el.className = black ? "bkey" : "wkey";
+    el.dataset.midi = String(key.midi);
+    el.dataset.black = black ? "1" : "0";
+    el.dataset.playable = playable(key.midi) ? "1" : "0";
+    if (black) el.style.left = (key.after + 1) * whiteW - blackW / 2 + "px";
+    const face = document.createElement("div");
+    face.className = "keyface" + faceExtra(key.midi, { flagMidi, lit, chordPcs, scaleSet, playable: playable(key.midi) });
+    if (names) {
+      const name = document.createElement("span");
+      name.className = "key-name";
+      const edge = key.midi === start || key.midi === start + octaves * 12;
+      name.textContent = noteName(key.midi, flats) + (edge ? String(Math.floor(key.midi / 12) - 1) : "");
+      face.appendChild(name);
+    }
+    if (key.midi === flagMidi) {
+      const tag = document.createElement("span");
+      tag.className = "key-flag";
+      tag.textContent = "key";
+      face.appendChild(tag);
+    }
+    el.appendChild(face);
+    bed.appendChild(el);
+  };
+  whites.forEach((k) => add(k, false));
+  blacks.forEach((k) => add(k, true));
+}
+function faceExtra(midi, ctx) {
+  const pc = pcOf(midi);
+  let cls = "";
+  if (ctx.lit) {
+    if (ctx.lit.has(midi)) cls += " scale";
+  } else if (midi === ctx.flagMidi) cls += " tonic";
+  else if (ctx.flagMidi >= 0 && midi >= ctx.flagMidi && midi < ctx.flagMidi + 12) {
+    if (ctx.chordPcs && ctx.chordPcs.has(pc)) cls += " chord";
+    else if (ctx.scaleSet.has(pc)) cls += " scale";
+  }
+  if (!ctx.playable) cls += " locked";
+  if (pressed.has(midi) && !ctx.lit) cls += " down";
+  return cls;
+}
+function layoutMain() {
+  const well = $("well");
+  const width = Math.max(280, well.clientWidth - 28);
+  const count = state.span * 7 + 1;
+  const fitted = Math.floor(width / count);
+  const whiteW = fitted >= 16 ? Math.min(54, fitted) : 22;
+  const pcs = scalePcs(state.tonic, scale().intervals);
+  const preview = previewChord();
+  buildBed(mainBed, {
+    start: state.startMidi, octaves: state.span, whiteW,
+    names: true, flag: true, lit: null,
+    chordPcs: preview ? new Set(preview.pcs) : null,
+    scaleSet: new Set(pcs), restrict: state.restrict, playPcs: null
+  });
+}
+function syncMainDown() {
+  if (!mainBed) return;
+  mainBed.querySelectorAll("[data-midi]").forEach((el) => {
+    el.querySelector(".keyface").classList.toggle("down", pressed.has(+el.dataset.midi));
+  });
+}
+function midiAt(bed, x, y) {
+  const hits = [...bed.querySelectorAll("[data-midi]")];
+  const pick = (black) => {
+    for (const el of hits) {
+      if ((el.dataset.black === "1") !== black) continue;
+      const r = el.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+        return el.dataset.playable === "1" ? +el.dataset.midi : null;
+      }
+    }
+    return undefined;
+  };
+  const b = pick(true);
+  if (b !== undefined) return b;
+  const w = pick(false);
+  return w === undefined ? null : w;
+}
+function endPointer(id) {
+  const track = pointers.get(id);
+  if (!track) return;
+  pointers.delete(id);
+  if (track.kind === "mini" && !track.dragging) {
+    if (track.bed._play) track.bed._play();
+    else piano.playStrike((track.bed.dataset.voice || "").split(",").filter(Boolean).map(Number));
+  } else piano.releaseHolder("p:" + id);
+  if (track.kind === "mini") clearMiniDown(track.bed);
+}
+function clearMiniDown(bed) {
+  bed.querySelectorAll(".keyface").forEach((face) => {
+    if (!face.dataset.flash) face.classList.remove("down");
+  });
+}
+function setMiniDown(bed, midi) {
+  bed.querySelectorAll("[data-midi]").forEach((el) => {
+    const face = el.querySelector(".keyface");
+    if (face.dataset.flash) return;
+    face.classList.toggle("down", midi != null && +el.dataset.midi === midi);
+  });
+}
+function flashStrip(bed, midis) {
+  const want = new Set(midis);
+  bed.querySelectorAll("[data-midi]").forEach((el) => {
+    const face = el.querySelector(".keyface");
+    const on = want.has(+el.dataset.midi);
+    face.classList.toggle("down", on);
+    if (on) face.dataset.flash = "1";
+    else delete face.dataset.flash;
+  });
+  setTimeout(() => {
+    bed.querySelectorAll(".keyface").forEach((face) => { delete face.dataset.flash; face.classList.remove("down"); });
+  }, 380);
+}
+function playStrip(bed, midis, label, pcs, degree, id) {
+  piano.playStrike(midis);
+  const name = state.inversion === 0 ? label : label + " · " + INV[state.inversion];
+  const key = label + ":" + state.inversion;
+  state.recent = [{ key, name, degree, midis, pcs }, ...state.recent.filter((r) => r.key !== key)].slice(0, 5);
+  if (id) state.selectedId = id;
+  renderDeck();
+  const next = document.querySelector('[data-voice="' + midis.join(",") + '"]');
+  if (next) flashStrip(next, midis);
+  else if (bed.isConnected) flashStrip(bed, midis);
+}
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text != null) node.textContent = text;
+  return node;
+}
+function renderChrome() {
+  const s = scale();
+  const flats = preferFlats(scalePcs(state.tonic, s.intervals));
+  $("now").innerHTML = "";
+  $("now").append(document.createTextNode(noteName(state.tonic, flats) + " " + s.name + " "));
+  const formula = el("span", "formula", stepPattern(s.intervals));
+  $("now").append(formula);
+  $("inkey").classList.toggle("on", state.restrict);
+  $("inkey").setAttribute("aria-pressed", String(state.restrict));
+  $("sustain").classList.toggle("on", state.sustain);
+  $("sustain").setAttribute("aria-pressed", String(state.sustain));
+  const oct = $("octaves");
+  oct.querySelectorAll("button").forEach((b) => b.remove());
+  for (const n of [3, 5, 7]) {
+    const b = el("button", "size-btn" + (state.span === n ? " on" : ""), String(n));
+    b.type = "button";
+    b.setAttribute("aria-label", n + " octaves");
+    b.setAttribute("aria-pressed", String(state.span === n));
+    b.onclick = () => { state.span = n; clampStart(); renderChrome(); layoutMain(); };
+    oct.append(b);
+  }
+}
+function paintMini(bed) {
+  const midis = (bed.dataset.voice || "").split(",").filter(Boolean).map(Number);
+  if (!midis.length) return;
+  const wrap = bed.parentElement;
+  const whiteW = Math.max(11, Math.floor((wrap.clientWidth || 280) / 22));
+  const low = Math.min(...midis);
+  const start = low - pcOf(low) - 12;
+  buildBed(bed, {
+    start, octaves: 3, whiteW, names: false, flag: false,
+    lit: new Set(midis), chordPcs: null, scaleSet: new Set(),
+    restrict: false, playPcs: new Set(midis.map(pcOf))
+  });
+}
+function miniKeyboard(midis) {
+  const wrap = el("div", "mini-scroll");
+  const bed = el("div", "keybed mini");
+  bed.dataset.kind = "mini";
+  bed.dataset.voice = midis.join(",");
+  wrap.append(bed);
+  return { wrap, bed };
+}
+function renderDeck() {
+  const s = scale();
+  const flats = preferFlats(scalePcs(state.tonic, s.intervals));
+  const pcs = scalePcs(state.tonic, s.intervals);
+  const scaleSet = new Set(pcs);
+  const scalesCol = $("col-scales");
+  scalesCol.innerHTML = "";
+  const head = el("header", "col-head");
+  head.append(el("h2", "", "Scales / Modes"), el("span", "", stepPattern(s.intervals)));
+  scalesCol.append(head);
+  const tonics = el("div", "tonic-row");
+  for (let pc = 0; pc < 12; pc++) {
+    const b = el("button", "tonic-btn" + (pc === state.tonic ? " on" : "") + (scaleSet.has(pc) ? " in" : ""), noteName(pc, flats));
+    b.type = "button";
+    b.onclick = () => { state.tonic = pc; state.selectedId = null; state.hoverId = null; refresh(); };
+    tonics.append(b);
+  }
+  scalesCol.append(tonics);
+  const grid = el("div", "scale-grid");
+  const core = SCALES.filter((x) => x.group === "core");
+  const color = SCALES.filter((x) => x.group === "color");
+  const rows = Math.max(core.length, color.length);
+  for (let i = 0; i < rows; i++) {
+    for (const item of [core[i], color[i]]) {
+      if (!item) { grid.append(el("span", "scale-btn")); continue; }
+      const b = el("button", "scale-btn" + (item.id === s.id ? " on" : ""), item.name);
+      b.type = "button";
+      b.onclick = () => { state.scaleId = item.id; state.selectedId = null; state.hoverId = null; refresh(); };
+      grid.append(b);
+    }
+  }
+  scalesCol.append(grid);
+
+  const chords = chordsInScale(state.tonic, s.intervals, state.size);
+  const chordCol = $("col-chords");
+  chordCol.innerHTML = "";
+  const ch = el("header", "col-head");
+  ch.append(el("h2", "", "Chords"), el("span", "", chords.length + " in " + noteName(state.tonic, flats)));
+  chordCol.append(ch);
+  const scroll = el("div", "chord-scroll");
+  if (!chords.length) scroll.append(el("p", "empty", "No chords of this size fit the scale. Try 5 or 7."));
+  else {
+    const cg = el("div", "chord-grid");
+    for (const chord of chords) {
+      const label = noteName(chord.root, flats) + " " + chord.suffix;
+      const b = el("button", "chord-btn" + (chord.id === state.selectedId ? " on" : ""));
+      b.type = "button";
+      b.append(el("span", "", label));
+      b.onmouseenter = () => { state.hoverId = chord.id; layoutMain(); };
+      b.onmouseleave = () => { state.hoverId = null; layoutMain(); };
+      b.onclick = () => {
+        state.selectedId = chord.id;
+        const midis = voiceChord(chord.pcs, state.inversion, 60);
+        piano.playStrike(midis);
+        const name = state.inversion === 0 ? label : label + " · " + INV[state.inversion];
+        const key = label + ":" + state.inversion;
+        state.recent = [{ key, name, midis, pcs: chord.pcs.join(",") }, ...state.recent.filter((r) => r.key !== key)].slice(0, 5);
+        renderDeck();
+      };
+      cg.append(b);
+    }
+    scroll.append(cg);
+  }
+  chordCol.append(scroll);
+
+  const degrees = degreeChords(state.tonic, s.intervals, state.size);
+  const invCount = Math.min(Math.max(state.size, 1), 4);
+  state.inversion = state.inversion % invCount;
+  const tri = $("col-triads");
+  tri.innerHTML = "";
+  const th = el("header", "col-head");
+  const title = s.intervals.length === 7 ? (state.size === 3 ? "Diatonic triads" : state.size === 5 ? "Diatonic 9ths" : "Diatonic 13ths") : "Chords in the scale";
+  th.append(el("h2", "", title + " · " + noteName(state.tonic, flats)));
+  tri.append(th);
+  const tools = el("div", "tools");
+  const sizes = el("div", "sizes");
+  sizes.setAttribute("role", "group");
+  sizes.append(el("span", "size-label light", "Notes"));
+  for (const n of [3, 5, 7]) {
+    const b = el("button", "size-btn" + (state.size === n ? " on" : ""), String(n));
+    b.type = "button";
+    b.setAttribute("aria-label", "Chords of up to " + n + " notes");
+    b.onclick = () => { state.size = n; state.inversion = 0; state.hoverId = null; refresh(); };
+    sizes.append(b);
+  }
+  const inv = el("div", "inv");
+  INV.slice(0, invCount).forEach((label, index) => {
+    const b = el("button", index === state.inversion ? "on" : "", label);
+    b.type = "button";
+    b.onclick = () => { state.inversion = index; renderDeck(); layoutMain(); };
+    inv.append(b);
+  });
+  tools.append(sizes, inv);
+  tri.append(tools);
+  const list = el("div", "triad-scroll");
+  degrees.forEach((deg) => {
+    const midis = voiceChord(deg.pcs, state.inversion, 60);
+    const card = el("div", "degree-card");
+    const play = () => {
+      piano.playStrike(midis);
+      const name = state.inversion === 0 ? deg.name : deg.name + " · " + INV[state.inversion];
+      const key = deg.name + ":" + state.inversion;
+      state.recent = [{ key, name, degree: deg.degree, midis, pcs: deg.pcs.join(",") }, ...state.recent.filter((r) => r.key !== key)].slice(0, 5);
+      state.selectedId = deg.pcs[0] + ":" + deg.name.split(" ").slice(1).join(" ");
+      const sid = deg.id + ":" + state.inversion;
+      renderDeck();
+      const next = document.querySelector('[data-sid="' + sid + '"]');
+      if (next) flashStrip(next, midis);
+    };
+    const btn = el("button", "degree-play");
+    btn.type = "button";
+    btn.append(el("span", "degree", deg.degree), el("span", "", deg.name));
+    btn.onclick = play;
+    const { wrap, bed } = miniKeyboard(midis);
+    bed.dataset.label = deg.name;
+    bed.dataset.pcs = deg.pcs.join(",");
+    bed.dataset.degree = deg.degree;
+    bed.dataset.sid = deg.id + ":" + state.inversion;
+    bed.dataset.play = "degree";
+    card.append(btn, wrap);
+    list.append(card);
+    bed._play = play;
+  });
+  list.append(el("h3", "recent-title", "Recent chords"));
+  if (!state.recent.length) list.append(el("p", "empty", "Play a chord and it stays here."));
+  else state.recent.forEach((item) => {
+    const card = el("div", "recent-card");
+    const play = () => {
+      piano.playStrike(item.midis);
+      flashStrip(bed, item.midis);
+    };
+    const btn = el("button", "recent-play");
+    btn.type = "button";
+    btn.append(el("span", "", item.name));
+    btn.onclick = play;
+    const { wrap, bed } = miniKeyboard(item.midis);
+    bed.dataset.label = item.name.replace(/ · .*$/, "");
+    bed.dataset.voice = item.midis.join(",");
+    bed.dataset.sid = item.key;
+    bed._play = play;
+    card.append(btn, wrap);
+    list.append(card);
+  });
+  tri.append(list);
+  document.querySelectorAll("#col-triads .keybed.mini").forEach(paintMini);
+  $("col-scales").classList.toggle("show", state.tab === "scales");
+  $("col-chords").classList.toggle("show", state.tab === "chords");
+  $("col-triads").classList.toggle("show", state.tab === "triads");
+}
+function refresh() {
+  piano.releaseDisallowed((midi) => !state.restrict || scalePcs(state.tonic, scale().intervals).includes(pcOf(midi)));
+  renderChrome();
+  layoutMain();
+  renderDeck();
+}
+
+$("inkey").onclick = () => { state.restrict = !state.restrict; refresh(); };
+$("sustain").onclick = () => { state.sustain = !state.sustain; piano.setPedal(state.sustain); renderChrome(); };
+$("oct-down").onclick = () => { state.startMidi = Math.max(PIANO_LOW, state.startMidi - 12); layoutMain(); };
+$("oct-up").onclick = () => { state.startMidi = Math.min(maxStart(), state.startMidi + 12); layoutMain(); };
+
+const tabs = $("tabs");
+for (const [id, label] of [["scales","Scales"],["chords","Chords"],["triads","Triads"]]) {
+  const b = el("button", state.tab === id ? "on" : "", label);
+  b.type = "button";
+  b.onclick = () => { state.tab = id; renderDeck(); tabs.querySelectorAll("button").forEach((n, i) => n.classList.toggle("on", ["scales","chords","triads"][i] === id)); };
+  tabs.append(b);
+}
+
+function onDown(event) {
+  const bed = event.target.closest(".keybed");
+  if (!bed || event.button !== 0) return;
+  event.preventDefault();
+  bed.setPointerCapture(event.pointerId);
+  const midi = midiAt(bed, event.clientX, event.clientY);
+  const kind = bed.dataset.kind === "mini" ? "mini" : "main";
+  pointers.set(event.pointerId, { bed, midi: kind === "mini" ? null : midi, dragging: kind !== "mini", startMidi: midi, kind });
+  if (kind === "main" && midi != null) piano.hold(midi, "p:" + event.pointerId);
+}
+function onMove(event) {
+  const track = pointers.get(event.pointerId);
+  if (!track) return;
+  const midi = midiAt(track.bed, event.clientX, event.clientY);
+  if (track.kind === "mini" && !track.dragging) {
+    if (midi === track.startMidi) return;
+    track.dragging = true;
+  }
+  if (midi === track.midi) return;
+  if (track.midi != null) piano.release(track.midi, "p:" + event.pointerId);
+  if (midi != null) piano.hold(midi, "p:" + event.pointerId);
+  track.midi = midi;
+  if (track.kind === "mini") setMiniDown(track.bed, track.dragging ? midi : null);
+}
+function onUp(event) { endPointer(event.pointerId); }
+document.addEventListener("pointerdown", onDown);
+document.addEventListener("pointermove", onMove);
+window.addEventListener("pointerup", onUp);
+window.addEventListener("pointercancel", onUp);
+window.addEventListener("blur", () => piano.panic());
+document.addEventListener("visibilitychange", () => { if (document.hidden) piano.panic(); });
+
+window.addEventListener("keydown", (event) => {
+  const target = event.target;
+  if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+  if (event.code === "Space") { event.preventDefault(); if (!event.repeat) $("sustain").click(); return; }
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "<" || event.key === ">") {
+    event.preventDefault();
+    if (event.repeat) return;
+    const dir = event.key === "ArrowLeft" || event.key === "<" ? -12 : 12;
+    const next = state.startMidi + dir;
+    state.startMidi = Math.min(maxStart(), Math.max(PIANO_LOW, next));
+    layoutMain();
+    return;
+  }
+  if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
+  const offset = KEY_OFFSET[event.key.toLowerCase()];
+  if (offset == null) return;
+  const midi = state.startMidi + offset;
+  if (midi > state.startMidi + state.span * 12) return;
+  if (state.restrict && !scalePcs(state.tonic, scale().intervals).includes(pcOf(midi))) return;
+  event.preventDefault();
+  piano.hold(midi, "key:" + event.key.toLowerCase());
+});
+window.addEventListener("keyup", (event) => {
+  if (KEY_OFFSET[event.key.toLowerCase()] == null) return;
+  piano.releaseHolder("key:" + event.key.toLowerCase());
+});
+new ResizeObserver(() => layoutMain()).observe($("well"));
+refresh();
+</script>
+</body>
+</html>
