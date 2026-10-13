@@ -54,6 +54,9 @@
   h1 { font-family: var(--display); font-size: 1.75rem; line-height: 1.1; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
   #hint { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.875rem; }
   .stats { padding: 0.5rem 0.75rem; text-align: right; }
+  .top-side { display: flex; align-items: flex-start; gap: 0.5rem; }
+  #fullscreen { pointer-events: auto; width: 2.75rem; justify-content: center; padding: 0; }
+  #fullscreen svg[hidden] { display: none; }
   .stats p { margin: 0; font-family: var(--mono); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
   #fps { color: var(--muted); }
   #dims { color: var(--subtle); }
@@ -198,7 +201,6 @@
   .dock.is-min #scene,
   .dock.is-min #import,
   .dock.is-min #export,
-  .dock.is-min #minimize,
   .dock.is-min #speeds { display: none; }
   #tools, #shapes { position: relative; }
   .dock-menu {
@@ -239,9 +241,15 @@
         <p id="hint">Falls and piles</p>
         <p class="sr">Keys: 1 sand, 2 water, 3 magma, 4 wood, 5 stone, 6 erase, 7 oil, 8 gunpowder, 9 seed, 0 salt, F fire, C coal, space toggles the air panel, P pauses, brackets change shape size, minus and equals change outline thickness.</p>
       </header>
+      <div class="top-side">
       <div class="card stats">
         <p id="fps">— fps</p>
         <p id="dims"></p>
+      </div>
+      <button id="fullscreen" type="button" class="dock-btn" aria-label="Full screen" title="Full screen">
+        <svg id="fs-enter" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        <svg id="fs-exit" hidden viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+      </button>
       </div>
     </div>
     <div class="dock card is-min">
@@ -264,7 +272,6 @@
       <button id="scene" type="button" class="dock-btn">Scene</button>
       <button id="import" type="button" class="dock-btn">Import</button>
       <a id="export" class="dock-btn" href="#" download="elemental-scene.png">Export</a>
-      <button id="minimize" type="button" class="dock-btn" aria-expanded="false">Minimize</button>
       <input id="import-file" type="file" accept="image/*" hidden aria-label="Import an image">
       </div>
       <button id="grip" type="button" class="dock-btn dock-grip" data-dock-grip aria-label="Expand controls" title="Drag to move. Click to expand">
@@ -3289,10 +3296,10 @@
 	const air = {
 		substeps: 4,
 		density: AIR_DENSITY,
-		pDamp: .9975,
-		vDamp: .993,
+		pDamp: .9854,
+		vDamp: .964,
 		beta: .5 * AIR_DENSITY,
-		grad: .56 / AIR_DENSITY,
+		grad: .21,
 		visc: .05,
 		buoy: .16,
 		oilHeat: 3,
@@ -5406,10 +5413,10 @@ void main() {
 		const importBtn = document.querySelector("#import");
 		const exportBtn = document.querySelector("#export");
 		const importFile = document.querySelector("#import-file");
-		const minBtn = document.querySelector("#minimize");
+		const fsBtn = document.querySelector("#fullscreen");
 		const dock = document.querySelector(".dock");
 		const wrap = document.querySelector("#app");
-		if (!canvas || !hint || !fpsEl || !sizeEl || !toolsEl || !speedsEl || !shapesEl || !size || !sizeN || !brush || !brushN || !pauseBtn || !clearBtn || !sceneBtn || !importBtn || !exportBtn || !importFile || !minBtn || !dock || !wrap) return;
+		if (!canvas || !hint || !fpsEl || !sizeEl || !toolsEl || !speedsEl || !shapesEl || !size || !sizeN || !brush || !brushN || !pauseBtn || !clearBtn || !sceneBtn || !importBtn || !exportBtn || !importFile || !dock || !wrap) return;
 		const view = canvas;
 		const hintEl = hint;
 		const pauseEl = pauseBtn;
@@ -5476,8 +5483,6 @@ void main() {
 		}
 		function paintControls() {
 			dock.classList.toggle("is-min", !controlsOpen);
-			minBtn.hidden = !controlsOpen;
-			minBtn.setAttribute("aria-expanded", controlsOpen ? "true" : "false");
 			for (const [id, btn] of toolButtons) {
 				btn.hidden = !controlsOpen && id !== tool;
 				if (!controlsOpen && id === tool) btn.title = TOOLS.find((item) => item.id === id)?.label ?? "Material";
@@ -5493,8 +5498,8 @@ void main() {
 			for (const [, btn] of speedButtons) btn.hidden = !controlsOpen;
 			const grip = document.querySelector("#grip");
 			if (grip) {
-				grip.title = controlsOpen ? "Drag to move the controls" : "Drag to move. Click to expand";
-				grip.setAttribute("aria-label", controlsOpen ? "Move controls" : "Expand controls");
+				grip.title = controlsOpen ? "Drag to move. Click to minimize" : "Drag to move. Click to expand";
+				grip.setAttribute("aria-label", controlsOpen ? "Minimize controls" : "Expand controls");
 			}
 		}
 		function animateDock(apply) {
@@ -5535,11 +5540,10 @@ void main() {
 			el.addEventListener("transitionend", onEnd);
 			window.setTimeout(clear, 420);
 		}
-		function openControls() {
-			if (controlsOpen) return;
+		function toggleControls() {
 			closeMenus();
 			animateDock(() => {
-				controlsOpen = true;
+				controlsOpen = !controlsOpen;
 				paintControls();
 			});
 		}
@@ -5587,13 +5591,6 @@ void main() {
 			thick = Number(brush.value);
 			brushN.textContent = String(thick + 1);
 			brush.setAttribute("aria-valuenow", String(thick + 1));
-		});
-		minBtn.addEventListener("click", () => {
-			closeMenus();
-			animateDock(() => {
-				controlsOpen = false;
-				paintControls();
-			});
 		});
 		toolsEl.style.position = "relative";
 		shapesEl.style.position = "relative";
@@ -5756,7 +5753,7 @@ void main() {
 				const ended = drag;
 				drag = null;
 				el.classList.remove("is-dragging");
-				if (ended.grip && !ended.moved && !controlsOpen) openControls();
+				if (ended.grip && !ended.moved) toggleControls();
 			};
 			el.addEventListener("pointerup", end);
 			el.addEventListener("pointercancel", end);
@@ -5876,6 +5873,27 @@ void main() {
 		paintControls();
 		paintHint();
 		setPaused(false);
+		const fsEnter = document.querySelector("#fs-enter");
+		const fsExit = document.querySelector("#fs-exit");
+		const fsOn = () => Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+		const paintFs = () => {
+			const on = fsOn();
+			fsEnter?.toggleAttribute("hidden", on);
+			fsExit?.toggleAttribute("hidden", !on);
+			fsBtn?.setAttribute("aria-label", on ? "Exit full screen" : "Full screen");
+			fsBtn?.setAttribute("title", on ? "Exit full screen" : "Full screen");
+		};
+		fsBtn?.addEventListener("click", () => {
+			const node = wrap;
+			const doc = document;
+			if (fsOn()) {
+				if (document.exitFullscreen) document.exitFullscreen();
+				else doc.webkitExitFullscreen?.();
+			} else if (node.requestFullscreen) node.requestFullscreen();
+			else node.webkitRequestFullscreen?.();
+		});
+		document.addEventListener("fullscreenchange", paintFs);
+		document.addEventListener("webkitfullscreenchange", paintFs);
 		const pointer = {
 			down: false,
 			x: 0,
