@@ -52,6 +52,7 @@
   .card { background: var(--surface); border-radius: 12px; }
   header.card { padding: 0.75rem 1rem; }
   h1 { font-family: var(--display); font-size: 1.75rem; line-height: 1.1; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
+  h1 .ver { margin-left: 0.5rem; font-family: var(--font); font-size: 0.875rem; font-weight: 400; letter-spacing: 0; color: var(--muted); }
   #hint { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.875rem; }
   .stats { padding: 0.5rem 0.75rem; text-align: right; }
   .top-side { display: flex; align-items: flex-start; gap: 0.5rem; }
@@ -237,7 +238,7 @@
   <div class="hud">
     <div class="top">
       <header class="card">
-        <h1>Elemental</h1>
+        <h1>Elemental <span class="ver">1.12</span></h1>
         <p id="hint">Falls and piles</p>
         <p class="sr">Keys: 1 sand, 2 water, 3 magma, 4 wood, 5 stone, 6 erase, 7 oil, 8 gunpowder, 9 seed, 0 salt, F fire, C coal, space toggles the air panel, P pauses, brackets change shape size, minus and equals change outline thickness.</p>
       </header>
@@ -771,6 +772,15 @@
 		if (isStone(c)) return 22;
 		return 99;
 	}
+	/** 0 nothing, 1 wall, 2 magma, 3 coal or wood fire, 4 oil fire, 5 painted flame. Shade changes inside one class do not move the air. */
+	function airClass(c) {
+		if (c === BEDROCK || c >= WOOD && c < COAL_FIRE) return 1;
+		if (c >= MAGMA && c < WOOD) return 2;
+		if (c >= COAL_FIRE && c < OIL) return 3;
+		if (c >= OIL_FIRE && c < OIL_FIRE_END) return 4;
+		if (c >= FLAME && c < FLAME_END) return 5;
+		return 0;
+	}
 	function gustRoll(x, y, frame) {
 		let h = Math.imul(x + 1, 2654435761) ^ Math.imul(y + 3, 2246822507) ^ Math.imul(frame + 1, 3266489909);
 		h = Math.imul(h ^ h >>> 16, 2146121005);
@@ -956,10 +966,13 @@
 		blastX = /* @__PURE__ */ new Int16Array(192);
 		blastY = /* @__PURE__ */ new Int16Array(192);
 		blastPow = /* @__PURE__ */ new Float32Array(192);
+		blastVy = /* @__PURE__ */ new Float32Array(192);
 		blastLogN = 0;
 		blastOut = [];
 		gustSeen = /* @__PURE__ */ new Uint8Array(0);
 		gustId = 1;
+		/** Columns that may contain fire. Burn skips the rest. */
+		fireCol = /* @__PURE__ */ new Uint8Array(0);
 		/** Sideways and upward speed, in cells, for grains that are off the ground. */
 		momX = /* @__PURE__ */ new Int8Array(0);
 		momY = /* @__PURE__ */ new Int8Array(0);
@@ -986,6 +999,12 @@
 				this.awakeList = new Int16Array(this.width);
 			}
 			if (this.dirty.length < this.width) this.dirty = new Uint8Array(this.width);
+			if (this.fireCol.length < this.width) {
+				const next = new Uint8Array(this.width);
+				next.set(this.fireCol);
+				next.fill(1, this.fireCol.length);
+				this.fireCol = next;
+			}
 			const need = (this.height + BAND - 1 >> 4) * this.width | 0;
 			if (this.band.length < need) this.rebuildBands();
 		}
@@ -1011,6 +1030,22 @@
 		}
 		wake(x) {
 			if (x >= 2 && x < this.width - 2) this.awake[x] = 1;
+		}
+		/** The air grid only cares when a wall or heat source appears, disappears, or changes kind. */
+		noteAir(a, b) {
+			if (airClass(a) !== airClass(b)) this.cellsDirty = true;
+		}
+		markFire(x) {
+			if (x >= 0 && x < this.fireCol.length) this.fireCol[x] = 1;
+		}
+		assign(cells, i, next) {
+			const prev = cells[i];
+			if (prev === next) return;
+			cells[i] = next;
+			this.noteAir(prev, next);
+			const x = i % this.width;
+			if (airClass(next) >= 3) this.markFire(x);
+			if (next !== 0) this.touchBand(x, i / this.width | 0);
 		}
 		anyAwake() {
 			const a = this.awake;
@@ -1100,6 +1135,7 @@
 			this.awake.fill(0);
 			this.dirty.fill(0);
 			this.band.fill(0);
+			this.fireCol.fill(0);
 			this.burning = false;
 			this.blastN = 0;
 			this.blastLogN = 0;
@@ -1132,6 +1168,7 @@
 			this.span.fill(0);
 			this.awake.fill(1);
 			this.dirty.fill(0);
+			this.fireCol.fill(0);
 			this.cellsDirty = true;
 			if (this.momX.length === this.cells.length) {
 				this.momX.fill(0);
@@ -1260,6 +1297,7 @@
 			const i = y * this.width + x;
 			const cells = this.cells;
 			if (cells[i] === BEDROCK) return;
+			const prev = cells[i];
 			if (tool === "erase") cells[i] = 0;
 			else if (tool === "wood") cells[i] = hashByte(x, y, WOOD, 30);
 			else if (tool === "coal") cells[i] = hashByte(x, y, COAL, 8);
@@ -1278,11 +1316,12 @@
 				if (cells[i] === FLAME_FULL) return;
 				cells[i] = FLAME_FULL;
 				this.burning = true;
+				this.markFire(x);
 			} else if (tool === "salt") {
 				if (!isSalt(cells[i])) cells[i] = saltByte();
 			} else if (!isSand(cells[i])) cells[i] = sandByte();
 			else return;
-			this.cellsDirty = true;
+			this.noteAir(prev, cells[i]);
 			if (i < this.momX.length) {
 				this.momX[i] = 0;
 				this.momY[i] = 0;
@@ -1617,7 +1656,6 @@
 		step() {
 			const { cells, width: W, height: H } = this;
 			this.ensureSpan();
-			if (this.anyAwake() || this.blastN > 0 || this.burning || this.sparkN > 0 || this.growN > 0) this.cellsDirty = true;
 			const melt = (this.frame & 15) === 0;
 			if (this.anyAwake() || this.blastN > 0) {
 				this.react(cells, W, H, melt);
@@ -1630,6 +1668,7 @@
 				if (this.blastN > 0) this.detonate(cells, W, H);
 			}
 			if (this.growN > 0) this.growPlants(cells, W, H);
+			this.nudgeMagma(cells, W, H);
 			this.frame++;
 		}
 		react(cells, W, H, melt) {
@@ -1648,7 +1687,7 @@
 						const i = y * W + x;
 						const c = cells[i];
 						if (isWood(c) && this.near(cells, i, W, MAGMA, WOOD)) {
-							cells[i] = FIRE_FULL;
+							this.assign(cells, i, FIRE_FULL);
 							this.burning = true;
 							this.wake(x - 1);
 							this.wake(x);
@@ -1656,7 +1695,7 @@
 							this.puff("smoke", x, y, 1);
 						} else if (isCoal(c) && this.near(cells, i, W, MAGMA, WOOD)) this.igniteCoal(cells, i, W);
 						else if (isOil(c) && this.oilSkin(cells, i, W) && (this.near(cells, i, W, MAGMA, WOOD) || this.near(cells, i, W, FIRE, OIL) || this.near(cells, i, W, COAL_FIRE, COAL_FIRE_END))) {
-							cells[i] = OIL_FIRE_FULL;
+							this.assign(cells, i, OIL_FIRE_FULL);
 							this.burning = true;
 							this.wake(x - 1);
 							this.wake(x);
@@ -1700,6 +1739,7 @@
 							const my = magmaAt / W | 0;
 							cells[i] = 0;
 							cells[magmaAt] = 0;
+							this.cellsDirty = true;
 							this.wake(x - 1);
 							this.wake(x);
 							this.wake(x + 1);
@@ -1728,12 +1768,13 @@
 			this.wake(x + 1);
 		}
 		/** A grain of powder becomes a pressure spike in the air field. */
-		pushBlast(x, y, power) {
+		pushBlast(x, y, power, vy = 0) {
 			const n = this.blastLogN;
 			if (n < this.blastX.length) {
 				this.blastX[n] = x;
 				this.blastY[n] = y;
 				this.blastPow[n] = power;
+				this.blastVy[n] = vy;
 				this.blastLogN = n + 1;
 				return;
 			}
@@ -1749,6 +1790,7 @@
 				}
 			}
 			this.blastPow[best] = this.blastPow[best] + power;
+			if (vy !== 0) this.blastVy[best] = vy;
 		}
 		takeBlasts() {
 			const n = this.blastLogN;
@@ -1763,6 +1805,7 @@
 				item.x = this.blastX[i];
 				item.y = this.blastY[i];
 				item.power = this.blastPow[i];
+				item.vy = this.blastVy[i];
 				out[i] = item;
 			}
 			this.blastLogN = 0;
@@ -1774,7 +1817,8 @@
 		* Downwind cells move first so a whole pile can slide into the gap.
 		*/
 		gust(field) {
-			if (!(field.energy >= .12) || field.w < 2 || field.h < 2) return;
+			if (!(field.energy >= .12) || field.w < 2 || field.h < 2) return false;
+			let movedAny = false;
 			const { cells, width: W, height: H } = this;
 			this.ensureSpan();
 			const seen = this.gustSeen;
@@ -1849,7 +1893,7 @@
 							for (let hop = 0; hop < hops; hop++) {
 								const moved = this.shove(cells, cx, cy, dirX, dirY, xFirst, W, H, id, depth);
 								if (!moved) break;
-								this.cellsDirty = true;
+								movedAny = true;
 								hx += moved.x - cx;
 								hy += moved.y - cy;
 								cx = moved.x;
@@ -1858,7 +1902,11 @@
 							const mi = cy * W + cx;
 							if (mi < this.momX.length) {
 								if (hx !== 0) this.momX[mi] = hx < -36 ? -36 : hx > 36 ? 36 : hx;
-								if (hy < 0) this.momY[mi] = hy < -16 ? -16 : hy;
+								if (hy < 0) {
+									const next = hy < -16 ? -16 : hy;
+									const prev = this.momY[mi];
+									this.momY[mi] = prev < next ? prev : next;
+								}
 							}
 						}
 					}
@@ -1872,6 +1920,7 @@
 				sparks[o + 2] = sparks[o + 2] + field.vx[ai] * (spanX / stride) * .05;
 				sparks[o + 3] = sparks[o + 3] + field.vy[ai] * (spanY / stride) * .05;
 			}
+			return movedAny;
 		}
 		shove(cells, x, y, dirX, dirY, xFirst, W, H, id, depth) {
 			if (this.gustSeen[y * W + x] === id) return null;
@@ -1935,7 +1984,7 @@
 						const n = cells[ni];
 						if (isGunpowder(n)) this.queueBlast(ni);
 						else if (isWood(n)) {
-							cells[ni] = FIRE_FULL;
+							this.assign(cells, ni, FIRE_FULL);
 							this.burning = true;
 							this.wake(nx - 1);
 							this.wake(nx);
@@ -1943,7 +1992,7 @@
 							this.puff("smoke", nx, ny, 1);
 						} else if (isCoal(n)) this.igniteCoal(cells, ni, W);
 						else if (isOil(n) && this.oilSkin(cells, ni, W)) {
-							cells[ni] = OIL_FIRE_FULL;
+							this.assign(cells, ni, OIL_FIRE_FULL);
 							this.burning = true;
 							this.wake(nx - 1);
 							this.wake(nx);
@@ -1951,7 +2000,7 @@
 							this.puff("smoke", nx, ny, 1);
 						} else if (isSeed(n)) this.igniteSeed(cells, ni, W);
 						else if (isStone(n)) {
-							cells[ni] = 0;
+							this.assign(cells, ni, 0);
 							this.wake(nx - 1);
 							this.wake(nx);
 							this.wake(nx + 1);
@@ -2021,7 +2070,7 @@
 				if (c !== 0 && !isFire(c) && !isOilFire(c) && !isCoalFire(c)) {
 					if (isGunpowder(c)) this.queueBlast(cy * W + cx);
 					else if (isWood(c)) {
-						cells[cy * W + cx] = FIRE_FULL;
+						this.assign(cells, cy * W + cx, FIRE_FULL);
 						this.burning = true;
 						this.wake(cx - 1);
 						this.wake(cx);
@@ -2029,7 +2078,7 @@
 						this.puff("smoke", cx, cy, 1);
 					} else if (isCoal(c)) this.igniteCoal(cells, cy * W + cx, W);
 					else if (isOil(c) && this.oilSkin(cells, cy * W + cx, W)) {
-						cells[cy * W + cx] = OIL_FIRE_FULL;
+						this.assign(cells, cy * W + cx, OIL_FIRE_FULL);
 						this.burning = true;
 						this.wake(cx - 1);
 						this.wake(cx);
@@ -2037,7 +2086,7 @@
 						this.puff("smoke", cx, cy, 1);
 					} else if (isSeed(c)) this.igniteSeed(cells, cy * W + cx, W);
 					else if (isStone(c)) {
-						cells[cy * W + cx] = 0;
+						this.assign(cells, cy * W + cx, 0);
 						this.wake(cx - 1);
 						this.wake(cx);
 						this.wake(cx + 1);
@@ -2096,7 +2145,7 @@
 				for (let dx = -1; dx <= 1; dx++) {
 					if (dx === 0 && dy === 0) continue;
 					if (isFire(cells[base + dx]) || isFlame(cells[base + dx]) || isCoalFire(cells[base + dx])) {
-						cells[base + dx] = 0;
+						this.assign(cells, base + dx, 0);
 						const fx = (base + dx) % W;
 						this.wake(fx - 1);
 						this.wake(fx);
@@ -2115,130 +2164,145 @@
 			let any = false;
 			let smokeLeft = 28;
 			for (let x = 2; x < W - 2; x++) {
+				if (!this.fireCol[x]) continue;
 				const y0 = span[x] ?? 0;
-				if (y0 >= H) continue;
-				for (let y = Math.max(1, y0); y <= H - 3; y++) {
-					const i = y * W + x;
-					const c = cells[i];
-					const oilFlame = isOilFire(c);
-					const painted = isFlame(c);
-					if (isCoalFire(c)) {
-						any = true;
-						if ((this.frame & 15) === 0) {
-							if (smokeLeft > 0 && Math.random() < .45) {
-								this.puff("smoke", x, y, 1);
-								smokeLeft--;
-							}
-							if (Math.random() < .55) {
-								const dir = Math.random() * 4 | 0;
-								const n = dir === 0 ? i - 1 : dir === 1 ? i + 1 : dir === 2 ? i - W : i + W;
-								if (isCoal(cells[n])) litCoal.push(n);
-								else if (isWood(cells[n])) lit.push(n);
-							}
-						}
-						if (this.frame % COAL_TICK === 0) {
-							cells[i] = c === COAL_FIRE ? 0 : c - 1;
-							this.wake(x - 1);
-							this.wake(x);
-							this.wake(x + 1);
-						}
-						continue;
-					}
-					if (!isFire(c) && !oilFlame && !painted) continue;
-					any = true;
-					if (smokeLeft > 0 && (painted || Math.random() < .45)) {
-						this.puff("smoke", x, y, 1);
-						smokeLeft--;
-					}
-					if (painted) {
-						for (let dy = -1; dy <= 1; dy++) {
-							const base = i + dy * W;
-							for (let dx = -1; dx <= 1; dx++) {
-								if (dx === 0 && dy === 0) continue;
-								const n = base + dx;
-								const m = cells[n];
-								if (isWood(m)) lit.push(n);
-								else if (isCoal(m)) litCoal.push(n);
-								else if (isOil(m) && this.oilSkin(cells, n, W)) litOil.push(n);
-								else if (isSeed(m)) litSeed.push(n);
-							}
-						}
-						if ((this.frame & 31) === 0) {
-							const next = c === FLAME ? 0 : c - 1;
-							const up = i - W;
-							if (y > 1 && cells[up] === 0) {
-								cells[up] = next;
-								cells[i] = 0;
-								this.mark(x, y - 1);
-							} else cells[i] = next;
-							this.wake(x - 1);
-							this.wake(x);
-							this.wake(x + 1);
-						}
-						continue;
-					}
-					if (oilFlame) {
-						const under = cells[i + W];
-						const inAir = under === 0 || isOilFire(under);
-						const up = i - W;
-						if (inAir) {
-							if (c === OIL_FIRE || cells[up] !== 0) {
-								if ((this.frame & 7) === 0 || c === OIL_FIRE) {
-									cells[i] = c === OIL_FIRE ? 0 : c - 1;
-									this.wake(x - 1);
-									this.wake(x);
-									this.wake(x + 1);
+				if (y0 >= H) {
+					this.fireCol[x] = 0;
+					continue;
+				}
+				let columnHot = false;
+				const b0 = (y0 < 0 ? 0 : y0) >> 4;
+				const b1 = H - 3 >> 4;
+				for (let b = b0; b <= b1; b++) {
+					if (this.band[b * W + x] === 0) continue;
+					const yStart = Math.max(1, y0, b * BAND);
+					const yEnd = Math.min(H - 3, b * BAND + BAND - 1);
+					for (let y = yStart; y <= yEnd; y++) {
+						const i = y * W + x;
+						const c = cells[i];
+						const oilFlame = isOilFire(c);
+						const painted = isFlame(c);
+						if (isCoalFire(c)) {
+							any = true;
+							columnHot = true;
+							if ((this.frame & 15) === 0) {
+								if (smokeLeft > 0 && Math.random() < .45) {
+									this.puff("smoke", x, y, 1);
+									smokeLeft--;
 								}
-							} else {
-								cells[up] = c - 1;
-								cells[i] = 0;
+								if (Math.random() < .55) {
+									const dir = Math.random() * 4 | 0;
+									const n = dir === 0 ? i - 1 : dir === 1 ? i + 1 : dir === 2 ? i - W : i + W;
+									if (isCoal(cells[n])) litCoal.push(n);
+									else if (isWood(cells[n])) lit.push(n);
+								}
+							}
+							if (this.frame % COAL_TICK === 0) {
+								this.assign(cells, i, c === COAL_FIRE ? 0 : c - 1);
 								this.wake(x - 1);
 								this.wake(x);
 								this.wake(x + 1);
 							}
 							continue;
 						}
-						if (cells[up] === 0) {
-							cells[up] = 229;
-							this.wake(x);
+						if (!isFire(c) && !oilFlame && !painted) continue;
+						any = true;
+						columnHot = true;
+						if (smokeLeft > 0 && (painted || Math.random() < .45)) {
+							this.puff("smoke", x, y, 1);
+							smokeLeft--;
 						}
-						if ((this.frame & 7) === 0) {
-							if (c === OIL_FIRE) {
-								cells[i] = 0;
+						if (painted) {
+							for (let dy = -1; dy <= 1; dy++) {
+								const base = i + dy * W;
+								for (let dx = -1; dx <= 1; dx++) {
+									if (dx === 0 && dy === 0) continue;
+									const n = base + dx;
+									const m = cells[n];
+									if (isWood(m)) lit.push(n);
+									else if (isCoal(m)) litCoal.push(n);
+									else if (isOil(m) && this.oilSkin(cells, n, W)) litOil.push(n);
+									else if (isSeed(m)) litSeed.push(n);
+								}
+							}
+							if ((this.frame & 31) === 0) {
+								const next = c === FLAME ? 0 : c - 1;
+								const up = i - W;
+								if (y > 1 && cells[up] === 0) {
+									this.assign(cells, up, next);
+									this.assign(cells, i, 0);
+									this.mark(x, y - 1);
+								} else this.assign(cells, i, next);
 								this.wake(x - 1);
 								this.wake(x);
 								this.wake(x + 1);
-								if (isOil(under)) litOil.push(i + W);
-							} else cells[i] = c - 1;
+							}
+							continue;
 						}
-						if (isOil(cells[i - 1]) && this.oilSkin(cells, i - 1, W)) litOil.push(i - 1);
-						if (isOil(cells[i + 1]) && this.oilSkin(cells, i + 1, W)) litOil.push(i + 1);
-						if (Math.random() < .45 && isSeed(cells[i - 1])) litSeed.push(i - 1);
-						if (Math.random() < .45 && isSeed(cells[i + 1])) litSeed.push(i + 1);
-						if (Math.random() < .45 && isSeed(cells[up])) litSeed.push(up);
-						continue;
-					}
-					if (c === FIRE) {
-						cells[i] = 0;
-						this.wake(x - 1);
-						this.wake(x);
-						this.wake(x + 1);
-						continue;
-					}
-					cells[i] = c - 1;
-					if (Math.random() < .55) {
-						const dir = Math.random() * 4 | 0;
-						const n = dir === 0 ? i - 1 : dir === 1 ? i + 1 : dir === 2 ? i - W : i + W;
-						if (isWood(cells[n])) lit.push(n);
-						else if (isCoal(cells[n])) litCoal.push(n);
-						else if (isSeed(cells[n])) litSeed.push(n);
+						if (oilFlame) {
+							const under = cells[i + W];
+							const inAir = under === 0 || isOilFire(under);
+							const up = i - W;
+							if (inAir) {
+								if (c === OIL_FIRE || cells[up] !== 0) {
+									if ((this.frame & 7) === 0 || c === OIL_FIRE) {
+										this.assign(cells, i, c === OIL_FIRE ? 0 : c - 1);
+										this.wake(x - 1);
+										this.wake(x);
+										this.wake(x + 1);
+									}
+								} else {
+									this.assign(cells, up, c - 1);
+									this.assign(cells, i, 0);
+									this.wake(x - 1);
+									this.wake(x);
+									this.wake(x + 1);
+								}
+								continue;
+							}
+							if (cells[up] === 0) {
+								this.assign(cells, up, 229);
+								this.wake(x);
+							}
+							if ((this.frame & 7) === 0) {
+								if (c === OIL_FIRE) {
+									this.assign(cells, i, 0);
+									this.wake(x - 1);
+									this.wake(x);
+									this.wake(x + 1);
+									if (isOil(under)) litOil.push(i + W);
+								} else this.assign(cells, i, c - 1);
+							}
+							if (isOil(cells[i - 1]) && this.oilSkin(cells, i - 1, W)) litOil.push(i - 1);
+							if (isOil(cells[i + 1]) && this.oilSkin(cells, i + 1, W)) litOil.push(i + 1);
+							if (Math.random() < .45 && isSeed(cells[i - 1])) litSeed.push(i - 1);
+							if (Math.random() < .45 && isSeed(cells[i + 1])) litSeed.push(i + 1);
+							if (Math.random() < .45 && isSeed(cells[up])) litSeed.push(up);
+							continue;
+						}
+						if (c === FIRE) {
+							this.assign(cells, i, 0);
+							this.wake(x - 1);
+							this.wake(x);
+							this.wake(x + 1);
+							continue;
+						}
+						this.assign(cells, i, c - 1);
+						if (Math.random() < .55) {
+							const dir = Math.random() * 4 | 0;
+							const n = dir === 0 ? i - 1 : dir === 1 ? i + 1 : dir === 2 ? i - W : i + W;
+							if (isWood(cells[n])) lit.push(n);
+							else if (isCoal(cells[n])) litCoal.push(n);
+							else if (isSeed(cells[n])) litSeed.push(n);
+						}
 					}
 				}
+				this.fireCol[x] = columnHot ? 1 : 0;
 			}
 			for (let k = 0; k < lit.length; k++) {
 				const n = lit[k];
 				if (!isWood(cells[n])) continue;
-				cells[n] = FIRE_FULL;
+				this.assign(cells, n, FIRE_FULL);
 				const x = n % W;
 				const y = n / W | 0;
 				this.wake(x - 1);
@@ -2250,7 +2314,7 @@
 			for (let k = 0; k < litCoal.length; k++) {
 				const n = litCoal[k];
 				if (!isCoal(cells[n])) continue;
-				cells[n] = COAL_FIRE_FULL;
+				this.assign(cells, n, COAL_FIRE_FULL);
 				const x = n % W;
 				const y = n / W | 0;
 				this.wake(x - 1);
@@ -2262,7 +2326,7 @@
 			for (let k = 0; k < litOil.length; k++) {
 				const n = litOil[k];
 				if (!isOil(cells[n])) continue;
-				cells[n] = OIL_FIRE_FULL;
+				this.assign(cells, n, OIL_FIRE_FULL);
 				const x = n % W;
 				const y = n / W | 0;
 				this.wake(x - 1);
@@ -2404,8 +2468,10 @@
 		transfer(cells, from, to, tx, ty) {
 			const fx = from % this.width;
 			const a = cells[from];
-			cells[from] = cells[to];
+			const b = cells[to];
+			cells[from] = b;
 			cells[to] = a;
+			this.noteAir(a, b);
 			if (from < this.momX.length && to < this.momX.length) {
 				const mx = this.momX[from];
 				const my = this.momY[from];
@@ -2488,15 +2554,21 @@
 				rose: false
 			};
 			let rose = false;
+			if (my < 0 && y <= 1) my = 0;
 			if (my < 0 && y > 1) {
-				const up = i - W;
-				if (cells[up] === 0) {
+				const steps = my <= -24 ? 3 : 1;
+				for (let s = 0; s < steps && my < 0 && y > 1; s++) {
+					const up = i - W;
+					if (cells[up] !== 0) {
+						my = 0;
+						break;
+					}
 					this.transfer(cells, i, up, x, y - 1);
 					i = up;
 					y -= 1;
 					my += 1;
 					rose = true;
-				} else my = 0;
+				}
 			}
 			const dir = mx > 0 ? 1 : mx < 0 ? -1 : 0;
 			if (dir !== 0) {
@@ -2644,7 +2716,7 @@
 			if (!isCoal(cells[i])) return;
 			const x = i % W;
 			const y = i / W | 0;
-			cells[i] = COAL_FIRE_FULL;
+			this.assign(cells, i, COAL_FIRE_FULL);
 			this.burning = true;
 			this.wake(x - 1);
 			this.wake(x);
@@ -2655,7 +2727,7 @@
 			if (!isSeed(cells[i])) return;
 			const x = i % W;
 			const y = i / W | 0;
-			cells[i] = SEED_FLAME;
+			this.assign(cells, i, SEED_FLAME);
 			this.burning = true;
 			this.wake(x - 1);
 			this.wake(x);
@@ -2665,6 +2737,7 @@
 		/** A resting wet seed becomes wood and starts a short-lived branch. */
 		germinate(cells, i, x, y) {
 			cells[i] = hashByte(x, y, WOOD, 30);
+			this.cellsDirty = true;
 			this.wake(x - 1);
 			this.wake(x);
 			this.wake(x + 1);
@@ -2746,9 +2819,13 @@
 				const here = cells[y * W + x];
 				if (!isWood(here)) continue;
 				const first = this.pickShoot(cells, x, y, W, H, 0, 0);
-				if (!first) continue;
+				if (!first) {
+					this.shedSeeds(cells, x, y, W, H);
+					continue;
+				}
 				this.placeWood(cells, first.x, first.y, W);
 				if (energy > 1) this.sprout(first.x, first.y, energy - 1);
+				else this.shedSeeds(cells, first.x, first.y, W, H);
 				if (energy >= 7 && Math.random() < .22) {
 					const second = this.pickShoot(cells, x, y, W, H, first.x - x, first.y - y);
 					if (second) {
@@ -2759,8 +2836,77 @@
 				}
 			}
 		}
+		/** A finished tip throws a few seeds up on a short upward pressure puff. */
+		shedSeeds(cells, x, y, W, H) {
+			const spots = [
+				[
+					0,
+					-2,
+					0,
+					-42
+				],
+				[
+					-1,
+					-2,
+					-5,
+					-36
+				],
+				[
+					1,
+					-2,
+					5,
+					-36
+				],
+				[
+					-2,
+					-1,
+					-8,
+					-30
+				],
+				[
+					2,
+					-1,
+					8,
+					-30
+				],
+				[
+					-1,
+					-3,
+					-3,
+					-48
+				],
+				[
+					1,
+					-3,
+					3,
+					-48
+				],
+				[
+					0,
+					-4,
+					1,
+					-45
+				]
+			];
+			if (Math.random() >= 1 / 12) return;
+			for (const [dx, dy, mx, my] of spots) {
+				const nx = x + dx;
+				const ny = y + dy;
+				if (nx < 2 || nx >= W - 2 || ny < 1 || ny >= H - 2) continue;
+				const i = ny * W + nx;
+				if (cells[i] !== 0) continue;
+				cells[i] = seedByte();
+				if (i < this.momX.length) {
+					this.momX[i] = mx;
+					this.momY[i] = my;
+				}
+				this.mark(nx, ny);
+			}
+			this.pushBlast(x, Math.max(1, y - 2), .5, -15);
+		}
 		placeWood(cells, x, y, W) {
 			cells[y * W + x] = hashByte(x, y, WOOD, 30);
+			this.cellsDirty = true;
 			this.wake(x - 1);
 			this.wake(x);
 			this.wake(x + 1);
@@ -2830,7 +2976,7 @@
 			return open[open.length - 1] ?? null;
 		}
 		moveLiquid(cells, x, y, W, H, bias, pass, kind) {
-			if (kind === "magma" && (this.frame & 1) !== 0) {
+			if (kind === "magma" && (this.frame & 1) !== 0 && Math.random() >= .15) {
 				this.wake(x);
 				return;
 			}
@@ -2839,16 +2985,24 @@
 				x = flew.x;
 				y = flew.y;
 				if (flew.rose) {
-					this.wake(x);
-					return;
+					if (kind !== "magma" || Math.random() >= .25) {
+						this.wake(x);
+						return;
+					}
 				}
 			} else if (y < H - 3) this.dropMom(y * W + x);
 			const yLand = this.descend(cells, x, y, W, H, kind, fallAir(kind, false));
 			const i = yLand * W + x;
 			const y0 = yLand;
-			if (y0 < H - 3 && cells[i + W] === 0) return;
+			if (y0 < H - 3 && cells[i + W] === 0) {
+				if (kind === "magma") this.wake(x);
+				return;
+			}
 			if (kind === "oil" && y0 < H - 3 && isWater(cells[i + W])) return;
-			if (kind === "magma" && pass !== 0) return;
+			if (kind === "magma" && pass !== 0) {
+				this.keepLoneMagma(cells, i, x, y0, W, H);
+				return;
+			}
 			const sides = bias > 0 ? [1, -1] : [-1, 1];
 			if (y0 < H - 3) for (const s of sides) {
 				const nx = x + s;
@@ -2868,12 +3022,41 @@
 							if (u !== 0 && !isLiquid(u)) solid++;
 							else break;
 						}
-						if (solid < 3) continue;
+						if (solid < 3 && !(kind === "magma" && !this.magmaBeside(cells, i, W) && Math.random() < .5)) continue;
 					}
 				}
 				this.transfer(cells, i, diag, nx, y0 + 1);
 				this.descend(cells, nx, y0 + 1, W, H, kind, fallAir(kind, true));
 				return;
+			}
+			if (kind === "magma") this.keepLoneMagma(cells, i, x, y0, W, H);
+		}
+		/** True when magma touches more magma. Pools keep their shape; a lone cell can slip. */
+		magmaBeside(cells, i, W) {
+			return isMagma(cells[i - 1]) || isMagma(cells[i + 1]) || isMagma(cells[i - W]) || isMagma(cells[i + W]);
+		}
+		keepLoneMagma(cells, i, x, y, W, H) {
+			if (y >= H - 3 || this.magmaBeside(cells, i, W)) return;
+			const downL = x > 2 && cells[(y + 1) * W + (x - 1)] === 0;
+			const downR = x < W - 3 && cells[(y + 1) * W + (x + 1)] === 0;
+			if (downL || downR || cells[(y + 1) * W + x] === 0) this.wake(x);
+		}
+		/**
+		* A few random columns. Magma left above the scan, or asleep on a lip, gets another chance.
+		* Only lone cells, so a resting pool is not stirred.
+		*/
+		nudgeMagma(cells, W, H) {
+			for (let n = 0; n < 4; n++) {
+				const x = 2 + (Math.random() * (W - 4) | 0);
+				for (let y = 1; y <= H - 3; y++) {
+					const i = y * W + x;
+					const c = cells[i];
+					if (!isMagma(c) || this.magmaBeside(cells, i, W)) continue;
+					const below = cells[i + W];
+					const downL = x > 2 && cells[i + W - 1] === 0;
+					const downR = x < W - 3 && cells[i + W + 1] === 0;
+					if (below === 0 || downL || downR) this.mark(x, y);
+				}
 			}
 		}
 		/**
@@ -3132,6 +3315,7 @@
 				break;
 			}
 			if (!changed) return;
+			if (airClass(vs[0]) !== 0) this.cellsDirty = true;
 			for (let i = 0; i < n; i++) {
 				const sx = xs[i];
 				cells[y * W + sx] = 0;
@@ -4286,7 +4470,8 @@ void main() {
 					for (let i = 0; i < input.blasts.length; i++) {
 						const b = input.blasts[i];
 						const amp = blastAmplitude(b.power);
-						stamp((b.x + .5) / sx - .5, (b.y + .5) / sy - .5, amp, Math.min(.55, .12 + .04 * b.power), 0, 0, amp * .55);
+						const lift = b.vy ?? 0;
+						stamp((b.x + .5) / sx - .5, (b.y + .5) / sy - .5, amp, Math.min(.55, .12 + .04 * b.power), 0, lift === 0 ? 0 : lift / sy * 3.6, lift === 0 ? amp * .55 : amp * .2);
 					}
 					if (input.brushDown) stamp((input.brushX + .5) / sx - .5, (input.brushY + .5) / sy - .5, 5, .16, input.brushVx / sx * 3.6, input.brushVy / sy * 3.6);
 					const rw = maxX - minX + 1;
@@ -4964,7 +5149,7 @@ void main() {
 				}
 			},
 			stepAir(input) {
-				uploadGrid(input.cells, input.width, input.height);
+				if (input.rebuildObstacles !== false) uploadGrid(input.cells, input.width, input.height);
 				if (airSolver) return airSolver.step(input, texture);
 				cpuField = stepCpuInput(cpuField, input);
 				return cpuField;
@@ -5016,7 +5201,8 @@ void main() {
 		for (let i = 0; i < input.blasts.length; i++) {
 			const b = input.blasts[i];
 			const amp = blastAmplitude(b.power);
-			splatPressure(current, (b.x + .5) / sx - .5, (b.y + .5) / sy - .5, amp, Math.min(.55, .12 + .04 * b.power), 0, 0, amp * .55);
+			const lift = b.vy ?? 0;
+			splatPressure(current, (b.x + .5) / sx - .5, (b.y + .5) / sy - .5, amp, Math.min(.55, .12 + .04 * b.power), 0, lift === 0 ? 0 : lift / sy * 3.6, lift === 0 ? amp * .55 : amp * .2);
 		}
 		if (input.brushDown) splatPressure(current, (input.brushX + .5) / sx - .5, (input.brushY + .5) / sy - .5, 5, .16, input.brushVx / sx * 3.6, input.brushVy / sy * 3.6);
 		advanceCpuAir(current, air.substeps, cpuSolid, cpuHeat, cpuFlame);
@@ -6026,8 +6212,7 @@ void main() {
 					brushVy: stirY,
 					rebuildObstacles
 				});
-				world.gust(field);
-				reuseGrid = !world.cellsDirty;
+				reuseGrid = !world.gust(field) && rebuildObstacles;
 			}
 			fx.update(raw);
 			draw();
