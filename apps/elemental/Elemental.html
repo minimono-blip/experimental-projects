@@ -48,16 +48,32 @@
     justify-content: space-between;
     padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   }
-  .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+  .top { display: flex; align-items: flex-start; justify-content: flex-end; flex-wrap: wrap; gap: 0.75rem; }
   .card { background: var(--surface); border-radius: 12px; }
-  header.card { padding: 0.75rem 1rem; }
+  header.card { margin-right: auto; padding: 0.75rem 1rem; }
   h1 { font-family: var(--display); font-size: 1.75rem; line-height: 1.1; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
   h1 .ver { margin-left: 0.5rem; font-family: var(--font); font-size: 0.875rem; font-weight: 400; letter-spacing: 0; color: var(--muted); }
   #hint { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.875rem; }
   .stats { padding: 0.5rem 0.75rem; text-align: right; }
   .top-side { display: flex; align-items: flex-start; gap: 0.5rem; }
+  #letter {
+    height: 2.75rem;
+    width: 7rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--fg);
+    padding: 0 0.6rem;
+    font: inherit;
+  }
+  #letter[hidden] { display: none !important; }
   #fullscreen { pointer-events: auto; width: 2.75rem; justify-content: center; padding: 0; }
   #fullscreen svg[hidden] { display: none; }
+  .zoom { display: flex; align-items: center; height: 2.75rem; overflow: hidden; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); pointer-events: auto; }
+  .zoom button { height: 2.75rem; min-width: 2.75rem; padding: 0 0.35rem; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: 1.05rem; }
+  #zoom-reset { font-family: var(--mono); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+  #app.is-full header.card,
+  #app.is-full .stats { display: none; }
   .stats p { margin: 0; font-family: var(--mono); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
   #fps { color: var(--muted); }
   #dims { color: var(--subtle); }
@@ -200,6 +216,7 @@
   .dock.is-min .brush,
   .dock.is-min #clear,
   .dock.is-min #scene,
+  .dock.is-min #reset,
   .dock.is-min #import,
   .dock.is-min #export,
   .dock.is-min #speeds { display: none; }
@@ -238,7 +255,7 @@
   <div class="hud">
     <div class="top">
       <header class="card">
-        <h1>Elemental <span class="ver">1.12</span></h1>
+        <h1>Elemental <span class="ver">1.15</span></h1>
         <p id="hint">Falls and piles</p>
         <p class="sr">Keys: 1 sand, 2 water, 3 magma, 4 wood, 5 stone, 6 erase, 7 oil, 8 gunpowder, 9 seed, 0 salt, F fire, C coal, space toggles the air panel, P pauses, brackets change shape size, minus and equals change outline thickness.</p>
       </header>
@@ -246,6 +263,11 @@
       <div class="card stats">
         <p id="fps">— fps</p>
         <p id="dims"></p>
+      </div>
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button id="zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+        <button id="zoom-reset" type="button" aria-label="Reset zoom" title="Scroll to zoom. Middle-drag, Alt-drag, or pinch to move.">1×</button>
+        <button id="zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
       </div>
       <button id="fullscreen" type="button" class="dock-btn" aria-label="Full screen" title="Full screen">
         <svg id="fs-enter" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
@@ -257,6 +279,7 @@
       <div class="dock-main">
       <div id="tools" role="radiogroup" aria-label="Material"></div>
       <div id="shapes" role="radiogroup" aria-label="Brush shape"></div>
+      <input id="letter" type="text" maxlength="24" value="Hi" placeholder="Text" aria-label="Text" title="Words placed with the next click" hidden>
       <label class="brush">
         <strong>Size</strong>
         <input id="size" type="range" min="0" max="24" value="3" aria-valuemin="1" aria-valuemax="25" aria-valuenow="4" aria-label="Shape size">
@@ -271,6 +294,7 @@
       <button id="pause" type="button" class="dock-btn" aria-pressed="false">Pause</button>
       <button id="clear" type="button" class="dock-btn">Clear</button>
       <button id="scene" type="button" class="dock-btn">Scene</button>
+      <button id="reset" type="button" class="dock-btn" title="Put back the last scene or import.">Reset</button>
       <button id="import" type="button" class="dock-btn">Import</button>
       <a id="export" class="dock-btn" href="#" download="elemental-scene.png">Export</a>
       <input id="import-file" type="file" accept="image/*" hidden aria-label="Import an image">
@@ -985,6 +1009,10 @@
 		holdY = new Int16Array(GROW_CAP);
 		holdE = new Uint8Array(GROW_CAP);
 		growN = 0;
+		/** Cells from the last Scene or import, so Reset can put that picture back. */
+		scene = null;
+		sceneW = 0;
+		sceneH = 0;
 		ensureSpan() {
 			const n = this.width * this.height;
 			if (this.span.length < this.width) this.span = new Int16Array(this.width);
@@ -1102,6 +1130,7 @@
 			this.growN = 0;
 			this.carveBedrock();
 			this.rebuildBands();
+			this.rebaseScene();
 		}
 		/** One pixel per cell, in colours Import will turn back into the same materials. */
 		snapshotRgba() {
@@ -1175,6 +1204,57 @@
 				this.momY.fill(0);
 			}
 			this.rebuildBands();
+			this.rememberScene();
+		}
+		/** Keep the current grid as the picture Reset returns to. */
+		rememberScene() {
+			this.scene = this.cells.slice();
+			this.sceneW = this.width;
+			this.sceneH = this.height;
+		}
+		/** Crop the saved scene when the grid changes size, and keep the bedrock border. */
+		rebaseScene() {
+			const src = this.scene;
+			if (!src) return;
+			const w = this.width;
+			const h = this.height;
+			if (this.sceneW === w && this.sceneH === h && src.length === w * h) return;
+			const kept = new Uint8Array(w * h);
+			const cw = Math.min(w, this.sceneW);
+			const ch = Math.min(h, this.sceneH);
+			for (let y = 0; y < ch; y++) kept.set(src.subarray(y * this.sceneW, y * this.sceneW + cw), y * w);
+			const live = this.cells;
+			this.cells = kept;
+			this.carveBedrock();
+			this.cells = live;
+			this.scene = kept;
+			this.sceneW = w;
+			this.sceneH = h;
+		}
+		/** Put back the last Scene or import. Painting since then is discarded. */
+		restoreScene() {
+			if (!this.scene) return false;
+			if (this.sceneW !== this.width || this.sceneH !== this.height || this.scene.length !== this.cells.length) this.rebaseScene();
+			const scene = this.scene;
+			if (!scene || scene.length !== this.cells.length) return false;
+			this.cells.set(scene);
+			this.burning = false;
+			this.blastN = 0;
+			this.blastLogN = 0;
+			this.sparkN = 0;
+			this.growN = 0;
+			this.ensureSpan();
+			this.span.fill(0);
+			this.awake.fill(1);
+			this.dirty.fill(0);
+			this.fireCol.fill(0);
+			this.cellsDirty = true;
+			if (this.momX.length === this.cells.length) {
+				this.momX.fill(0);
+				this.momY.fill(0);
+			}
+			this.rebuildBands();
+			return true;
 		}
 		seed() {
 			this.clear();
@@ -1217,6 +1297,7 @@
 				}
 				if (tool !== "concrete" && tool !== "wood") this.holdLoose(ox - 1, y0 - 1, ox + glyphW * scale, y0 + glyphH * scale);
 			}
+			this.rememberScene();
 		}
 		/** One cell of stone around loose material so a letter keeps its shape until the wall is broken. */
 		holdLoose(x0, y0, x1, y1) {
@@ -1240,6 +1321,7 @@
 		}
 		stamp(cx, cy, radius, tool, shape = "circle", thick = 0) {
 			if (!Number.isFinite(cx) || !Number.isFinite(cy)) return;
+			if (shape === "text" || shape === "textOutline") return;
 			if (shape === "saw" || shape === "sine") {
 				this.stampWave(cx, cy, radius, tool, shape, thick);
 				return;
@@ -1270,9 +1352,23 @@
 				}
 			}
 		}
+		/** Place a pre-rasterized label, centered on the cell. */
+		stampMask(cx, cy, mask, mw, mh, tool) {
+			if (!Number.isFinite(cx) || !Number.isFinite(cy) || mw < 1 || mh < 1 || mask.length < mw * mh) return;
+			const x0 = Math.round(cx - mw / 2);
+			const y0 = Math.round(cy - mh / 2);
+			for (let y = 0; y < mh; y++) {
+				const row = y * mw;
+				for (let x = 0; x < mw; x++) {
+					if ((mask[row + x] ?? 0) < 128) continue;
+					this.paint(x0 + x, y0 + y, tool);
+				}
+			}
+		}
 		/** Wave strokes return the phase so the next segment continues the outline. */
 		stroke(x0, y0, x1, y1, radius, tool, shape = "circle", phase = 0, caps = "both", prevDx = 0, prevDy = 0, thick = 0) {
 			if (!Number.isFinite(x0) || !Number.isFinite(y0) || !Number.isFinite(x1) || !Number.isFinite(y1)) return phase;
+			if (shape === "text" || shape === "textOutline") return phase;
 			if (shape === "saw" || shape === "sine") {
 				if (radius <= 0) {
 					this.trace(x0, y0, x1, y1, (x, y) => this.blot(x, y, tool, thick, null));
@@ -4604,6 +4700,8 @@ uniform int u_tool;
 uniform int u_shape;
 uniform sampler2D u_air;
 uniform int u_airRaw;
+uniform sampler2D u_text;
+uniform vec2 u_textSize;
 
 out vec4 fragColor;
 
@@ -4809,7 +4907,17 @@ void main() {
     if (u_tool == 8) tint = vec3(0.72, 0.86, 0.28);
     if (u_tool == 9) tint = vec3(0.93, 0.93, 0.90);
     float mark = 0.0;
-    if (r < 0.5) {
+    if (u_shape == 6 || u_shape == 7) {
+      if (u_textSize.x < 0.5 || u_textSize.y < 0.5) {
+        mark = 1.0 - smoothstep(0.2, 0.8, dist);
+      } else {
+        vec2 local = g - u_cursor + u_textSize * 0.5;
+        ivec2 m = ivec2(floor(local));
+        if (m.x >= 0 && m.y >= 0 && m.x < int(u_textSize.x) && m.y < int(u_textSize.y)) {
+          mark = texelFetch(u_text, m, 0).r > 0.5 ? 1.0 : 0.0;
+        }
+      }
+    } else if (r < 0.5) {
       if (t < 0.5) mark = 1.0 - smoothstep(0.12, 0.55, dist);
       else mark = 1.0 - smoothstep(t - 0.15, t + 0.45, dist);
     } else if (u_shape == 4 || u_shape == 5) {
@@ -4956,6 +5064,8 @@ void main() {
 		if (shape === "frame") return 3;
 		if (shape === "saw") return 4;
 		if (shape === "sine") return 5;
+		if (shape === "text") return 6;
+		if (shape === "textOutline") return 7;
 		return 0;
 	}
 	function createRenderer(canvas) {
@@ -4997,7 +5107,9 @@ void main() {
 			tool: gl.getUniformLocation(program, "u_tool"),
 			shape: gl.getUniformLocation(program, "u_shape"),
 			air: gl.getUniformLocation(program, "u_air"),
-			airRaw: gl.getUniformLocation(program, "u_airRaw")
+			airRaw: gl.getUniformLocation(program, "u_airRaw"),
+			text: gl.getUniformLocation(program, "u_text"),
+			textSize: gl.getUniformLocation(program, "u_textSize")
 		};
 		const texture = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -5006,6 +5118,17 @@ void main() {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+		const textTex = gl.createTexture();
+		gl.activeTexture(gl.TEXTURE2);
+		gl.bindTexture(gl.TEXTURE_2D, textTex);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 1, 1, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array([0]));
+		let shownMask = null;
+		let shownW = 0;
+		let shownH = 0;
 		let puffProgram = null;
 		let puffVao = null;
 		let puffBuf = null;
@@ -5110,11 +5233,10 @@ void main() {
 				gl.activeTexture(gl.TEXTURE0);
 				gl.bindTexture(gl.TEXTURE_2D, texture);
 				if (!state.reuseGrid) uploadGrid(state.cells, state.width, state.height);
-				const scale = state.cell;
-				const viewW = state.width * scale;
-				const viewH = state.height * scale;
-				const offsetX = Math.floor((bufW - viewW) / 2);
-				const offsetY = Math.floor((bufH - viewH) / 2);
+				const place = viewPlacement(bufW, bufH, state.width, state.height, state.cell, cameraOf(state));
+				const scale = place.scale;
+				const offsetX = place.offsetX;
+				const offsetY = place.offsetY;
 				gl.uniform1i(loc.grid, 0);
 				gl.uniform2f(loc.resolution, bufW, bufH);
 				gl.uniform2f(loc.offset, offsetX, offsetY);
@@ -5126,6 +5248,25 @@ void main() {
 				gl.uniform1f(loc.thick, Math.max(state.thick ?? 0, 0));
 				gl.uniform1i(loc.tool, toolIndex(state.tool));
 				gl.uniform1i(loc.shape, shapeIndex(state.shape));
+				const nextMask = state.textMask ?? null;
+				const nextW = nextMask ? state.textW ?? 0 : 0;
+				const nextH = nextMask ? state.textH ?? 0 : 0;
+				if (nextMask !== shownMask || nextW !== shownW || nextH !== shownH) {
+					shownMask = nextMask;
+					gl.activeTexture(gl.TEXTURE2);
+					gl.bindTexture(gl.TEXTURE_2D, textTex);
+					if (!nextMask || nextW < 1 || nextH < 1) {
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 1, 1, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array([0]));
+						shownW = 0;
+						shownH = 0;
+					} else {
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, nextW, nextH, 0, gl.RED, gl.UNSIGNED_BYTE, nextMask);
+						shownW = nextW;
+						shownH = nextH;
+					}
+				}
+				gl.uniform1i(loc.text, 2);
+				gl.uniform2f(loc.textSize, shownW, shownH);
 				gl.activeTexture(gl.TEXTURE1);
 				if (airSolver) airSolver.bind(1);
 				else gl.bindTexture(gl.TEXTURE_2D, blankAir);
@@ -5161,6 +5302,7 @@ void main() {
 				airSolver?.destroy();
 				gl.deleteTexture(blankAir);
 				gl.deleteTexture(texture);
+				gl.deleteTexture(textTex);
 				gl.deleteProgram(program);
 				gl.deleteShader(vs);
 				gl.deleteShader(fs);
@@ -5236,10 +5378,12 @@ void main() {
 				}
 				const data = image.data;
 				const cells = state.cells;
-				const viewW = state.width * state.cell;
-				const viewH = state.height * state.cell;
-				const ox = Math.floor((canvas.width - viewW) / 2);
-				const oy = Math.floor((canvas.height - viewH) / 2);
+				const place = viewPlacement(canvas.width, canvas.height, state.width, state.height, state.cell, cameraOf(state));
+				const scale = place.scale;
+				const ox = place.offsetX;
+				const oy = place.offsetY;
+				const viewW = state.width * scale;
+				const viewH = state.height * scale;
 				const skyAt = (py) => {
 					const t = Math.min(1, Math.max(0, py / Math.max(1, canvas.height)));
 					return [
@@ -5253,7 +5397,7 @@ void main() {
 					const o = i * 4;
 					const y = i / state.width | 0;
 					if (v === 0) {
-						const [r, g, b] = skyAt(oy + (y + .5) * state.cell);
+						const [r, g, b] = skyAt(oy + (y + .5) * scale);
 						const shade = (y > 0 ? cells[i - state.width] ?? 0 : 0) > 0 ? .74 : 1;
 						data[o] = r * shade;
 						data[o + 1] = g * shade;
@@ -5321,7 +5465,7 @@ void main() {
 						data[o + 1] = 176 + v % 3 * 10;
 						data[o + 2] = 46;
 					} else {
-						const [r, g, b] = skyAt(oy + ((i / state.width | 0) + .5) * state.cell);
+						const [r, g, b] = skyAt(oy + ((i / state.width | 0) + .5) * scale);
 						data[o] = r;
 						data[o + 1] = g;
 						data[o + 2] = b;
@@ -5347,9 +5491,9 @@ void main() {
 						const blast = kind > 2.5;
 						const flame = !blast && kind > 1.5;
 						const grow = blast ? 4 + (1 - life) * 14 : flame ? 2.4 + (1 - life) * 2.8 : kind > .5 ? 2.6 + (1 - life) * 3.8 : 2.2 + (1 - life) * 3.4;
-						const px = ox + x * state.cell;
-						const py = oy + y * state.cell;
-						const radius = grow * state.cell * .5;
+						const px = ox + x * scale;
+						const py = oy + y * scale;
+						const radius = grow * scale * .5;
 						ctx.beginPath();
 						if (blast) {
 							ctx.fillStyle = `rgba(255, ${Math.round(150 + life * 90)}, 64, ${.28 + life * .45})`;
@@ -5357,7 +5501,7 @@ void main() {
 							ctx.fill();
 							ctx.beginPath();
 							ctx.strokeStyle = `rgba(255, 236, 170, ${.35 + life * .65})`;
-							ctx.lineWidth = Math.max(2, state.cell * .55);
+							ctx.lineWidth = Math.max(2, scale * .55);
 							ctx.arc(px, py, radius, 0, Math.PI * 2);
 							ctx.stroke();
 						} else {
@@ -5369,7 +5513,7 @@ void main() {
 				}
 				if (state.cursorOn) {
 					const shape = state.shape ?? "circle";
-					const s = state.cell;
+					const s = scale;
 					const span = Math.max(0, state.brush);
 					const thick = Math.max(0, state.thick ?? 0);
 					const cx = ox + (state.cursorX + .5) * s;
@@ -5382,7 +5526,20 @@ void main() {
 					ctx.lineWidth = weight;
 					ctx.lineJoin = "round";
 					ctx.lineCap = "round";
-					if (span <= 0) {
+					if ((shape === "text" || shape === "textOutline") && state.textMask && state.textW && state.textH) {
+						const mask = state.textMask;
+						const mw = state.textW;
+						const mh = state.textH;
+						const x0 = ox + (state.cursorX + .5 - mw / 2) * s;
+						const y0 = oy + (state.cursorY + .5 - mh / 2) * s;
+						ctx.fillStyle = "rgba(243, 239, 230, 0.55)";
+						for (let i = 0; i < mask.length; i++) {
+							if ((mask[i] ?? 0) < 128) continue;
+							const x = i % mw;
+							const y = i / mw | 0;
+							ctx.fillRect(x0 + x * s, y0 + y * s, Math.max(1, s), Math.max(1, s));
+						}
+					} else if (span <= 0) {
 						ctx.beginPath();
 						ctx.arc(cx, cy, Math.max(1.5, thick * s), 0, Math.PI * 2);
 						ctx.fill();
@@ -5427,16 +5584,94 @@ void main() {
 			destroy() {}
 		};
 	}
-	function pointerToCell(canvas, clientX, clientY, gridW, gridH, cell) {
+	function cameraOf(state) {
+		const zoom = state.zoom ?? 1;
+		return {
+			zoom: zoom <= 1 ? 1 : zoom,
+			focusX: state.focusX ?? state.width / 2,
+			focusY: state.focusY ?? state.height / 2
+		};
+	}
+	function clampZoom(zoom) {
+		if (zoom <= 1.02) return 1;
+		return Math.min(8, zoom);
+	}
+	function clampCamera(bufW, bufH, gridW, gridH, cell, camera) {
+		if (camera.zoom <= 1) return {
+			zoom: 1,
+			focusX: gridW / 2,
+			focusY: gridH / 2
+		};
+		const scale = cell * camera.zoom;
+		const visX = bufW / Math.max(scale, 1);
+		const visY = bufH / Math.max(scale, 1);
+		const padX = Math.min(gridW * .5, visX * .25);
+		const padY = Math.min(gridH * .5, visY * .25);
+		return {
+			zoom: camera.zoom,
+			focusX: Math.min(gridW - padX, Math.max(padX, camera.focusX)),
+			focusY: Math.min(gridH - padY, Math.max(padY, camera.focusY))
+		};
+	}
+	/** Pixel placement of the grid. At 1× this matches the old centered layout. */
+	function viewPlacement(bufW, bufH, gridW, gridH, cell, camera) {
+		if (camera.zoom <= 1) {
+			const scale = cell;
+			return {
+				scale,
+				offsetX: Math.floor((bufW - gridW * scale) / 2),
+				offsetY: Math.floor((bufH - gridH * scale) / 2)
+			};
+		}
+		const scale = cell * camera.zoom;
+		return {
+			scale,
+			offsetX: bufW / 2 - camera.focusX * scale,
+			offsetY: bufH / 2 - camera.focusY * scale
+		};
+	}
+	/** Zoom toward a point in canvas-buffer pixels, keeping the cell under it still. */
+	function zoomAt(bufW, bufH, gridW, gridH, cell, camera, sx, sy, nextZoom) {
+		const zoom = clampZoom(nextZoom);
+		if (zoom <= 1) return {
+			zoom: 1,
+			focusX: gridW / 2,
+			focusY: gridH / 2
+		};
+		const place = viewPlacement(bufW, bufH, gridW, gridH, cell, camera);
+		const gx = (sx - place.offsetX) / place.scale;
+		const gy = (sy - place.offsetY) / place.scale;
+		const scale = cell * zoom;
+		return clampCamera(bufW, bufH, gridW, gridH, cell, {
+			zoom,
+			focusX: (bufW / 2 - (sx - gx * scale)) / scale,
+			focusY: (bufH / 2 - (sy - gy * scale)) / scale
+		});
+	}
+	/** Move the view by a canvas-buffer pixel delta. No effect at 1×. */
+	function panBy(bufW, bufH, gridW, gridH, cell, camera, dx, dy) {
+		if (camera.zoom <= 1) return camera;
+		const scale = cell * camera.zoom;
+		return clampCamera(bufW, bufH, gridW, gridH, cell, {
+			zoom: camera.zoom,
+			focusX: camera.focusX - dx / scale,
+			focusY: camera.focusY - dy / scale
+		});
+	}
+	function pinchCamera(bufW, bufH, gridW, gridH, cell, camera, prev, next) {
+		return panBy(bufW, bufH, gridW, gridH, cell, zoomAt(bufW, bufH, gridW, gridH, cell, camera, prev.sx, prev.sy, camera.zoom * (next.dist / Math.max(8, prev.dist))), next.sx - prev.sx, next.sy - prev.sy);
+	}
+	function pointerToCell(canvas, clientX, clientY, gridW, gridH, cell, camera) {
 		const rect = canvas.getBoundingClientRect();
 		const x = (clientX - rect.left) * canvas.width / Math.max(rect.width, 1);
 		const y = (clientY - rect.top) * canvas.height / Math.max(rect.height, 1);
-		const viewW = gridW * cell;
-		const viewH = gridH * cell;
-		const offsetX = Math.floor((canvas.width - viewW) / 2);
-		const offsetY = Math.floor((canvas.height - viewH) / 2);
-		const gx = Math.floor((x - offsetX) / cell);
-		const gy = Math.floor((y - offsetY) / cell);
+		const place = viewPlacement(canvas.width, canvas.height, gridW, gridH, cell, camera ?? {
+			zoom: 1,
+			focusX: gridW / 2,
+			focusY: gridH / 2
+		});
+		const gx = Math.floor((x - place.offsetX) / place.scale);
+		const gy = Math.floor((y - place.offsetY) / place.scale);
 		return {
 			x: gx,
 			y: gy,
@@ -5461,6 +5696,53 @@ void main() {
 		const bytes = new Uint8Array(bin.length);
 		for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 		return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
+	}
+	//#endregion
+	//#region src/sim/text-mask.ts
+	const EMPTY = {
+		w: 0,
+		h: 0,
+		mask: /* @__PURE__ */ new Uint8Array(0)
+	};
+	/** Ink mask for a short label. Height is in cells. Outline uses the brush thickness. */
+	function rasterText(text, height, outline, thick) {
+		if (typeof document === "undefined") return EMPTY;
+		const label = text.replace(/\s+/g, " ").trim().slice(0, 24);
+		if (!label) return EMPTY;
+		const fontPx = Math.max(6, Math.min(48, Math.round(height)));
+		const canvas = document.createElement("canvas");
+		const ctx = canvas.getContext("2d", { willReadFrequently: true });
+		if (!ctx) return EMPTY;
+		const font = `600 ${fontPx}px Fraunces, Palatino, "Palatino Linotype", serif`;
+		ctx.font = font;
+		const measured = Math.ceil(ctx.measureText(label).width);
+		const weight = outline ? Math.max(1, Math.round((thick + 1) * fontPx / 14)) : 0;
+		const pad = weight + 2;
+		const w = Math.min(480, Math.max(1, measured + pad * 2));
+		const h = Math.min(80, Math.max(1, Math.ceil(fontPx * 1.35) + pad * 2));
+		canvas.width = w;
+		canvas.height = h;
+		ctx.font = font;
+		ctx.textAlign = "center";
+		ctx.textBaseline = "middle";
+		ctx.lineJoin = "round";
+		ctx.lineCap = "round";
+		ctx.fillStyle = "#fff";
+		ctx.strokeStyle = "#fff";
+		ctx.lineWidth = weight;
+		if (outline) ctx.strokeText(label, w / 2, h / 2);
+		else ctx.fillText(label, w / 2, h / 2);
+		const data = ctx.getImageData(0, 0, w, h).data;
+		const mask = new Uint8Array(w * h);
+		for (let i = 0; i < w * h; i++) mask[i] = (data[i * 4 + 3] ?? 0) > 96 ? 255 : 0;
+		return {
+			w,
+			h,
+			mask
+		};
+	}
+	function textHeight(radius) {
+		return (Math.max(0, radius) + 1) * 3;
 	}
 	//#endregion
 	//#region src/standalone.ts
@@ -5579,6 +5861,16 @@ void main() {
 			id: "sine",
 			label: "Sine",
 			icon: `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2 13c1.6-5 3.2-5 4.8 0s3.2 5 4.8 0 3.2-5 4.8 0 3.2 5 4.8 0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`
+		},
+		{
+			id: "text",
+			label: "Solid text",
+			icon: `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 3.2 4.2 21h3.1l1.5-4h6.4l1.5 4h3.1L12 3.2zm0 6.2 1.9 5.1H10.1L12 9.4z"/></svg>`
+		},
+		{
+			id: "textOutline",
+			label: "Outline text",
+			icon: `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 4 5 20M12 4l7 16M8.2 14h7.6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`
 		}
 	];
 	function boot() {
@@ -5616,6 +5908,8 @@ void main() {
 		let shape = "circle";
 		let radius = 3;
 		let thick = 0;
+		let letter = "Hi";
+		let textMask = rasterText(letter, textHeight(3), false, 0);
 		let paused = false;
 		let speed = "normal";
 		let cell = 1;
@@ -5756,6 +6050,7 @@ void main() {
 			shape = next;
 			paintShapes();
 			paintControls();
+			refreshText();
 		}
 		function setSpeed(next) {
 			speed = next;
@@ -5772,12 +6067,29 @@ void main() {
 			radius = Number(size.value);
 			sizeN.textContent = String(radius + 1);
 			size.setAttribute("aria-valuenow", String(radius + 1));
+			refreshText();
 		});
 		brush.addEventListener("input", () => {
 			thick = Number(brush.value);
 			brushN.textContent = String(thick + 1);
 			brush.setAttribute("aria-valuenow", String(thick + 1));
+			refreshText();
 		});
+		const letterInput = document.querySelector("#letter");
+		function refreshText() {
+			const on = shape === "text" || shape === "textOutline";
+			if (letterInput) letterInput.hidden = !on;
+			textMask = on ? rasterText(letter, textHeight(radius), shape === "textOutline", thick) : {
+				w: 0,
+				h: 0,
+				mask: /* @__PURE__ */ new Uint8Array(0)
+			};
+		}
+		letterInput?.addEventListener("input", () => {
+			letter = letterInput.value;
+			refreshText();
+		});
+		letterInput?.addEventListener("pointerdown", (event) => event.stopPropagation());
 		toolsEl.style.position = "relative";
 		shapesEl.style.position = "relative";
 		const toolMenu = document.createElement("div");
@@ -5961,6 +6273,10 @@ void main() {
 			world.emitFx = emit;
 			fx.clear();
 		});
+		document.querySelector("#reset")?.addEventListener("click", () => {
+			world.restoreScene();
+			fx.clear();
+		});
 		importBtn.title = "Turn an image into elements by nearest colour. You can also drop an image on the sandbox.";
 		importBtn.addEventListener("click", () => importFile.click());
 		exportBtn.title = "Save the scene as an image. Import that image later to restore it.";
@@ -6068,6 +6384,7 @@ void main() {
 			fsExit?.toggleAttribute("hidden", !on);
 			fsBtn?.setAttribute("aria-label", on ? "Exit full screen" : "Full screen");
 			fsBtn?.setAttribute("title", on ? "Exit full screen" : "Full screen");
+			wrap.classList.toggle("is-full", on);
 		};
 		fsBtn?.addEventListener("click", () => {
 			const node = wrap;
@@ -6097,6 +6414,23 @@ void main() {
 			dirY: 0,
 			air: false
 		};
+		const camera = {
+			zoom: 1,
+			focusX: 0,
+			focusY: 0
+		};
+		const zoomResetBtn = document.querySelector("#zoom-reset");
+		const paintZoom = () => {
+			if (!zoomResetBtn) return;
+			const n = camera.zoom <= 1.02 ? 1 : Math.round(camera.zoom * 10) / 10;
+			zoomResetBtn.textContent = Number.isInteger(n) ? `${n}×` : `${n.toFixed(1)}×`;
+		};
+		const adopt = (next) => {
+			camera.zoom = next.zoom;
+			camera.focusX = next.focusX;
+			camera.focusY = next.focusY;
+			paintZoom();
+		};
 		const fit = (preserve) => {
 			const dpr = Math.min(window.devicePixelRatio || 1, 2);
 			const bufW = Math.max(1, Math.floor(wrap.clientWidth * dpr));
@@ -6116,6 +6450,10 @@ void main() {
 					fx.clear();
 				}
 			}
+			if (camera.zoom <= 1) {
+				camera.focusX = world.width / 2;
+				camera.focusY = world.height / 2;
+			} else adopt(panBy(bufW, bufH, world.width, world.height, cell, camera, 0, 0));
 			sizeEl.textContent = `${world.width}×${world.height} gpu shaded`;
 		};
 		const paintStroke = () => {
@@ -6140,6 +6478,7 @@ void main() {
 		};
 		let reuseGrid = false;
 		const draw = () => {
+			const letters = shape === "text" || shape === "textOutline" ? textMask : null;
 			renderer.draw({
 				cells: world.cells,
 				width: world.width,
@@ -6154,7 +6493,13 @@ void main() {
 				shape,
 				fx: packDrawFx(),
 				fxCount: fxDrawCount,
-				reuseGrid
+				reuseGrid,
+				zoom: camera.zoom,
+				focusX: camera.focusX,
+				focusY: camera.focusY,
+				textMask: letters?.mask,
+				textW: letters?.w,
+				textH: letters?.h
 			});
 		};
 		function packDrawFx() {
@@ -6228,13 +6573,83 @@ void main() {
 		};
 		raf = requestAnimationFrame(loop);
 		const readPointer = (e) => {
-			const p = pointerToCell(view, e.clientX, e.clientY, world.width, world.height, cell);
+			const p = pointerToCell(view, e.clientX, e.clientY, world.width, world.height, cell, camera);
 			pointer.x = p.x;
 			pointer.y = p.y;
 			pointer.inside = p.inside;
 			pointer.on = true;
 		};
+		const bufPoint = (clientX, clientY) => {
+			const rect = view.getBoundingClientRect();
+			return {
+				sx: (clientX - rect.left) * view.width / Math.max(rect.width, 1),
+				sy: (clientY - rect.top) * view.height / Math.max(rect.height, 1)
+			};
+		};
+		const fingers = /* @__PURE__ */ new Map();
+		let pinch = null;
+		let pan = null;
+		const pinchSample = () => {
+			const pts = [...fingers.values()];
+			if (pts.length < 2) return null;
+			const a = pts[0];
+			const b = pts[1];
+			const mid = bufPoint((a.x + b.x) / 2, (a.y + b.y) / 2);
+			return {
+				sx: mid.sx,
+				sy: mid.sy,
+				dist: Math.hypot(a.x - b.x, a.y - b.y)
+			};
+		};
+		const stops = [
+			1,
+			1.5,
+			2,
+			3,
+			4,
+			6,
+			8
+		];
+		const stepZoom = (dir) => {
+			if (dir === 0) {
+				adopt({
+					zoom: 1,
+					focusX: world.width / 2,
+					focusY: world.height / 2
+				});
+				return;
+			}
+			const next = dir > 0 ? stops.find((stop) => stop > camera.zoom + .05) ?? 8 : [...stops].reverse().find((stop) => stop < camera.zoom - .05) ?? 1;
+			adopt(zoomAt(view.width, view.height, world.width, world.height, cell, camera, view.width / 2, view.height / 2, next));
+		};
+		document.querySelector("#zoom-out")?.addEventListener("click", () => stepZoom(-1));
+		zoomResetBtn?.addEventListener("click", () => stepZoom(0));
+		document.querySelector("#zoom-in")?.addEventListener("click", () => stepZoom(1));
 		view.addEventListener("pointerdown", (e) => {
+			fingers.set(e.pointerId, {
+				x: e.clientX,
+				y: e.clientY
+			});
+			if (fingers.size >= 2) {
+				if (pointer.down) closeOutline();
+				pointer.down = false;
+				pointer.air = false;
+				pan = null;
+				pinch = pinchSample();
+				view.setPointerCapture(e.pointerId);
+				e.preventDefault();
+				return;
+			}
+			if (e.button === 1 || e.button === 0 && e.altKey) {
+				pan = {
+					id: e.pointerId,
+					x: e.clientX,
+					y: e.clientY
+				};
+				view.setPointerCapture(e.pointerId);
+				e.preventDefault();
+				return;
+			}
 			if (e.button !== 0 && e.button !== 2) return;
 			view.setPointerCapture(e.pointerId);
 			readPointer(e);
@@ -6246,19 +6661,57 @@ void main() {
 				pointer.phase = 0;
 				pointer.still = true;
 				pointer.open = false;
+				if (pointer.inside && (shape === "text" || shape === "textOutline")) world.stampMask(pointer.x, pointer.y, textMask.mask, textMask.w, textMask.h, tool);
 			}
 			e.preventDefault();
 		});
-		view.addEventListener("pointermove", readPointer);
+		view.addEventListener("pointermove", (e) => {
+			if (fingers.has(e.pointerId)) fingers.set(e.pointerId, {
+				x: e.clientX,
+				y: e.clientY
+			});
+			if (pinch && fingers.size >= 2) {
+				const next = pinchSample();
+				if (next) {
+					adopt(pinchCamera(view.width, view.height, world.width, world.height, cell, camera, pinch, next));
+					pinch = next;
+				}
+				return;
+			}
+			if (pan && e.pointerId === pan.id) {
+				const from = bufPoint(pan.x, pan.y);
+				const to = bufPoint(e.clientX, e.clientY);
+				adopt(panBy(view.width, view.height, world.width, world.height, cell, camera, to.sx - from.sx, to.sy - from.sy));
+				pan.x = e.clientX;
+				pan.y = e.clientY;
+				return;
+			}
+			readPointer(e);
+		});
 		const up = (e) => {
+			fingers.delete(e.pointerId);
+			if (fingers.size < 2) pinch = null;
+			if (pan && e.pointerId === pan.id) pan = null;
 			if (e.button === 2) pointer.air = false;
-			else {
+			else if (e.button === 0) {
 				closeOutline();
 				pointer.down = false;
 			}
-			if (e.type === "pointercancel") pointer.air = false;
-			if (!pointer.down && !pointer.air && view.hasPointerCapture(e.pointerId)) view.releasePointerCapture(e.pointerId);
+			if (e.type === "pointercancel") {
+				pointer.air = false;
+				pointer.down = false;
+				pan = null;
+				pinch = null;
+			}
+			if (!pointer.down && !pointer.air && !pan && view.hasPointerCapture(e.pointerId)) view.releasePointerCapture(e.pointerId);
 		};
+		view.addEventListener("wheel", (e) => {
+			e.preventDefault();
+			const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * view.clientHeight : e.deltaY;
+			const factor = Math.min(1.25, Math.max(.8, Math.exp(-dy * .0015)));
+			const at = bufPoint(e.clientX, e.clientY);
+			adopt(zoomAt(view.width, view.height, world.width, world.height, cell, camera, at.sx, at.sy, camera.zoom * factor));
+		}, { passive: false });
 		view.addEventListener("pointerup", up);
 		view.addEventListener("pointercancel", up);
 		view.addEventListener("pointerleave", () => {
@@ -6393,18 +6846,22 @@ void main() {
 				radius = Math.max(0, radius - 1);
 				size.value = String(radius);
 				sizeN.textContent = String(radius + 1);
+				refreshText();
 			} else if (e.key === "]") {
 				radius = Math.min(24, radius + 1);
 				size.value = String(radius);
 				sizeN.textContent = String(radius + 1);
+				refreshText();
 			} else if (e.key === "-" || e.key === "_") {
 				thick = Math.max(0, thick - 1);
 				brush.value = String(thick);
 				brushN.textContent = String(thick + 1);
+				refreshText();
 			} else if (e.key === "=" || e.key === "+") {
 				thick = Math.min(12, thick + 1);
 				brush.value = String(thick);
 				brushN.textContent = String(thick + 1);
+				refreshText();
 			} else if (e.code === "KeyP") {
 				e.preventDefault();
 				setPaused(!paused);
