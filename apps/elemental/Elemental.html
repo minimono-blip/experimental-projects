@@ -215,9 +215,8 @@
   .dock.is-min { width: auto; }
   .dock.is-min .brush,
   .dock.is-min #clear,
-  .dock.is-min #scene,
+  .dock.is-min #scene-wrap,
   .dock.is-min #reset,
-  .dock.is-min #import,
   .dock.is-min #export,
   .dock.is-min #speeds { display: none; }
   #tools, #shapes { position: relative; }
@@ -238,6 +237,33 @@
   }
   .dock-menu.is-down { bottom: auto; top: calc(100% + 0.4rem); }
   .dock-menu[hidden] { display: none !important; }
+  .dock-menu.scene-menu { left: auto; right: 0; flex-direction: row; align-items: flex-end; gap: 0.45rem; }
+  .scene-thumb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    width: 7.25rem;
+    padding: 0.25rem;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--fg);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .scene-thumb:hover, .scene-thumb:focus-visible { border-color: var(--border); }
+  .scene-thumb img {
+    width: 100%;
+    height: 4rem;
+    object-fit: contain;
+    image-rendering: pixelated;
+    background: #141210;
+    border-radius: 6px;
+  }
+  .scene-wrap { position: relative; }
+  #app.is-full .zoom { display: none; }
   #shapes { display: flex; flex-wrap: wrap; gap: 0.35rem; }
   .shape-btn { width: 2.75rem; justify-content: center; padding: 0; }
   .shape-btn svg { display: block; }
@@ -255,7 +281,7 @@
   <div class="hud">
     <div class="top">
       <header class="card">
-        <h1>Elemental <span class="ver">1.15</span></h1>
+        <h1>Elemental <span class="ver">1.20</span></h1>
         <p id="hint">Falls and piles</p>
         <p class="sr">Keys: 1 sand, 2 water, 3 magma, 4 wood, 5 stone, 6 erase, 7 oil, 8 gunpowder, 9 seed, 0 salt, F fire, C coal, space toggles the air panel, P pauses, brackets change shape size, minus and equals change outline thickness.</p>
       </header>
@@ -293,9 +319,14 @@
       <div id="speeds" role="group" aria-label="Fall speed"></div>
       <button id="pause" type="button" class="dock-btn" aria-pressed="false">Pause</button>
       <button id="clear" type="button" class="dock-btn">Clear</button>
-      <button id="scene" type="button" class="dock-btn">Scene</button>
+      <div id="scene-wrap" class="scene-wrap">
+      <button id="scene" type="button" class="dock-btn" aria-haspopup="menu" aria-expanded="false" title="Choose a scene">Scene</button>
+      <div id="scene-menu" class="dock-menu scene-menu" hidden role="menu" aria-label="Scenes"></div>
+      </div>
       <button id="reset" type="button" class="dock-btn" title="Put back the last scene or import.">Reset</button>
-      <button id="import" type="button" class="dock-btn">Import</button>
+      <button id="import" type="button" class="dock-btn shape-btn" aria-label="Import" title="Turn an image into elements by nearest colour. You can also drop an image on the sandbox.">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21"/><path d="m14 19.5 3-3 3 3"/><path d="M17 22v-5.5"/><circle cx="9" cy="9" r="2"/></svg>
+      </button>
       <a id="export" class="dock-btn" href="#" download="elemental-scene.png">Export</a>
       <input id="import-file" type="file" accept="image/*" hidden aria-label="Import an image">
       </div>
@@ -1013,6 +1044,10 @@
 		scene = null;
 		sceneW = 0;
 		sceneH = 0;
+		/** The last imported picture, kept even after a built-in scene is loaded. */
+		imported = null;
+		importW = 0;
+		importH = 0;
 		ensureSpan() {
 			const n = this.width * this.height;
 			if (this.span.length < this.width) this.span = new Int16Array(this.width);
@@ -1134,8 +1169,18 @@
 		}
 		/** One pixel per cell, in colours Import will turn back into the same materials. */
 		snapshotRgba() {
-			const { cells, width: W, height: H } = this;
-			const data = new Uint8ClampedArray(W * H * 4);
+			return this.pictureRgba(this.cells);
+		}
+		/** The last imported picture, in the same colours, or null if nothing has been imported. */
+		importRgba() {
+			if (!this.imported) return null;
+			if (this.importW !== this.width || this.importH !== this.height || this.imported.length !== this.cells.length) this.rebaseScene();
+			const src = this.imported;
+			if (!src || src.length !== this.cells.length) return null;
+			return this.pictureRgba(src);
+		}
+		pictureRgba(cells) {
+			const data = new Uint8ClampedArray(cells.length * 4);
 			for (let i = 0; i < cells.length; i++) {
 				const [r, g, b] = rgbForCode(materialCode(cells[i]));
 				const o = i * 4;
@@ -1205,6 +1250,7 @@
 			}
 			this.rebuildBands();
 			this.rememberScene();
+			this.rememberImport();
 		}
 		/** Keep the current grid as the picture Reset returns to. */
 		rememberScene() {
@@ -1212,33 +1258,55 @@
 			this.sceneW = this.width;
 			this.sceneH = this.height;
 		}
-		/** Crop the saved scene when the grid changes size, and keep the bedrock border. */
-		rebaseScene() {
-			const src = this.scene;
-			if (!src) return;
+		rememberImport() {
+			this.imported = this.cells.slice();
+			this.importW = this.width;
+			this.importH = this.height;
+		}
+		hasImport() {
+			return this.imported !== null;
+		}
+		/** Crop a saved picture when the grid changes size, and keep the bedrock border. */
+		rebaseStored(src, sw, sh) {
+			if (!src) return null;
 			const w = this.width;
 			const h = this.height;
-			if (this.sceneW === w && this.sceneH === h && src.length === w * h) return;
+			if (sw === w && sh === h && src.length === w * h) return {
+				buf: src,
+				w,
+				h
+			};
 			const kept = new Uint8Array(w * h);
-			const cw = Math.min(w, this.sceneW);
-			const ch = Math.min(h, this.sceneH);
-			for (let y = 0; y < ch; y++) kept.set(src.subarray(y * this.sceneW, y * this.sceneW + cw), y * w);
+			const cw = Math.min(w, sw);
+			const ch = Math.min(h, sh);
+			for (let y = 0; y < ch; y++) kept.set(src.subarray(y * sw, y * sw + cw), y * w);
 			const live = this.cells;
 			this.cells = kept;
 			this.carveBedrock();
 			this.cells = live;
-			this.scene = kept;
-			this.sceneW = w;
-			this.sceneH = h;
+			return {
+				buf: kept,
+				w,
+				h
+			};
 		}
-		/** Put back the last Scene or import. Painting since then is discarded. */
-		restoreScene() {
-			if (!this.scene) return false;
-			if (this.sceneW !== this.width || this.sceneH !== this.height || this.scene.length !== this.cells.length) this.rebaseScene();
-			const scene = this.scene;
-			if (!scene || scene.length !== this.cells.length) return false;
-			this.cells.set(scene);
-			this.burning = false;
+		/** Crop the saved scene when the grid changes size, and keep the bedrock border. */
+		rebaseScene() {
+			const scene = this.rebaseStored(this.scene, this.sceneW, this.sceneH);
+			if (scene) {
+				this.scene = scene.buf;
+				this.sceneW = scene.w;
+				this.sceneH = scene.h;
+			}
+			const imported = this.rebaseStored(this.imported, this.importW, this.importH);
+			if (imported) {
+				this.imported = imported.buf;
+				this.importW = imported.w;
+				this.importH = imported.h;
+			}
+		}
+		pastePicture(src) {
+			this.cells.set(src);
 			this.blastN = 0;
 			this.blastLogN = 0;
 			this.sparkN = 0;
@@ -1248,15 +1316,244 @@
 			this.awake.fill(1);
 			this.dirty.fill(0);
 			this.fireCol.fill(0);
+			let hot = false;
+			const W = this.width;
+			for (let i = 0; i < this.cells.length; i++) if (airClass(this.cells[i]) >= 3) {
+				hot = true;
+				this.markFire(i % W);
+			}
+			this.burning = hot;
 			this.cellsDirty = true;
 			if (this.momX.length === this.cells.length) {
 				this.momX.fill(0);
 				this.momY.fill(0);
 			}
 			this.rebuildBands();
+		}
+		/** Put back the last Scene or import. Painting since then is discarded. */
+		restoreScene() {
+			if (!this.scene) return false;
+			if (this.sceneW !== this.width || this.sceneH !== this.height || this.scene.length !== this.cells.length) this.rebaseScene();
+			const scene = this.scene;
+			if (!scene || scene.length !== this.cells.length) return false;
+			this.pastePicture(scene);
 			return true;
 		}
-		seed() {
+		/** Put back the last imported image, and make that the picture Reset returns to. */
+		restoreImport() {
+			if (!this.imported) return false;
+			if (this.importW !== this.width || this.importH !== this.height || this.imported.length !== this.cells.length) this.rebaseScene();
+			const imported = this.imported;
+			if (!imported || imported.length !== this.cells.length) return false;
+			this.pastePicture(imported);
+			this.rememberScene();
+			return true;
+		}
+		/** Replace the grid with a captured picture of the same size. */
+		applyPicture(cells) {
+			if (cells.length !== this.cells.length) return false;
+			this.pastePicture(cells);
+			this.rememberScene();
+			return true;
+		}
+		seed(kind = "title") {
+			if ((kind === "random" ? Math.random() < .5 ? "title" : "circles" : kind) === "circles") this.seedCircles();
+			else this.seedTitle();
+		}
+		/** Element rings, plus three solid stone chambers of gunpowder linked by tunnels. */
+		seedCircles() {
+			this.clear();
+			const { width: W, height: H } = this;
+			const chambers = this.placeChambers(W, H);
+			const elems = [
+				"sand",
+				"salt",
+				"water",
+				"oil",
+				"magma",
+				"wood",
+				"coal",
+				"gunpowder",
+				"seed",
+				"fire"
+			];
+			for (let i = elems.length - 1; i > 0; i--) {
+				const j = Math.random() * (i + 1) | 0;
+				const swap = elems[i];
+				elems[i] = elems[j];
+				elems[j] = swap;
+			}
+			const placed = chambers.map((c) => ({
+				x: c.x,
+				y: c.y,
+				r: c.r
+			}));
+			const maxR = Math.max(8, Math.min(22, Math.floor(Math.min(W, H) / 8)));
+			const minR = Math.max(6, Math.min(maxR, Math.floor(maxR * .55)));
+			const fitR = Math.max(minR, Math.floor((Math.min(W, H) - 8) / 2));
+			for (const tool of elems) {
+				let spot = null;
+				for (let t = 0; t < 140 && !spot; t++) {
+					const base = minR + (Math.random() * (maxR - minR + 1) | 0);
+					const scale = 3 + Math.random() * 7;
+					const r = Math.min(fitR, Math.max(minR, Math.round(base * scale)));
+					const xSpan = Math.max(1, W - 6 - r * 2);
+					const ySpan = Math.max(1, H - 5 - r * 2);
+					const x = 3 + r + (Math.random() * xSpan | 0);
+					const y = 2 + r + (Math.random() * ySpan | 0);
+					let hit = false;
+					for (const p of placed) {
+						const dx = p.x - x;
+						const dy = p.y - y;
+						const need = p.r + r + 2;
+						if (dx * dx + dy * dy < need * need) {
+							hit = true;
+							break;
+						}
+					}
+					if (!hit) spot = {
+						x,
+						y,
+						r
+					};
+				}
+				if (!spot) continue;
+				placed.push(spot);
+				const wall = Math.max(2, Math.round(spot.r * .28));
+				this.stampRing(spot.x, spot.y, spot.r, "concrete", wall);
+				const room = spot.r - wall - 1;
+				if (room < 2) continue;
+				const inner = 2 + (Math.random() * Math.max(1, room - 1) | 0);
+				this.stampDisk(spot.x, spot.y, inner, tool);
+			}
+			const tunnelMats = ["coal", "wood"];
+			const tunnelStart = Math.random() * 2 | 0;
+			let tunnelN = 0;
+			for (let i = 0; i < chambers.length; i++) for (let j = i + 1; j < chambers.length; j++) {
+				const a = chambers[i];
+				const b = chambers[j];
+				const tool = tunnelMats[(tunnelStart + tunnelN) % 2];
+				tunnelN++;
+				const thick = Math.max(2, Math.min(6, Math.round(Math.min(a.r, b.r) * .1)));
+				this.meander(a.x, a.y, b.x, b.y, tool, thick);
+			}
+			for (const c of chambers) {
+				this.stampDisk(c.x, c.y, c.r, "concrete");
+				this.powderCluster(c.x, c.y, c.r);
+			}
+			this.coalHexGrid();
+			this.rememberScene();
+		}
+		/** Pointy hex outlines, 50 cells flat to flat, drawn 5 cells wide. */
+		coalHexGrid() {
+			const across = 50;
+			const side = across / Math.sqrt(3);
+			const rowH = side * 1.5;
+			const thick = 2;
+			const cols = Math.ceil(this.width / across) + 2;
+			const rows = Math.ceil(this.height / rowH) + 2;
+			for (let row = -1; row < rows; row++) {
+				const ox = row % 2 === 0 ? 0 : across / 2;
+				const cy = rowH * row;
+				for (let col = -1; col < cols; col++) this.hexOutline(across * col + ox, cy, side, thick);
+			}
+		}
+		hexOutline(cx, cy, side, thick) {
+			const pts = [];
+			for (let k = 0; k < 6; k++) {
+				const a = -Math.PI / 2 + k * Math.PI / 3;
+				pts.push({
+					x: Math.round(cx + Math.cos(a) * side),
+					y: Math.round(cy + Math.sin(a) * side)
+				});
+			}
+			for (let k = 0; k < 6; k++) {
+				const a = pts[k];
+				const b = pts[(k + 1) % 6];
+				if (a.x < -thick && b.x < -thick) continue;
+				if (a.y < -thick && b.y < -thick) continue;
+				if (a.x >= this.width + thick && b.x >= this.width + thick) continue;
+				if (a.y >= this.height + thick && b.y >= this.height + thick) continue;
+				this.line(a.x, a.y, b.x, b.y, "coal", thick);
+			}
+		}
+		/** Three large disks, separated enough for a tunnel to wander between them. */
+		placeChambers(W, H) {
+			let best = [];
+			let radius = Math.max(16, Math.min(Math.floor(Math.min(W, H) / 6), 110));
+			for (let shrink = 0; shrink < 6; shrink++) {
+				const r = Math.max(12, Math.floor(radius * (1 - shrink * .16)));
+				const gap = Math.max(6, Math.floor(r * (.55 - shrink * .08)));
+				const found = [];
+				for (let n = 0; n < 3; n++) {
+					let spot = null;
+					const xSpan = Math.max(1, W - 8 - r * 2);
+					const ySpan = Math.max(1, H - 8 - r * 2);
+					for (let t = 0; t < 120 && !spot; t++) {
+						const x = 4 + r + (Math.random() * xSpan | 0);
+						const y = 4 + r + (Math.random() * ySpan | 0);
+						let hit = false;
+						for (const p of found) {
+							const dx = p.x - x;
+							const dy = p.y - y;
+							const need = p.r + r + gap;
+							if (dx * dx + dy * dy < need * need) {
+								hit = true;
+								break;
+							}
+						}
+						if (!hit) spot = {
+							x,
+							y,
+							r
+						};
+					}
+					if (!spot) break;
+					found.push(spot);
+				}
+				if (found.length > best.length) best = found;
+				if (found.length === 3) return found;
+			}
+			return best;
+		}
+		/** Five equal gunpowder disks packed inside a stone circle. */
+		powderCluster(cx, cy, R) {
+			const g = Math.max(2, Math.floor((R - 4) / 3.2));
+			const orbit = Math.min(R - g - 2, Math.round(g * 2.05));
+			if (orbit < Math.round(g * 1.7)) {
+				this.stampDisk(cx, cy, Math.max(2, Math.floor(R * .45)), "gunpowder");
+				return;
+			}
+			const spin = Math.random() * Math.PI * 2;
+			for (let k = 0; k < 5; k++) {
+				const a = spin + k * Math.PI * 2 / 5;
+				this.stampDisk(cx + Math.cos(a) * orbit, cy + Math.sin(a) * orbit, g, "gunpowder");
+			}
+		}
+		/** A thick wandering stroke from one chamber to the next. */
+		meander(ax, ay, bx, by, tool, thick) {
+			const dx = bx - ax;
+			const dy = by - ay;
+			const len = Math.hypot(dx, dy) || 1;
+			const px = -dy / len;
+			const py = dx / len;
+			const steps = 5 + (Math.random() * 3 | 0);
+			const amp = Math.min(len * .22, Math.min(this.width, this.height) * .1);
+			let x0 = Math.round(ax);
+			let y0 = Math.round(ay);
+			const xEnd = Math.round(bx);
+			const yEnd = Math.round(by);
+			for (let i = 1; i <= steps; i++) {
+				const t = i / steps;
+				const side = (Math.random() * 2 - 1) * Math.sin(t * Math.PI) * amp;
+				const x1 = i === steps ? xEnd : Math.round(Math.max(4, Math.min(this.width - 5, ax + dx * t + px * side)));
+				const y1 = i === steps ? yEnd : Math.round(Math.max(4, Math.min(this.height - 5, ay + dy * t + py * side)));
+				this.line(x0, y0, x1, y1, tool, thick);
+				x0 = x1;
+				y0 = y1;
+			}
+		}
+		seedTitle() {
 			this.clear();
 			const w = this.width;
 			const h = this.height;
@@ -1389,6 +1686,8 @@
 			return phase;
 		}
 		paint(x, y, tool) {
+			x = Math.round(x);
+			y = Math.round(y);
 			if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
 			const i = y * this.width + x;
 			const cells = this.cells;
@@ -5745,6 +6044,35 @@ void main() {
 		return (Math.max(0, radius) + 1) * 3;
 	}
 	//#endregion
+	//#region src/sim/scene-thumb.ts
+	/** A small pixel preview of a scene. Empty cells stay the dark export colour. */
+	function thumbDataUrl(width, height, rgba, maxW = 128) {
+		if (typeof document === "undefined" || width < 1 || height < 1 || rgba.length < width * height * 4) return "";
+		const step = Math.max(1, Math.ceil(width / maxW));
+		const tw = Math.ceil(width / step);
+		const th = Math.ceil(height / step);
+		const small = new Uint8ClampedArray(tw * th * 4);
+		for (let y = 0; y < th; y++) {
+			const sy = Math.min(height - 1, y * step);
+			for (let x = 0; x < tw; x++) {
+				const sx = Math.min(width - 1, x * step);
+				const si = (sy * width + sx) * 4;
+				const di = (y * tw + x) * 4;
+				small[di] = rgba[si] ?? 0;
+				small[di + 1] = rgba[si + 1] ?? 0;
+				small[di + 2] = rgba[si + 2] ?? 0;
+				small[di + 3] = 255;
+			}
+		}
+		const canvas = document.createElement("canvas");
+		canvas.width = tw;
+		canvas.height = th;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return "";
+		ctx.putImageData(new ImageData(small, tw, th), 0, 0);
+		return canvas.toDataURL("image/png");
+	}
+	//#endregion
 	//#region src/standalone.ts
 	const SPEEDS = [
 		{
@@ -6267,11 +6595,56 @@ void main() {
 			paintHint();
 		});
 		sceneBtn.addEventListener("click", () => {
-			const emit = world.emitFx;
-			world.emitFx = null;
-			world.seed();
-			world.emitFx = emit;
-			fx.clear();
+			const menu = document.querySelector("#scene-menu");
+			if (!menu) return;
+			if (!menu.hidden) {
+				menu.hidden = true;
+				sceneBtn.setAttribute("aria-expanded", "false");
+				return;
+			}
+			menu.replaceChildren();
+			const add = (label, hint, url, apply) => {
+				const btn = document.createElement("button");
+				btn.type = "button";
+				btn.className = "scene-thumb";
+				btn.title = hint;
+				btn.setAttribute("role", "menuitem");
+				const img = document.createElement("img");
+				img.src = url;
+				img.alt = "";
+				const cap = document.createElement("span");
+				cap.textContent = label;
+				btn.append(img, cap);
+				btn.addEventListener("click", (event) => {
+					event.stopPropagation();
+					const emit = world.emitFx;
+					world.emitFx = null;
+					apply();
+					world.emitFx = emit;
+					fx.clear();
+					menu.hidden = true;
+					sceneBtn.setAttribute("aria-expanded", "false");
+				});
+				menu.append(btn);
+			};
+			for (const kind of ["title", "circles"]) {
+				const ghost = new World();
+				ghost.resize(world.width, world.height, false);
+				ghost.seed(kind);
+				const cells = ghost.cells.slice();
+				add(kind === "title" ? "Title" : "Circles", kind === "title" ? "The ELEMENTAL letters" : "This layout of stone rings", thumbDataUrl(world.width, world.height, ghost.snapshotRgba()), () => world.applyPicture(cells));
+			}
+			const imported = world.importRgba();
+			if (imported) add("Imported", "The last imported image", thumbDataUrl(world.width, world.height, imported), () => world.restoreImport());
+			menu.hidden = false;
+			sceneBtn.setAttribute("aria-expanded", "true");
+		});
+		document.addEventListener("pointerdown", (event) => {
+			const wrapScene = document.querySelector("#scene-wrap");
+			if (event.target instanceof Node && wrapScene?.contains(event.target)) return;
+			const menu = document.querySelector("#scene-menu");
+			if (menu) menu.hidden = true;
+			sceneBtn.setAttribute("aria-expanded", "false");
 		});
 		document.querySelector("#reset")?.addEventListener("click", () => {
 			world.restoreScene();
@@ -6445,7 +6818,7 @@ void main() {
 				if (first) {
 					const emit = world.emitFx;
 					world.emitFx = null;
-					world.seed();
+					world.seed("random");
 					world.emitFx = emit;
 					fx.clear();
 				}
