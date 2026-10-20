@@ -71,7 +71,7 @@
       padding: 16px;
       pointer-events: none;
     }
-    .mark, .pause, .panel, .dock-min { pointer-events: auto; }
+    .mark, .pause, .panel, .dock-min, .heart { pointer-events: auto; }
     .tools { display: flex; gap: 8px; pointer-events: none; }
     .mark {
       border: 1px solid var(--border);
@@ -155,26 +155,99 @@
       background: rgb(7 7 8 / 0.52);
       backdrop-filter: blur(12px);
     }
-    .drag {
+    .panel-bar {
       position: sticky;
       top: 0;
       z-index: 3;
       display: flex;
       align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 22px;
+      gap: 6px;
       margin: -8px 0 8px;
+      background: rgb(7 7 8 / 0.72);
+      border-radius: 6px;
+    }
+    .drag {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 28px;
+      margin: 0;
       padding: 0;
       border: 0;
       border-radius: 6px;
-      background: rgb(7 7 8 / 0.72);
+      background: transparent;
       color: var(--muted);
       cursor: grab;
       touch-action: none;
     }
     .drag:active { cursor: grabbing; }
     .drag svg { width: 28px; height: 10px; display: block; }
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      flex: none;
+    }
+    .icon-btn svg { width: 18px; height: 18px; display: block; }
+    .mini {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: min(28rem, calc(100% - 24px));
+      margin: 0 auto 12px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgb(7 7 8 / 0.62);
+      backdrop-filter: blur(12px);
+    }
+    .mini[hidden] { display: none; }
+    .mini-drag {
+      width: 28px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      cursor: grab;
+      touch-action: none;
+      flex: none;
+    }
+    .mini-drag:active { cursor: grabbing; }
+    .mini-drag svg { width: 16px; height: 10px; display: block; }
+    .mini select {
+      width: 8.5rem;
+      height: 36px;
+      margin: 0;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+      padding: 0 8px;
+      font: inherit;
+      font-size: 0.8rem;
+      flex: none;
+    }
+    .mini .range { flex: 1; min-width: 0; }
+    .mini b {
+      min-width: 4.6em;
+      text-align: right;
+      font-size: 0.75rem;
+      font-weight: 500;
+      flex: none;
+    }
     .dock-min {
       display: block;
       margin: 0 auto 12px;
@@ -191,13 +264,43 @@
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
     .foreground,
     .feedback,
-    .bg-row {
+    .bg-row,
+    .fav-row {
       position: relative;
       margin: 18px 0 14px;
       padding: 18px 12px 12px;
       border: 1px solid var(--border);
       border-radius: 10px;
     }
+    .favs { display: flex; flex-wrap: wrap; gap: 8px; min-height: 28px; }
+    .fav {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--fg);
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+    .fav.on { border-color: var(--accent); color: var(--accent); }
+    .heart {
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--glass);
+      color: var(--fg);
+      backdrop-filter: blur(8px);
+    }
+    .heart svg { width: 22px; height: 22px; display: block; }
+    .heart svg[hidden] { display: none; }
+    .heart[aria-pressed="true"] { color: #e23b3b; }
     .foreground > .row,
     .feedback > .row,
     .section-title {
@@ -219,6 +322,11 @@
     .section-title[aria-pressed="false"] {
       text-decoration: line-through;
       opacity: 0.5;
+    }
+    span.section-title { cursor: default; }
+    .chip.off {
+      text-decoration: line-through;
+      opacity: 0.55;
     }
     .foreground .chips { margin: 0; }
     .foreground .grid { margin-top: 12px; }
@@ -573,12 +681,19 @@
       background: var(--accent);
     }
     .note { margin: 4px 0 0; font-size: 0.75rem; line-height: 1.45; color: var(--muted); }
-    :fullscreen header,
+    :fullscreen .mark,
     :fullscreen .dock,
     :fullscreen .err,
-    :-webkit-full-screen header,
+    :fullscreen #pause,
+    :-webkit-full-screen .mark,
     :-webkit-full-screen .dock,
-    :-webkit-full-screen .err { display: none; }
+    :-webkit-full-screen .err,
+    :-webkit-full-screen #pause { display: none; }
+    :fullscreen header,
+    :-webkit-full-screen header {
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-right: max(16px, env(safe-area-inset-right));
+    }
     @media (min-width: 640px) {
       header { padding: 24px; }
       h1 { font-size: 2.25rem; }
@@ -594,10 +709,14 @@
   <canvas id="field" aria-hidden="true"></canvas>
   <header>
     <div class="mark">
-      <h1>LSD <span class="ver" id="version">v1_05</span></h1>
+      <h1>LSD <span class="ver" id="version">v1_11</span></h1>
       <p class="eyebrow" id="scene-label">Scene 1 · Ball</p>
     </div>
     <div class="tools">
+      <button class="heart" type="button" id="fav-add" aria-pressed="false" aria-label="Save favourite">
+        <svg data-icon="outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        <svg data-icon="filled" hidden xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#e23b3b" stroke="#e23b3b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+      </button>
       <button class="pause" type="button" id="full" aria-pressed="false" aria-label="Full screen">
         <svg data-icon="enter" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect width="10" height="8" x="7" y="8" rx="1"/></svg>
         <svg data-icon="exit" hidden xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
@@ -611,10 +730,26 @@
   <p class="err" id="err" role="alert" hidden></p>
   <div class="dock" id="dock">
     <button type="button" class="dock-min" id="dock-min" hidden>Controls</button>
-    <section class="panel" id="panel">
-      <button type="button" class="drag" id="panel-drag" aria-label="Drag panel" title="Drag to move">
+    <div class="mini" id="mini" hidden>
+      <button type="button" class="mini-drag" id="mini-drag" aria-label="Drag compact panel" title="Drag to move">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 2.5h20M4 5.5h20M4 8.5h20"/></svg>
       </button>
+      <select id="mini-pick" aria-label="Setting"></select>
+      <input class="range" id="mini-range" type="range" min="0" max="1" step="0.01" value="0" aria-label="Setting value" />
+      <b id="mini-value">0</b>
+      <button type="button" class="icon-btn" id="mini-max" aria-label="Maximize panel" title="Maximize panel">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      </button>
+    </div>
+    <section class="panel" id="panel">
+      <div class="panel-bar">
+        <button type="button" class="drag" id="panel-drag" aria-label="Drag panel" title="Drag to move">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 2.5h20M4 5.5h20M4 8.5h20"/></svg>
+        </button>
+        <button type="button" class="icon-btn" id="panel-min" aria-label="Minimize panel" title="Minimize panel">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+        </button>
+      </div>
       <div class="set-row">
         <button type="button" class="chip" id="set-save">Save set</button>
         <button type="button" class="chip" id="set-recall">Recall</button>
@@ -627,8 +762,12 @@
         <span class="row"><span>Message</span></span>
         <input id="message" type="text" maxlength="18" value="LSD" aria-label="Message" autocomplete="off" spellcheck="false" />
       </form>
+      <section class="fav-row">
+        <span class="section-title">Favourites</span>
+        <div class="favs" id="favs"></div>
+      </section>
       <section class="foreground">
-        <button type="button" class="section-title" id="toggle-foreground" aria-pressed="true">Foreground</button>
+        <span class="section-title">Foreground</span>
         <div class="chips" id="chips"></div>
         <div class="palette-row">
           <span class="row"><span>Palette</span></span>
@@ -643,12 +782,12 @@
         <button type="button" class="section-title" id="toggle-feedback" aria-pressed="true">Feedback</button>
         <div class="grid" id="sliders"></div>
       </section>
-      <p class="note">Click the image to hide the panels. Click it again, or press Enter, to bring them back. Keys 1–9 switch scenes, 0 is noise, N is sparse noise, T is text, C is circuits, O is orbits, K is checks. Key I brings the opening image back. S saves a set. Arrow keys move between saved sets.</p>
+      <p class="note">Click the image to hide the panels. Click it again, or press Enter, to bring them back. Keys 1–9 switch scenes, 0 is noise, N is sparse noise, T is text, C is circuits, O is orbits, K is checks. Key I brings the opening image back. S saves a set. Left and right move between favourites. Up and down move between saved sets.</p>
     </section>
   </div>
   <script>
   (() => {
-    const APP_VERSION = "v1_05";
+    const APP_VERSION = "v1_11";
     document.getElementById("version").textContent = APP_VERSION;
     const panelEl = document.getElementById("panel");
     const panelDrag = document.getElementById("panel-drag");
@@ -682,6 +821,36 @@
     }
     panelDrag.addEventListener("pointerup", endPanelDrag);
     panelDrag.addEventListener("pointercancel", endPanelDrag);
+    const miniEl = document.getElementById("mini");
+    const miniDrag = document.getElementById("mini-drag");
+    let miniDragState = null;
+    miniDrag.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      const rect = miniEl.getBoundingClientRect();
+      miniEl.style.position = "fixed";
+      miniEl.style.left = rect.left + "px";
+      miniEl.style.top = rect.top + "px";
+      miniEl.style.margin = "0";
+      miniEl.style.width = rect.width + "px";
+      miniDragState = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top };
+      miniDrag.setPointerCapture(event.pointerId);
+    });
+    miniDrag.addEventListener("pointermove", (event) => {
+      if (!miniDragState || event.pointerId !== miniDragState.id) return;
+      const width = miniEl.offsetWidth;
+      const height = miniEl.offsetHeight;
+      const left = Math.min(window.innerWidth - 48, Math.max(8, miniDragState.left + event.clientX - miniDragState.x));
+      const top = Math.min(window.innerHeight - height - 8, Math.max(8, miniDragState.top + event.clientY - miniDragState.y));
+      miniEl.style.left = left + "px";
+      miniEl.style.top = top + "px";
+    });
+    function endMiniDrag(event) {
+      if (!miniDragState || event.pointerId !== miniDragState.id) return;
+      miniDragState = null;
+    }
+    miniDrag.addEventListener("pointerup", endMiniDrag);
+    miniDrag.addEventListener("pointercancel", endMiniDrag);
     let stopped = false;
     let rafId = 0;
     let restoreStill = true;
@@ -692,12 +861,22 @@
         restoreStill = true;
         return;
       }
-      if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        stepFavCursor(-1);
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        stepFavCursor(1);
+        return;
+      }
+      if (event.key === "ArrowUp") {
         event.preventDefault();
         stepSetCursor(-1);
         return;
       }
-      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      if (event.key === "ArrowDown") {
         event.preventDefault();
         stepSetCursor(1);
         return;
@@ -875,12 +1054,22 @@
       for (const [id, label, help] of scenes) {
         const button = document.createElement("button");
         button.type = "button";
-        button.className = "chip" + (state.scene === id ? " on" : "");
+        const shown = layers.foreground && state.scene === id;
+        const parked = !layers.foreground && state.scene === id;
+        button.className = "chip" + (shown ? " on" : parked ? " off" : "");
         button.textContent = label;
         button.title = help;
         button.setAttribute("aria-label", help);
-        button.setAttribute("aria-pressed", state.scene === id ? "true" : "false");
-        button.addEventListener("click", () => setScene(id));
+        button.setAttribute("aria-pressed", shown ? "true" : "false");
+        button.addEventListener("click", () => {
+          if (state.scene === id && layers.foreground) {
+            layers.foreground = false;
+            markFavDirty();
+            paintChips();
+            return;
+          }
+          setScene(id);
+        });
         chips.appendChild(button);
       }
     }
@@ -914,6 +1103,9 @@
     let fireworksTime = 0;
     let flockTime = 0;
     let panelHidden = false;
+    let panelMode = "full";
+    let lastSetting = "gain";
+    let refreshMini = () => {};
 
     function particleCount(base) {
       return Math.max(1, Math.min(PARTICLE_N, Math.round(base * state.amount)));
@@ -2004,6 +2196,7 @@
           option.style.background = paletteCss(palette);
           option.addEventListener("click", () => {
             scenePalettes[state.scene] = index;
+            markFavDirty();
             list.hidden = true;
             button.setAttribute("aria-expanded", "false");
             paintPalettes();
@@ -2056,7 +2249,24 @@
       paintPalettes();
     }
 
+    let livePalette = null;
+
+    function lerpCoeffs(from, to, e) {
+      const mix = (a, b) => [
+        a[0] + (b[0] - a[0]) * e,
+        a[1] + (b[1] - a[1]) * e,
+        a[2] + (b[2] - a[2]) * e,
+      ];
+      return { a: mix(from.a, to.a), b: mix(from.b, to.b), c: mix(from.c, to.c), d: mix(from.d, to.d) };
+    }
+
+    function paletteAt(index) {
+      return PALETTES[Math.min(PALETTES.length - 1, Math.max(0, Math.round(Number(index)) || 0))] || PALETTES[0];
+    }
+
     function setScene(n) {
+      markFavDirty();
+      layers.foreground = true;
       state.scene = n;
       const titles = { 1: "Scene 1 · Ball", 2: "Scene 2 · Fireworks", 3: "Scene 3 · Flock", 4: "Scene 4 · Stars", 5: "Scene 5 · Cube", 6: "Scene 6 · Flame", 7: "Scene 7 · Snow", 8: "Scene 8 · Grid", 9: "Scene 9 · Stucco", 10: "Scene 10 · Noise", 11: "Scene 11 · Text", 12: "Scene 12 · Sparse", 13: "Scene 13 · Circuits", 14: "Scene 14 · Orbits", 15: "Scene 15 · Checks" };
       sceneLabel.textContent = titles[n] || titles[1];
@@ -2485,6 +2695,7 @@ const PHOTO_TEX = {
     bgReset.setAttribute("aria-label", "Reset background to transparent");
     bgReset.addEventListener("click", () => {
       setMix = null;
+      markFavDirty();
       bgPalette = null;
       bgShader = 0;
       bgShaderSelect.value = "0";
@@ -2563,6 +2774,7 @@ const PHOTO_TEX = {
     bgShaderSelect.addEventListener("change", () => {
       bgShader = Math.max(0, Math.min(BG_SHADERS.length - 1, Number(bgShaderSelect.value) || 0));
       setMix = null;
+      markFavDirty();
       if (setIndex >= 0 && sets[setIndex] && sets[setIndex].background) sets[setIndex].background.shader = bgShader;
     });
     bgShaderRow.append(bgShaderLabel, bgShaderSelect);
@@ -2578,6 +2790,7 @@ const PHOTO_TEX = {
     texBlendSelect.value = "2";
     function commitBgTex() {
       setMix = null;
+      markFavDirty();
       if (setIndex >= 0 && sets[setIndex] && sets[setIndex].background) {
         sets[setIndex].background.texA = bgTexA;
         sets[setIndex].background.texB = bgTexB;
@@ -2697,7 +2910,7 @@ const PHOTO_TEX = {
     const texBtnA = makeTexButton("a", "Background texture");
     const texBtnB = makeTexButton("b", "Background texture 2");
     function animateTexSwatches() {
-      if (panelHidden) return;
+      if (panelHidden || panelMode !== "full") return;
       const rnd = [Math.random(), Math.random()];
       drawTexSwatch(previewButtons[0].canvas, BG_PATS[bgTexA], rnd);
       drawTexSwatch(previewButtons[1].canvas, BG_PATS[bgTexB], rnd);
@@ -2773,11 +2986,12 @@ const PHOTO_TEX = {
     bgSliders.className = "grid";
     bgTools.append(picks, bgReset);
     bgRow.append(bgName, bgPaletteRow, bgShaderRow, texRow, texBlendRow, bgTools, bgSliders);
-    messageForm.after(bgRow);
+    document.querySelector(".fav-row").after(bgRow);
 
     function setBgPalette(index) {
       const was = bgPalette;
       bgPalette = index;
+      markFavDirty();
       if (index != null && was == null && background.plane.a === 0 && background.plane.r === 0 && background.plane.g === 0 && background.plane.b === 0) {
         background.plane = { r: 1, g: 1, b: 1, a: 1 };
       }
@@ -2854,11 +3068,11 @@ const PHOTO_TEX = {
     function bindLayer(button, key) {
       button.addEventListener("click", () => {
         layers[key] = !layers[key];
+        markFavDirty();
         button.setAttribute("aria-pressed", layers[key] ? "true" : "false");
       });
     }
     bindLayer(bgName, "background");
-    bindLayer(document.getElementById("toggle-foreground"), "foreground");
     bindLayer(document.getElementById("toggle-feedback"), "feedback");
 
     const colorPanel = document.createElement("div");
@@ -2935,6 +3149,7 @@ const PHOTO_TEX = {
     function applyPicker() {
       if (!colorKey) return;
       setMix = null;
+      markFavDirty();
       const rgb = hsvToRgb(pickerHue, pickerS, pickerV);
       const color = activeColor();
       color.r = rgb.r;
@@ -3016,6 +3231,7 @@ const PHOTO_TEX = {
       input.addEventListener("input", () => {
         if (!colorKey) return;
         setMix = null;
+        markFavDirty();
         activeColor()[channel] = Number(input.value) / scale;
         spreadPlane();
         paintChannel(channel);
@@ -3034,7 +3250,7 @@ const PHOTO_TEX = {
       spec.value.textContent = channel === "a" ? Math.round(amount) + "%" : String(Math.round(amount));
     }
     function paintColor() {
-      if (!colorKey || panelHidden) {
+      if (!colorKey || panelHidden || panelMode !== "full") {
         colorPanel.hidden = true;
         paintSwatches();
         return;
@@ -3075,32 +3291,51 @@ const PHOTO_TEX = {
 
     function setPanelHidden(hidden) {
       panelHidden = hidden;
-      panel.hidden = hidden;
+      const showFull = !hidden && panelMode === "full";
+      const showMini = !hidden && panelMode === "compact";
+      panel.hidden = !showFull;
+      miniEl.hidden = !showMini;
       dockMin.hidden = true;
-        if (hidden) {
+      if (!showFull) {
         oscPanel.hidden = true;
         colorPanel.hidden = true;
         texPop.hidden = true;
       } else if (oscKey) oscPanel.hidden = false;
-      if (!hidden && colorKey) colorPanel.hidden = false;
+      if (showFull && colorKey) colorPanel.hidden = false;
     }
 
     canvas.addEventListener("click", () => {
-      if (document.fullscreenElement || document.webkitFullscreenElement) {
-        if (document.exitFullscreen) document.exitFullscreen();
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-        return;
-      }
+      if (document.fullscreenElement || document.webkitFullscreenElement) return;
       setPanelHidden(!panelHidden);
     });
 
     const fullBtn = document.getElementById("full");
+    let wakeLock = null;
+    function holdWake() {
+      if (!navigator.wakeLock || wakeLock) return;
+      navigator.wakeLock.request("screen").then((lock) => {
+        wakeLock = lock;
+        lock.addEventListener("release", () => {
+          if (wakeLock === lock) wakeLock = null;
+        });
+      }).catch(() => {});
+    }
+    function dropWake() {
+      const lock = wakeLock;
+      wakeLock = null;
+      if (lock) lock.release().catch(() => {});
+    }
     function syncFull() {
       const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
       fullBtn.setAttribute("aria-pressed", on ? "true" : "false");
       fullBtn.setAttribute("aria-label", on ? "Exit full screen" : "Full screen");
       fullBtn.querySelector('[data-icon="enter"]').toggleAttribute("hidden", on);
       fullBtn.querySelector('[data-icon="exit"]').toggleAttribute("hidden", !on);
+      if (on) holdWake();
+      else {
+        dropWake();
+        setPanelHidden(false);
+      }
     }
     fullBtn.addEventListener("click", () => {
       const root = document.documentElement;
@@ -3109,11 +3344,15 @@ const PHOTO_TEX = {
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
         return;
       }
+      holdWake();
       if (root.requestFullscreen) root.requestFullscreen();
       else if (root.webkitRequestFullscreen) root.webkitRequestFullscreen();
     });
     document.addEventListener("fullscreenchange", syncFull);
     document.addEventListener("webkitfullscreenchange", syncFull);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && (document.fullscreenElement || document.webkitFullscreenElement)) holdWake();
+    });
 
     function paintSlider(key) {
       const input = inputs[key];
@@ -3172,6 +3411,7 @@ const PHOTO_TEX = {
         input.style.setProperty("--p", pct + "%");
       }
       input.closest("label").querySelector("b").textContent = spec[5](dragging === key ? bases[key] : live);
+      refreshMini(key);
     }
 
     function applyOscillators(dt) {
@@ -3234,6 +3474,7 @@ const PHOTO_TEX = {
       button.addEventListener("click", () => {
         if (!oscKey) return;
         ensureOsc(oscKey).wave = id;
+        markFavDirty();
         paintOsc();
       });
       waveButtons[id] = button;
@@ -3258,6 +3499,7 @@ const PHOTO_TEX = {
     const oscRange = makeOscSlider("Range", "Oscillator range", (input, value) => {
       if (!oscKey) return;
       ensureOsc(oscKey).range = Number(input.value);
+      markFavDirty();
       const spec = specOf[oscKey];
       value.textContent = "±" + Number(input.value).toFixed(decimals(spec[4]));
       const pct = (Number(input.value) / Number(input.max)) * 100;
@@ -3266,6 +3508,7 @@ const PHOTO_TEX = {
     const oscRate = makeOscSlider("Rate", "Oscillator rate", (input, value) => {
       if (!oscKey) return;
       ensureOsc(oscKey).rate = Number(input.value);
+      markFavDirty();
       value.textContent = Number(input.value).toFixed(1) + "s";
       const pct = ((Number(input.value) - 0.25) / (12 - 0.25)) * 100;
       input.style.setProperty("--p", pct + "%");
@@ -3307,6 +3550,7 @@ const PHOTO_TEX = {
     function toggleOsc(key) {
       const osc = ensureOsc(key);
       osc.on = !osc.on;
+      markFavDirty();
       if (osc.on) {
         const place = oscOrder.indexOf(key);
         if (place >= 0) oscOrder.splice(place, 1);
@@ -3339,11 +3583,14 @@ const PHOTO_TEX = {
         bases[key] = next;
         state[key] = next;
         setMix = null;
+        markFavDirty();
         if (setIndex >= 0 && sets[setIndex]) sets[setIndex].values[key] = next;
         input.value = String(next);
         const nextPct = ((next - min) / (max - min)) * 100;
         input.style.setProperty("--p", nextPct + "%");
         value.textContent = format(next);
+        lastSetting = key;
+        refreshMini(key);
       });
       const value = document.createElement("b");
       value.textContent = format(state[key]);
@@ -3368,10 +3615,13 @@ const PHOTO_TEX = {
         bases[key] = Number(input.value);
         state[key] = bases[key];
         setMix = null;
+        markFavDirty();
         if (setIndex >= 0 && sets[setIndex]) sets[setIndex].values[key] = bases[key];
         value.textContent = format(bases[key]);
         const next = ((bases[key] - min) / (max - min)) * 100;
         input.style.setProperty("--p", next + "%");
+        lastSetting = key;
+        refreshMini(key);
       });
       inputs[key] = input;
       const auto = document.createElement("button");
@@ -3391,6 +3641,90 @@ const PHOTO_TEX = {
       const home = BACKGROUND_SLIDERS.has(key) ? bgSliders : FOREGROUND_SLIDERS.has(key) ? foregroundSliders : sliders;
       home.appendChild(wrap);
     }
+    const MINI_LABELS = { size: "Fg Scale", bgScale: "Bg Scale", tunnelZoom: "Fg Zoom", fieldZoom: "Zoom", alpha: "Fg Alpha", bgAlpha: "Bg Alpha" };
+    const miniPick = document.getElementById("mini-pick");
+    const miniRange = document.getElementById("mini-range");
+    const miniValue = document.getElementById("mini-value");
+    const miniGroups = { Background: [], Foreground: [], Feedback: [] };
+    for (const [key, label] of SLIDERS) {
+      const group = BACKGROUND_SLIDERS.has(key) ? "Background" : FOREGROUND_SLIDERS.has(key) ? "Foreground" : "Feedback";
+      miniGroups[group].push([key, MINI_LABELS[key] || label]);
+    }
+    for (const name of ["Background", "Foreground", "Feedback"]) {
+      const group = document.createElement("optgroup");
+      group.label = name;
+      for (const [key, label] of miniGroups[name]) {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = label;
+        group.appendChild(option);
+      }
+      miniPick.appendChild(group);
+    }
+    function syncMini() {
+      const key = specOf[lastSetting] ? lastSetting : "gain";
+      lastSetting = key;
+      miniPick.value = key;
+      const spec = specOf[key];
+      const live = dragging === key ? bases[key] : state[key];
+      miniRange.min = String(spec[2]);
+      miniRange.max = String(spec[3]);
+      miniRange.step = String(spec[4]);
+      miniRange.value = String(live);
+      const pct = ((Number(miniRange.value) - spec[2]) / (spec[3] - spec[2])) * 100;
+      miniRange.style.setProperty("--p", pct + "%");
+      miniValue.textContent = spec[5](Number(miniRange.value));
+      miniRange.setAttribute("aria-label", spec[1]);
+    }
+    refreshMini = (key) => {
+      if (panelMode !== "compact" || key !== lastSetting) return;
+      syncMini();
+    };
+    miniPick.addEventListener("change", () => {
+      lastSetting = miniPick.value;
+      syncMini();
+    });
+    miniRange.addEventListener("pointerdown", () => {
+      dragging = lastSetting;
+    });
+    miniRange.addEventListener("input", () => {
+      const key = lastSetting;
+      const spec = specOf[key];
+      const input = inputs[key];
+      bases[key] = Number(miniRange.value);
+      state[key] = bases[key];
+      setMix = null;
+      markFavDirty();
+      if (setIndex >= 0 && sets[setIndex]) sets[setIndex].values[key] = bases[key];
+      input.value = String(bases[key]);
+      const pct = ((bases[key] - spec[2]) / (spec[3] - spec[2])) * 100;
+      input.style.setProperty("--p", pct + "%");
+      miniRange.style.setProperty("--p", pct + "%");
+      const text = spec[5](bases[key]);
+      input.closest("label").querySelector("b").textContent = text;
+      miniValue.textContent = text;
+    });
+    function placeMini() {
+      const rect = panel.getBoundingClientRect();
+      const width = Math.min(440, Math.max(260, Math.min(rect.width, window.innerWidth - 16)));
+      miniEl.style.position = "fixed";
+      miniEl.style.margin = "0";
+      miniEl.style.width = width + "px";
+      const left = Math.min(window.innerWidth - width - 8, Math.max(8, rect.left));
+      const top = Math.min(window.innerHeight - 60, Math.max(8, rect.bottom - 60));
+      miniEl.style.left = left + "px";
+      miniEl.style.top = top + "px";
+    }
+    document.getElementById("panel-min").addEventListener("click", () => {
+      placeMini();
+      panelMode = "compact";
+      syncMini();
+      setPanelHidden(false);
+    });
+    document.getElementById("mini-max").addEventListener("click", () => {
+      panelMode = "full";
+      setPanelHidden(false);
+    });
     function makeBlendSelect(label, aria, current, onChange) {
       const wrap = document.createElement("label");
       wrap.className = "blend-wrap";
@@ -3416,6 +3750,7 @@ const PHOTO_TEX = {
     const fgBlend = makeBlendSelect("Blend", "Foreground blend mode", state.fgBlend, (select) => {
       state.fgBlend = Number(select.value);
       setMix = null;
+      markFavDirty();
       if (setIndex >= 0 && sets[setIndex]) sets[setIndex].values.fgBlend = state.fgBlend;
     });
     fgBlendSelect = fgBlend.select;
@@ -3444,6 +3779,7 @@ const PHOTO_TEX = {
     blendSelect.addEventListener("change", () => {
       state.blend = Number(blendSelect.value);
       setMix = null;
+      markFavDirty();
       if (setIndex >= 0 && sets[setIndex]) sets[setIndex].values.blend = state.blend;
     });
     blendWrap.append(blendRow, blendSelect);
@@ -3457,6 +3793,11 @@ const PHOTO_TEX = {
     let setFileMeta = {};
     const setLabel = document.getElementById("set-label");
     const setFile = document.getElementById("set-file");
+    const favs = [];
+    let favIndex = -1;
+    let favLive = false;
+    const favRoot = document.getElementById("favs");
+    const favAdd = document.getElementById("fav-add");
 
     function captureSet() {
       const values = { blend: state.blend, fgBlend: state.fgBlend };
@@ -3667,7 +4008,7 @@ const PHOTO_TEX = {
       oscKey = target.focus && oscs[target.focus]?.on ? target.focus : (oscOrder.length ? oscOrder[oscOrder.length - 1] : null);
       paintAutos();
       paintOsc();
-      if (panelHidden) oscPanel.hidden = true;
+      if (panelHidden || panelMode !== "full") oscPanel.hidden = true;
     }
 
     function finishSet(target) {
@@ -3687,40 +4028,78 @@ const PHOTO_TEX = {
         osc.range = dest.range;
         osc.rate = dest.rate;
       }
-      if (oscKey && !panelHidden) paintOsc();
+      if (oscKey && !panelHidden && panelMode === "full") paintOsc();
       if (target.background) applyBackground(target.background);
     }
 
-    function beginSet(index) {
-      if (!sets.length) return;
-      setIndex = (index + sets.length) % sets.length;
-      const target = sets[setIndex];
+    function startMix(target, dur, fav) {
+      favLive = false;
+      paintHeart();
+      const fromScene = state.scene;
+      const fromFg = paletteAt(scenePalettes[fromScene] || 0);
+      const targetScene = target.scene >= 1 && target.scene <= 15 ? target.scene : fromScene;
+      const targetPals = target.palettes || {};
+      const toFgRaw = targetPals[targetScene] != null ? targetPals[targetScene] : targetPals[String(targetScene)];
+      const toFg = paletteAt(Number.isFinite(Number(toFgRaw)) ? toFgRaw : scenePalettes[targetScene] || 0);
+      const fromBgIndex = bgPalette;
+      const toBgIndex = target.background && Object.prototype.hasOwnProperty.call(target.background, "palette") ? target.background.palette : bgPalette;
+      const fromBgOn = fromBgIndex == null ? 0 : 1;
+      const toBgOn = toBgIndex == null ? 0 : 1;
+      const fromBgPal = paletteAt(fromBgIndex == null ? (toBgIndex == null ? 0 : toBgIndex) : fromBgIndex);
+      const toBgPal = paletteAt(toBgIndex == null ? (fromBgIndex == null ? 0 : fromBgIndex) : toBgIndex);
       const from = { blend: state.blend, fgBlend: state.fgBlend };
       for (const [key] of SLIDERS) from[key] = bases[key];
       const fromOsc = {};
-      const keys = new Set([...Object.keys(oscs), ...Object.keys(target.osc)]);
+      const keys = new Set([...Object.keys(oscs), ...Object.keys(target.osc || {})]);
       for (const key of keys) {
         const osc = oscs[key];
         fromOsc[key] = { range: osc?.on ? osc.range : 0, rate: osc?.rate ?? target.osc[key]?.rate ?? 4 };
       }
       if (state.scene !== target.scene) setScene(target.scene);
-      applyPalettes(target.palettes);
+      else if (!layers.foreground) {
+        layers.foreground = true;
+        paintChips();
+      }
       applyOscState(target);
       if (!allowOsc) {
+        applyPalettes(target.palettes);
         finishSet(target);
         setMix = null;
+        livePalette = null;
+        if (fav) {
+          favLive = true;
+          paintHeart();
+        }
       } else {
-        setMix = { from, to: target, fromOsc, fromBg: snapshotBackground(), t: 0, dur: 2.8 };
+        setMix = { from, to: target, fromOsc, fromBg: snapshotBackground(), t: 0, dur, fav: !!fav, pal: { fromFg, toFg, fromBgPal, toBgPal, fromBgOn, toBgOn } };
+        livePalette = { fg: fromFg, bg: fromBgPal, bgOn: fromBgOn };
       }
+    }
+
+    function beginSet(index) {
+      if (!sets.length) return;
+      setIndex = (index + sets.length) % sets.length;
+      startMix(sets[setIndex], 2.8);
       paintSetLabel();
     }
 
     function stepSet(dt) {
-      if (!setMix || dragging) return;
+      if (!setMix || dragging) {
+        if (!setMix) livePalette = null;
+        return;
+      }
       setMix.t += dt;
       const u = Math.min(1, setMix.t / setMix.dur);
       const e = u * u * (3 - 2 * u);
       const target = setMix.to;
+      if (setMix.pal) {
+        const p = setMix.pal;
+        livePalette = {
+          fg: lerpCoeffs(p.fromFg, p.toFg, e),
+          bg: lerpCoeffs(p.fromBgPal, p.toBgPal, e),
+          bgOn: p.fromBgOn + (p.toBgOn - p.fromBgOn) * e,
+        };
+      }
       for (const [key] of SLIDERS) {
         const spec = specOf[key];
         let value = setMix.from[key] + (target.values[key] - setMix.from[key]) * e;
@@ -3769,7 +4148,6 @@ const PHOTO_TEX = {
             a: from.a + (to.a - from.a) * e,
           };
         }
-        if (Object.prototype.hasOwnProperty.call(target.background, "palette")) next.palette = target.background.palette;
         if (Object.prototype.hasOwnProperty.call(target.background, "shader")) next.shader = target.background.shader;
         if (Object.prototype.hasOwnProperty.call(target.background, "texA")) next.texA = target.background.texA;
         if (Object.prototype.hasOwnProperty.call(target.background, "texB")) next.texB = target.background.texB;
@@ -3780,15 +4158,67 @@ const PHOTO_TEX = {
         applyBackground(next);
       }
       if (u >= 1) {
+        const wasFav = !!setMix.fav;
+        applyPalettes(target.palettes);
         finishSet(target);
+        livePalette = null;
         setMix = null;
-      } else if (oscKey && !panelHidden) paintOsc();
+        if (wasFav) {
+          favLive = true;
+          paintHeart();
+        }
+      } else if (oscKey && !panelHidden && panelMode === "full") paintOsc();
     }
 
     function stepSetCursor(direction) {
       if (!sets.length) return;
       beginSet(setIndex < 0 ? (direction > 0 ? 0 : sets.length - 1) : setIndex + direction);
     }
+
+    function markFavDirty() {
+      if (!favLive) return;
+      favLive = false;
+      paintHeart();
+    }
+
+    function paintHeart() {
+      favAdd.setAttribute("aria-pressed", favLive ? "true" : "false");
+      favAdd.querySelector('[data-icon="outline"]').toggleAttribute("hidden", favLive);
+      favAdd.querySelector('[data-icon="filled"]').toggleAttribute("hidden", !favLive);
+    }
+
+    function paintFavs() {
+      favRoot.replaceChildren();
+      favs.forEach((_, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "fav" + (index === favIndex ? " on" : "");
+        button.textContent = String(index + 1).padStart(2, "0");
+        button.setAttribute("aria-label", "Favourite " + button.textContent);
+        button.addEventListener("click", () => beginFavourite(index));
+        favRoot.appendChild(button);
+      });
+    }
+
+    function beginFavourite(index) {
+      if (!favs.length) return;
+      favIndex = (index + favs.length) % favs.length;
+      paintFavs();
+      startMix(favs[favIndex], 4, true);
+    }
+
+    function stepFavCursor(direction) {
+      if (!favs.length) return;
+      beginFavourite(favIndex < 0 ? (direction > 0 ? 0 : favs.length - 1) : favIndex + direction);
+    }
+
+    favAdd.addEventListener("click", () => {
+      favs.push(captureSet());
+      favIndex = favs.length - 1;
+      favLive = true;
+      paintFavs();
+      paintHeart();
+    });
 
     document.getElementById("set-save").addEventListener("click", () => {
       sets.push(captureSet());
@@ -3923,6 +4353,9 @@ vec3 palette(float t) {
 }
 vec3 bgPaletteColor(float t) {
   return uBgPalA + uBgPalB * cos(6.28318530718 * (uBgPalC * t + uBgPalD));
+}
+vec3 mixBgPal(vec3 plain, vec3 graded) {
+  return mix(plain, graded, clamp(uBgPalOn, 0.0, 1.0));
 }
 vec3 displayToBuf(vec3 c) {
   return -log(max(vec3(0.001), 1.0 - clamp(c, 0.0, 0.985))) / 1.5;
@@ -4405,8 +4838,8 @@ vec3 bgBaseWarp(vec2 fragCoord) {
   vec2 mid = uResolution.xy * 0.5 / uResolution.x;
   uv = bgOrient(uv - mid) + mid;
   float shade = clamp(bwPattern(uv), 0.0, 1.0);
-  if (uBgPalOn > 0.5) return clamp(bgPaletteColor(shade), 0.0, 1.0);
-  return vec3(bwRed(shade), bwGreen(shade), bwBlue(shade));
+  vec3 plain = vec3(bwRed(shade), bwGreen(shade), bwBlue(shade));
+  return mixBgPal(plain, clamp(bgPaletteColor(shade), 0.0, 1.0));
 }
 vec3 bgCreation(vec2 fragCoord) {
   vec3 c = vec3(0.0);
@@ -4426,8 +4859,8 @@ vec3 bgCreation(vec2 fragCoord) {
   return c / l;
 }
 vec3 beautyColor(float t) {
-  if (uBgPalOn > 0.5) return bgPaletteColor(t);
-  return vec3(0.5) + vec3(0.5) * cos(6.28318 * (t + vec3(0.263, 0.416, 0.557)));
+  vec3 embedded = vec3(0.5) + vec3(0.5) * cos(6.28318 * (t + vec3(0.263, 0.416, 0.557)));
+  return mixBgPal(embedded, bgPaletteColor(t));
 }
 vec3 bgBeauty(vec2 fragCoord) {
   vec2 uv = (fragCoord * 2.0 - uResolution.xy) / max(uResolution.y, 1.0);
@@ -4484,9 +4917,8 @@ vec3 bgMystify(vec2 fragCoord) {
       float d = min(min(mystLine(p, c0, c1), mystLine(p, c1, c2)), min(mystLine(p, c2, c3), mystLine(p, c3, c0)));
       float line = smoothstep(0.004, 0.001, d) * fade;
       float hueT = fract(ht * 0.05 + float(s) * 0.37);
-      vec3 ink = uBgPalOn > 0.5
-        ? bgPaletteColor(hueT)
-        : 0.55 + 0.45 * cos(6.28318 * (hueT + vec3(0.0, 0.33, 0.67)));
+      vec3 plain = 0.55 + 0.45 * cos(6.28318 * (hueT + vec3(0.0, 0.33, 0.67)));
+      vec3 ink = mixBgPal(plain, bgPaletteColor(hueT));
       col += ink * line;
     }
   }
@@ -4523,12 +4955,11 @@ vec3 bgRaymarchB(vec2 fragCoord) {
   }
   vec3 ip = pos + dir * t;
   float light = max(0.0, rbMap(ip - 0.1) - tt);
-  vec3 col = 0.05 * t + abs(dir) * sqrt(vec3(max(t * 0.1, 0.0))) + light;
-  if (uBgPalOn > 0.5) {
-    float shade = clamp(t * 0.08 + light * 0.35, 0.0, 1.0);
-    vec3 pal = bgPaletteColor(shade);
-    col = pal * (0.2 + light * 3.0) + pal * sqrt(max(t * 0.1, 0.0));
-  }
+  vec3 plain = 0.05 * t + abs(dir) * sqrt(vec3(max(t * 0.1, 0.0))) + light;
+  float shade = clamp(t * 0.08 + light * 0.35, 0.0, 1.0);
+  vec3 pal = bgPaletteColor(shade);
+  vec3 graded = pal * (0.2 + light * 3.0) + pal * sqrt(max(t * 0.1, 0.0));
+  vec3 col = mixBgPal(plain, graded);
   float fade = clamp(1.0 / max(t * t * t * t, 0.0001), 0.0, 1.0);
   return col * fade;
 }
@@ -4862,8 +5293,9 @@ void main() {
   bgUv.x /= bgAspect;
   bgUv += 0.5;
   vec4 bg = mix(mix(uBgBL, uBgBR, bgUv.x), mix(uBgTL, uBgTR, bgUv.x), bgUv.y);
+  float palOn = clamp(uBgPalOn, 0.0, 1.0);
   bool hasPat = uPatA.x >= 0.0 || uPatB.x >= 0.0;
-  if (uBgPalOn > 0.5 && !hasPat) bg = vec4(clamp(bgPaletteColor(bgUv.x) * uBgPlane.rgb, 0.0, 1.0), uBgPlane.a);
+  if (!hasPat) bg.rgb = mix(bg.rgb, clamp(bgPaletteColor(bgUv.x) * uBgPlane.rgb, 0.0, 1.0), palOn);
   if (uBgOn > 0.5 && uBgShader > 0.5) {
     vec3 tun = bgTunnel(gl_FragCoord.xy);
     if (uBgShader > 1.5 && uBgShader < 2.5) tun = bgMotion(gl_FragCoord.xy);
@@ -4881,9 +5313,11 @@ void main() {
     else if (uBgShader > 13.5 && uBgShader < 14.5) tun = bgUniverse(gl_FragCoord.xy);
     else if (uBgShader > 14.5 && uBgShader < 15.5) tun = bgWorley(gl_FragCoord.xy);
     else if (uBgShader > 15.5) tun = bgFlame(gl_FragCoord.xy);
-    if (bg.a > 0.0 && !(uBgPalOn > 0.5 && ((uBgShader > 7.5 && uBgShader < 8.5) || uBgShader > 9.5))) {
+    if (bg.a > 0.0) {
       vec3 bgRgb = -log(max(1.0 - clamp(bg.rgb, 0.0, 0.985), 0.001)) / 1.5;
-      tun = mix(tun, bgRgb, bg.a);
+      bool palOwned = (uBgShader > 7.5 && uBgShader < 8.5) || uBgShader > 9.5;
+      float planeMix = palOwned ? bg.a * (1.0 - palOn) : bg.a;
+      tun = mix(tun, bgRgb, planeMix);
     }
     col = mix(col, tun, uBgAlpha);
   } else if (uBgOn > 0.5 && bg.a > 0.0) {
@@ -4893,7 +5327,8 @@ void main() {
   if (uBgOn > 0.5 && (uPatA.x >= 0.0 || uPatB.x >= 0.0)) {
     vec3 pat = blendPat(samplePat(uPatA, bgUv, uPatRnd.xy), samplePat(uPatB, bgUv, uPatRnd.zw), uPatBlend);
     if (pat.x >= 0.0) {
-      if (uBgPalOn > 0.5) pat *= clamp(bgPaletteColor(bgUv.x) * uBgPlane.rgb, 0.0, 1.0);
+      vec3 tintedPat = pat * clamp(bgPaletteColor(bgUv.x) * uBgPlane.rgb, 0.0, 1.0);
+      pat = mix(pat, tintedPat, palOn);
       col = mix(col, displayToBuf(pat), uBgAlpha);
     }
   }
@@ -5716,7 +6151,7 @@ void main() {
           gl.uniform1f(fu.radius, radius);
           gl.uniform1f(fu.squash, squash);
           gl.uniform1f(fu.pathHue, pathHue);
-          const pal = PALETTES[scenePalettes[state.scene]] || PALETTES[0];
+          const pal = livePalette ? livePalette.fg : (PALETTES[scenePalettes[state.scene]] || PALETTES[0]);
           gl.uniform3fv(fu.palA, pal.a);
           gl.uniform3fv(fu.palB, pal.b);
           gl.uniform3fv(fu.palC, pal.c);
@@ -5730,12 +6165,13 @@ void main() {
           gl.uniform4f(fu.bgBL, background.bl.r, background.bl.g, background.bl.b, background.bl.a);
           gl.uniform4f(fu.bgBR, background.br.r, background.br.g, background.br.b, background.br.a);
           const bgPal = bgPalette == null ? null : PALETTES[bgPalette];
-          gl.uniform1f(fu.bgPalOn, bgPal ? 1 : 0);
-          if (bgPal) {
-            gl.uniform3fv(fu.bgPalA, bgPal.a);
-            gl.uniform3fv(fu.bgPalB, bgPal.b);
-            gl.uniform3fv(fu.bgPalC, bgPal.c);
-            gl.uniform3fv(fu.bgPalD, bgPal.d);
+          const bgCoeffs = livePalette ? livePalette.bg : bgPal;
+          gl.uniform1f(fu.bgPalOn, livePalette ? livePalette.bgOn : (bgPal ? 1 : 0));
+          if (bgCoeffs) {
+            gl.uniform3fv(fu.bgPalA, bgCoeffs.a);
+            gl.uniform3fv(fu.bgPalB, bgCoeffs.b);
+            gl.uniform3fv(fu.bgPalC, bgCoeffs.c);
+            gl.uniform3fv(fu.bgPalD, bgCoeffs.d);
           }
           gl.uniform4f(fu.bgPlane, background.plane.r, background.plane.g, background.plane.b, background.plane.a);
           gl.uniform1f(fu.bgRotate, state.bgRotate * Math.PI / 180);
