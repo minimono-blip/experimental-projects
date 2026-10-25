@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Blitz VJ (WebGL port)</title>
 <style>
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
@@ -12,10 +13,18 @@
   #screen { width: 1024px; height: 768px; flex: none; image-rendering: auto; outline: none; display: block; }
   body.fit #screen, body.fs:not(.stretch) #screen { width: min(100vw, calc(100vh * 4 / 3)); height: min(100vh, calc(100vw * 3 / 4)); }
   body.stretch #screen { width: 100vw; height: 100vh; }
+  /* mobile: dvh = the visible height (excludes the browser's address bar); same as vh on desktop */
+  @supports (height: 100dvh) {
+    html, body { height: 100dvh; }
+    body.fit #screen, body.fs:not(.stretch) #screen { width: min(100vw, calc(100dvh * 4 / 3)); height: min(100dvh, calc(100vw * 3 / 4)); }
+    body.stretch #screen { height: 100dvh; }
+  }
+  #screen { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
   #status { position: fixed; left: 8px; top: 8px; color: #9cf; font: 12px monospace; white-space: pre-wrap; max-width: 90vw; }
   #saved { position: fixed; right: 8px; bottom: 8px; color: #9f9; font: 12px monospace; opacity: 0; transition: opacity .5s; }
   #tools { position: fixed; right: 6px; top: 6px; font: 11px sans-serif; opacity: 0; transition: opacity .3s; }
-  #tools:hover { opacity: 0.9; }
+  #tools:hover, body.mousemoved #tools { opacity: 0.9; }
+  @media (hover: none) { #tools { opacity: 0.6; } } /* touch screens have no hover: keep the menu faintly visible */
   body.fs #tools { display: none; }
   body.fs #screen { cursor: default; }
   #tools button, #tools label { background: #222; color: #ccc; border: 1px solid #444; padding: 2px 6px; cursor: pointer; }
@@ -32,6 +41,17 @@
   <button onclick="window.blitzExport()" title="Download performances saved in this browser">Export</button>
   <label title="Load .lsd performances or a background image (or drag &amp; drop onto the page)">Import<input type="file" multiple accept=".lsd,.jpg,.jpeg,.png" style="display:none" onchange="window.blitzImport(this.files)"></label>
 </div>
+<script>
+// Fade the tools menu in on any mouse movement; hide again 2.5 s after the mouse stops.
+(function () {
+  var t = 0;
+  window.addEventListener('mousemove', function () {
+    document.body.classList.add('mousemoved');
+    clearTimeout(t);
+    t = setTimeout(function () { document.body.classList.remove('mousemoved'); }, 2500);
+  }, { passive: true });
+})();
+</script>
 <script>
 (function () {
   // view mode: ?fit=1|0|stretch overrides the remembered choice (localStorage blitzvj.view), default fit
@@ -569,7 +589,8 @@ function installGL(R) {
       const tex = texs.get(en === 2 ? t.bCube : t.b2d);
       if (!tex || !tex.complete()) { u.push('0'); continue; }
       const comb = t.envMode === 0x8570 ? [t.combRGB, t.combA, t.srcRGB.join(':'), t.opRGB.join(':'), t.srcA.join(':'), t.opA.join(':')].join('.') : '';
-      const filt = (en === 1 && R.lodMode !== 'hw' && tex.mag === 0x2601) ? 'L' : 'H';
+      // exact sampler variant: compile-time min filter + per-axis REPEAT (see genSampL); 'H' = hardware texture()
+      const filt = (en === 1 && R.lodMode !== 'hw' && tex.mag === 0x2601) ? `L${tex.min}:${tex.ws === 0x2901 ? 1 : 0}${tex.wt === 0x2901 ? 1 : 0}` : 'H';
       u.push(`${en}.${t.envMode}.${comb}.${filt}.${t.gen.map((g, k) => g ? t.genMode[k] : 0).join(':')}`);
     }
     const lit = !!S.en[GLC.LIGHTING];
@@ -577,6 +598,51 @@ function installGL(R) {
       lit && S.en[GLC.NORMALIZE] ? 1 : 0, lit && S.en[GLC.RESCALE_NORMAL] ? 1 : 0,
       S.en[GLC.FOG] ? S.fog.mode : 0, S.shade === 0x1D00 ? 1 : 0, S.en[GLC.ALPHA_TEST] ? S.alphaFunc : 0, S.en[GLC.COLOR_LOGIC_OP] ? S.logicOp : 0,
       src.points ? 1 : 0, u.join('|'), (R.blendMode !== 'hw' && S.en[GLC.BLEND] && !S.en[GLC.COLOR_LOGIC_OP] && S.blendSrc === 0x0302) ? 1 : 0].join(',');
+  }
+  // ---- exact (llvmpipe-identical) sampler, see QUIRKS.md "Sampler arithmetic"
+  // Mesa llvmpipe-exact bilinear filtering (the reference renderer): texel coordinates are rounded to 1/256 texel, and each of
+  // the three lerps works on 8-bit integers and rounds: a + ((b - a) * w + 128) >> 8. The intermediate rounding is what makes
+  // repeated feedback passes drift; float bilinear (SwiftShader/GPUs) does not do that.
+  // The integer arithmetic is done in highp float: every value is an integer below 2^24 (the 1/256-texel coordinate is at most
+  // 2048*256 = 2^19, |(b - a) * w + 128| < 2^16) and /256 is exact, so floor(x / 256) == x >> 8 and c - 256*floor(c/256) == c & 255,
+  // bit-for-bit; ~20% faster than ivec maths. 'precision highp int' is still declared (WebGL2 guarantees 32-bit highp ints; the
+  // LOD uses floatBitsToInt). The earlier int version wrapped with 16-bit mediump ints (tiled image); ?emulint16=1 reproduces it.
+  // Per-unit variants are generated with the min filter and REPEAT/clamp per axis as compile-time constants (part of the program
+  // key), so GL_LINEAR minification skips the LOD maths and no runtime filter/wrap branches remain. Generic reference version:
+  // git history / scratch-perf/orig (sampL with u_tp uniform).
+  const SAMP_COMMON = `vec4 lerp8(vec4 a, vec4 b, float w) { return a + floor(((b - a) * w + 128.0) * (1.0 / 256.0)); }
+float lodL(sampler2D s, vec2 uv) {
+  vec2 sz0 = vec2(textureSize(s, 0));
+  vec2 dx = dFdx(uv) * sz0, dy = dFdy(uv) * sz0;
+  // llvmpipe LOD: lambda = 0.5 * fast_log2(rho^2), fast_log2(x) = exponent + (mantissa - 1) (piecewise-linear), measured 100% fit
+  float r2 = max(max(dot(dx, dx), dot(dy, dy)), 1e-30); int rb = floatBitsToInt(r2);
+  return 0.5 * (float(((rb >> 23) & 255) - 127) + intBitsToFloat((rb & 0x7FFFFF) | 0x3F800000) - 1.0);
+}
+`;
+  function genSampL(name, mn, rs, rt) {
+    const wr = (r, a, b, n) => r ? `(ivec2(${a}, ${b}) % ${n} + ${n}) % ${n}` : `clamp(ivec2(${a}, ${b}), 0, ${n} - 1)`;
+    const b = `${name}_b`;
+    let f = `vec4 ${b}(sampler2D s, vec2 uv, int l) {
+  ivec2 sz = textureSize(s, l);
+  vec2 c = floor((uv * vec2(sz) - 0.5) * 256.0 + 0.5);
+${R.emulInt16 ? '  c = vec2((ivec2(c) << 16) >> 16); // debug (?emulint16=1): 16-bit mediump int wrap of the 1/256-texel coordinate\n' : ''}  vec2 fi = floor(c * (1.0 / 256.0)); vec2 f = c - fi * 256.0; ivec2 i0 = ivec2(fi);
+  ivec2 xs = ${wr(rs, 'i0.x', 'i0.x + 1', 'sz.x')}, ys = ${wr(rt, 'i0.y', 'i0.y + 1', 'sz.y')};
+  vec4 t00 = floor(texelFetch(s, ivec2(xs.x, ys.x), l) * 255.0 + 0.5), t10 = floor(texelFetch(s, ivec2(xs.y, ys.x), l) * 255.0 + 0.5);
+  vec4 t01 = floor(texelFetch(s, ivec2(xs.x, ys.y), l) * 255.0 + 0.5), t11 = floor(texelFetch(s, ivec2(xs.y, ys.y), l) * 255.0 + 0.5);
+  return lerp8(lerp8(t00, t10, f.x), lerp8(t01, t11, f.x), f.y);
+}
+vec4 ${name}(sampler2D s, vec2 uv, int q) {
+`;
+    if (mn === 0x2601) return f + `  return ${b}(s, uv, 0) / 255.0;\n}\n`; // GL_LINEAR min: always level 0, LOD irrelevant
+    const cth = (mn === 0x2700 || mn === 0x2702) ? '0.5' : '0.0';
+    f += `  float lam = lodL(s, uv);\n  if (lam <= ${cth}) return ${b}(s, uv, 0) / 255.0;\n`;
+    if (mn === 0x2701) f += `  int d = (lam <= 0.5) ? 0 : int(ceil(lam + 0.5)) - 1; return ${b}(s, uv, min(d, q)) / 255.0;\n`;
+    else if (mn === 0x2703) f += `  if (lam >= float(q)) return ${b}(s, uv, q) / 255.0;
+  int d1 = int(floor(lam)); float t = floor(fract(lam) * 256.0);
+  vec4 b1 = ${b}(s, uv, d1);
+  return (t == 0.0 ? b1 : lerp8(b1, ${b}(s, uv, d1 + 1), t)) / 255.0;\n`;
+    else f += `  return texture(s, uv);\n`;
+    return f + '}\n';
   }
   function buildProgram(key) {
     const k = key.split(',');
@@ -652,51 +718,35 @@ uniform int u_nl; uniform vec4 u_lAmb[8], u_lDif[8], u_lSpec[8], u_lPos[8]; unif
       vs += `    v_tc[${i}] = u_tm[${i}] * tc; }\n`;
     }
     vs += '}\n';
+    // Exact-sampler functions, specialised per unit at compile time (min filter, REPEAT per axis): same arithmetic as the generic
+    // version (see genSampL), minus the LOD maths for GL_LINEAR minification and the runtime wrap/filter branches.
+    const sampFns = new Map();
+    units.forEach(u => { if (u && u.kind === 1 && u.filt[0] === 'L') { const [mn, rr] = u.filt.slice(1).split(':'); u.sampFn = `sampL_${mn}_${rr}`; sampFns.set(u.sampFn, [+mn, rr[0] === '1', rr[1] === '1']); } });
+    const sampSrc = sampFns.size ? SAMP_COMMON + [...sampFns].map(([n, a]) => genSampL(n, ...a)).join('') : '';
     let fs = `#version 300 es
 precision highp float;
-${FL}in vec4 v_col; ${FL}in vec4 v_spec; in float v_fog; in vec4 v_tc[${NU}];
+precision highp int;
+precision highp sampler2D;
+${R.emulInt16 ? '#define EMUL_INT16 1\n' : ''}${FL}in vec4 v_col; ${FL}in vec4 v_spec; in float v_fog; in vec4 v_tc[${NU}];
 uniform sampler2D u_s2[${NU}]; uniform samplerCube u_sc[${NU}]; uniform vec4 u_envc[${NU}]; uniform float u_rgbScale[${NU}], u_aScale[${NU}];
 uniform vec4 u_fogc; uniform vec3 u_fogp; uniform float u_aref; uniform sampler2D u_dst;
-uniform ivec4 u_tp[${NU}]; uniform int u_tl[${NU}];
+uniform int u_tl[${NU}];
 out vec4 o;
 // Mesa llvmpipe-exact bilinear filtering (the reference renderer, see QUIRKS.md "Sampler arithmetic"): texel coordinates are
 // rounded to 1/256 texel, and each of the three lerps works on 8-bit integers and rounds: a + ((b - a) * w + 128) >> 8.
 // The intermediate rounding is what makes repeated feedback passes drift; float bilinear (SwiftShader/GPUs) does not do that.
-ivec2 wrap2(ivec2 i, int n, int w) { return w == 0x2901 ? (i % n + n) % n : clamp(i, 0, n - 1); }
-ivec4 lerp8(ivec4 a, ivec4 b, int w) { return a + (((b - a) * w + 128) >> 8); }
-ivec4 bil8(sampler2D s, vec2 uv, int l, ivec2 w) {
-  ivec2 sz = textureSize(s, l);
-  ivec2 c = ivec2(floor((uv * vec2(sz) - 0.5) * 256.0 + 0.5));
-  ivec2 i0 = c >> 8; ivec2 f = c & 255;
-  ivec2 xs = wrap2(ivec2(i0.x, i0.x + 1), sz.x, w.x), ys = wrap2(ivec2(i0.y, i0.y + 1), sz.y, w.y);
-  ivec4 t00 = ivec4(texelFetch(s, ivec2(xs.x, ys.x), l) * 255.0 + 0.5), t10 = ivec4(texelFetch(s, ivec2(xs.y, ys.x), l) * 255.0 + 0.5);
-  ivec4 t01 = ivec4(texelFetch(s, ivec2(xs.x, ys.y), l) * 255.0 + 0.5), t11 = ivec4(texelFetch(s, ivec2(xs.y, ys.y), l) * 255.0 + 0.5);
-  return lerp8(lerp8(t00, t10, f.x), lerp8(t01, t11, f.x), f.y);
-}
-vec4 sampL(sampler2D s, vec2 uv, ivec4 tp, int q) {
-  int mn = tp.x; ivec2 w = tp.zw;
-  vec2 sz0 = vec2(textureSize(s, 0));
-  vec2 dx = dFdx(uv) * sz0, dy = dFdy(uv) * sz0;
-  // llvmpipe LOD: lambda = 0.5 * fast_log2(rho^2), fast_log2(x) = exponent + (mantissa - 1) (piecewise-linear), measured 100% fit
-  float r2 = max(max(dot(dx, dx), dot(dy, dy)), 1e-30); int rb = floatBitsToInt(r2);
-  float lam = 0.5 * (float(((rb >> 23) & 255) - 127) + intBitsToFloat((rb & 0x7FFFFF) | 0x3F800000) - 1.0);
-  float cth = (mn == 0x2700 || mn == 0x2702) ? 0.5 : 0.0;
-  if (lam <= cth || mn == 0x2601) return vec4(bil8(s, uv, 0, w)) / 255.0;
-  if (mn == 0x2701) { int d = (lam <= 0.5) ? 0 : int(ceil(lam + 0.5)) - 1; return vec4(bil8(s, uv, min(d, q), w)) / 255.0; }
-  if (mn == 0x2703) {
-    if (lam >= float(q)) return vec4(bil8(s, uv, q, w)) / 255.0;
-    int d1 = int(floor(lam)); int t = int(fract(lam) * 256.0);
-    ivec4 b1 = bil8(s, uv, d1, w);
-    return vec4(t == 0 ? b1 : lerp8(b1, bil8(s, uv, d1 + 1, w), t)) / 255.0;
-  }
-  return texture(s, uv);
-}
-void main(){
+// The integer arithmetic is done in highp float: every value is an integer below 2^24 (the 1/256-texel coordinate is at most
+// 2048*256 = 2^19, |(b - a) * w + 128| < 2^16) and /256 is exact, so floor(x / 256) == x >> 8 and c - 256*floor(c/256) == c & 255,
+// bit-for-bit. This is ~20% faster than ivec maths. 'precision highp int' is still declared (WebGL2 guarantees 32-bit highp
+// ints; the LOD below uses floatBitsToInt).
+// (The earlier int version needed 'precision highp int': 16-bit mediump ints wrapped the coordinate -> tiled image; ?emulint16=1
+// still reproduces that wrap.)
+${sampSrc}void main(){
   vec4 cf = v_col; vec4 cp = cf; vec4 ct;
 `;
     for (let i = 0; i < NU; i++) {
       const u = units[i]; if (!u) continue;
-      fs += u.kind === 2 ? `  ct = texture(u_sc[${i}], v_tc[${i}].xyz);\n` : (u.filt === 'L' ? `  ct = sampL(u_s2[${i}], v_tc[${i}].xy / v_tc[${i}].w, u_tp[${i}], u_tl[${i}]);\n` : `  ct = texture(u_s2[${i}], v_tc[${i}].xy / v_tc[${i}].w);\n`);
+      fs += u.kind === 2 ? `  ct = texture(u_sc[${i}], v_tc[${i}].xyz);\n` : (u.sampFn ? `  ct = ${u.sampFn}(u_s2[${i}], v_tc[${i}].xy / v_tc[${i}].w, u_tl[${i}]);\n` : `  ct = texture(u_s2[${i}], v_tc[${i}].xy / v_tc[${i}].w);\n`);
       switch (u.env) {
         case 0x1E01: fs += `  cp = ct;\n`; break;
         case 0x2100: fs += `  cp = cp * ct;\n`; break;
@@ -748,7 +798,7 @@ void main(){
     for (const n of ['tm', 's2', 'sc', 'envc', 'rgbScale', 'aScale', 'tp', 'tl']) P.u[n] = [];
     for (let i = 0; i < NU; i++) {
       P.u.tm[i] = loc(`u_tm[${i}]`); P.u.s2[i] = loc(`u_s2[${i}]`); P.u.sc[i] = loc(`u_sc[${i}]`);
-      P.u.envc[i] = loc(`u_envc[${i}]`); P.u.tp[i] = loc(`u_tp[${i}]`); P.u.tl[i] = loc(`u_tl[${i}]`); P.u.rgbScale[i] = loc(`u_rgbScale[${i}]`); P.u.aScale[i] = loc(`u_aScale[${i}]`);
+      P.u.envc[i] = loc(`u_envc[${i}]`); P.u.tl[i] = loc(`u_tl[${i}]`); P.u.rgbScale[i] = loc(`u_rgbScale[${i}]`); P.u.aScale[i] = loc(`u_aScale[${i}]`);
     }
     if (lit) { P.u.L = {}; for (const n of ['u_lAmb', 'u_lDif', 'u_lSpec', 'u_lPos', 'u_lSdir', 'u_lAtt', 'u_lSexp', 'u_lScos', 'u_lScut']) P.u.L[n] = loc(n + '[0]'); }
     gl.useProgram(p);
@@ -803,6 +853,124 @@ void main(){
     gl.texParameteri(tg, gl.TEXTURE_MAX_LEVEL, Math.min(ml, t.maxLevel));
     t.dirty = false;
   }
+  // ------------------------------------------------------------- GL state / uniform cache
+  // All of gl.js talks to WebGL through this wrapper: every method of the real context, bound, with the redundant-state setters
+  // (enable/disable, blend, depth, cull, viewport, scissor, masks, program, framebuffer/texture/buffer bindings, uniforms,
+  // generic attribute values) skipping the native call when the value is already current. Because everything (FBO ping-pong,
+  // copies, present, readback) goes through the same object the shadow can't go stale; deleting a bound object clears the
+  // binding (as GL does), and context loss / R.glCacheReset() drops the whole shadow. Uniform values are per program in GL, so
+  // they are cached per uniform location (values compared after Math.fround, i.e. as GL stores them) and need no invalidation
+  // on program switch. ?glcache=0 disables the cache (debug).
+  function makeCachedGL(raw) {
+    const g = {};
+    for (let o = Object.getPrototypeOf(raw); o && o !== Object.prototype; o = Object.getPrototypeOf(o))
+      for (const k of Object.getOwnPropertyNames(o)) {
+        if (k in g || k === 'constructor') continue;
+        const d = Object.getOwnPropertyDescriptor(o, k);
+        if (typeof d.value === 'function') g[k] = d.value.bind(raw);
+        else if ('value' in d) g[k] = d.value;
+        else if (d.get) Object.defineProperty(g, k, { get: () => raw[k] });
+      }
+    g.raw = raw;
+    if (typeof location !== 'undefined' && new URLSearchParams(location.search).get('glcache') === '0') {
+      g.attrBegin = () => { for (let i = 0; i < 8; i++) g.disableVertexAttribArray(i); };
+      g.streamData = (t, b, data) => g.bufferData(t, data, raw.STREAM_DRAW);
+      g.cacheReset = () => {};
+      return g;
+    }
+    const N = {}; for (const k of ['enable', 'disable', 'blendFuncSeparate', 'depthFunc', 'depthMask', 'cullFace', 'frontFace', 'viewport', 'scissor', 'colorMask', 'clearColor', 'clearDepth', 'useProgram', 'bindFramebuffer', 'activeTexture', 'bindTexture', 'bindBuffer', 'bindVertexArray', 'vertexAttrib4f', 'deleteTexture', 'deleteFramebuffer', 'deleteBuffer', 'deleteProgram', 'deleteVertexArray', 'texParameteri']) N[k] = g[k];
+    const U = {}; for (const k of ['uniform1f', 'uniform1i', 'uniform3f', 'uniform4f', 'uniform4i', 'uniform1fv', 'uniform3fv', 'uniform4fv', 'uniformMatrix3fv', 'uniformMatrix4fv']) U[k] = g[k];
+    let c;
+    const reset = fresh => { c = { cap: new Map(), blend: [], dfunc: -1, dmask: -1, cull: -1, front: -1, vp: [], sc: [], cm: [], cc: [], cd: NaN, prog: undefined, rfb: undefined, dfb: undefined, unit: fresh ? raw.TEXTURE0 : -1, tex: new Map(), buf: new Map(), vao: undefined, va: new Map(), uni: new Map(), vas: new Map() }; };
+    reset(true); g.cacheReset = reset; // fresh context: active unit is TEXTURE0; manual reset: unknown
+    const same4 = (a, x, y, z, w) => a[0] === x && a[1] === y && a[2] === z && a[3] === w;
+    const set4 = (a, x, y, z, w) => { a[0] = x; a[1] = y; a[2] = z; a[3] = w; };
+    g.enable = cap => { if (c.cap.get(cap) !== true) { c.cap.set(cap, true); N.enable(cap); } };
+    g.disable = cap => { if (c.cap.get(cap) !== false) { c.cap.set(cap, false); N.disable(cap); } };
+    g.blendFuncSeparate = (a, b, cc, d) => { if (!same4(c.blend, a, b, cc, d)) { set4(c.blend, a, b, cc, d); N.blendFuncSeparate(a, b, cc, d); } };
+    g.blendFunc = (a, b) => g.blendFuncSeparate(a, b, a, b);
+    g.depthFunc = f => { if (c.dfunc !== f) { c.dfunc = f; N.depthFunc(f); } };
+    g.depthMask = m => { m = !!m; if (c.dmask !== m) { c.dmask = m; N.depthMask(m); } };
+    g.cullFace = f => { if (c.cull !== f) { c.cull = f; N.cullFace(f); } };
+    g.frontFace = f => { if (c.front !== f) { c.front = f; N.frontFace(f); } };
+    g.viewport = (x, y, w, h) => { if (!same4(c.vp, x, y, w, h)) { set4(c.vp, x, y, w, h); N.viewport(x, y, w, h); } };
+    g.scissor = (x, y, w, h) => { if (!same4(c.sc, x, y, w, h)) { set4(c.sc, x, y, w, h); N.scissor(x, y, w, h); } };
+    g.colorMask = (r, gg, b, a) => { r = !!r; gg = !!gg; b = !!b; a = !!a; if (!same4(c.cm, r, gg, b, a)) { set4(c.cm, r, gg, b, a); N.colorMask(r, gg, b, a); } };
+    g.clearColor = (r, gg, b, a) => { r = Math.fround(r); gg = Math.fround(gg); b = Math.fround(b); a = Math.fround(a); if (!same4(c.cc, r, gg, b, a)) { set4(c.cc, r, gg, b, a); N.clearColor(r, gg, b, a); } };
+    g.clearDepth = d => { if (c.cd !== d) { c.cd = d; N.clearDepth(d); } };
+    g.useProgram = p => { if (c.prog !== p) { c.prog = p; N.useProgram(p); } };
+    g.bindFramebuffer = (t, f) => {
+      if (t === raw.FRAMEBUFFER) { if (c.rfb !== f || c.dfb !== f) { c.rfb = c.dfb = f; N.bindFramebuffer(t, f); } }
+      else if (t === raw.READ_FRAMEBUFFER) { if (c.rfb !== f) { c.rfb = f; N.bindFramebuffer(t, f); } }
+      else if (t === raw.DRAW_FRAMEBUFFER) { if (c.dfb !== f) { c.dfb = f; N.bindFramebuffer(t, f); } }
+      else N.bindFramebuffer(t, f);
+    };
+    g.activeTexture = u => { if (c.unit !== u || u < 0) { c.unit = u; N.activeTexture(u); } };
+    g.bindTexture = (t, x) => { const k = c.unit * 65536 + t; if (c.unit < 0 || c.tex.get(k) !== x) { if (c.unit >= 0) c.tex.set(k, x); N.bindTexture(t, x); } };
+    // ELEMENT_ARRAY_BUFFER is vertex-array state: keyed by the bound VAO
+    const bufKey = t => t === raw.ELEMENT_ARRAY_BUFFER ? c.vao || 'null' : t;
+    g.bindBuffer = (t, b) => { const k = bufKey(t); if (c.buf.get(k) !== b || !c.buf.has(k)) { c.buf.set(k, b); N.bindBuffer(t, b); } };
+    g.bindVertexArray = v => { if (c.vao !== v) { c.vao = v; N.bindVertexArray(v); } };
+    g.vertexAttrib4f = (l, x, y, z, w) => { x = Math.fround(x); y = Math.fround(y); z = Math.fround(z); w = Math.fround(w); let a = c.va.get(l); if (!a) c.va.set(l, a = []); if (!same4(a, x, y, z, w)) { set4(a, x, y, z, w); N.vertexAttrib4f(l, x, y, z, w); } };
+    const unbind = (m, x) => { for (const [k, v] of m) if (v === x) m.delete(k); };
+    g.deleteTexture = x => { unbind(c.tex, x); N.deleteTexture(x); };
+    g.deleteBuffer = x => { unbind(c.buf, x); for (const v of c.vas.values()) v.ptr.length = 0; N.deleteBuffer(x); };
+    g.deleteVertexArray = x => { if (c.vao === x) c.vao = undefined; c.buf.delete(x); c.vas.delete(x); N.deleteVertexArray(x); };
+    g.deleteFramebuffer = x => { if (c.rfb === x) c.rfb = undefined; if (c.dfb === x) c.dfb = undefined; N.deleteFramebuffer(x); };
+    g.deleteProgram = x => { if (c.prog === x) c.prog = undefined; N.deleteProgram(x); };
+    // texture parameters are per texture object: cached on the object (WeakMap) for the bound texture of the active unit
+    const tp = new WeakMap();
+    g.texParameteri = (t, pn, v) => {
+      const x = c.unit >= 0 ? c.tex.get(c.unit * 65536 + t) : undefined;
+      if (!x) { N.texParameteri(t, pn, v); return; }
+      let m = tp.get(x); if (!m) tp.set(x, m = new Map());
+      if (m.get(pn) !== v) { m.set(pn, v); N.texParameteri(t, pn, v); }
+    };
+    // uniforms
+    const sc = (k, cv) => (l, v) => { if (l == null) return; if (cv) v = cv(v); if (c.uni.get(l) !== v) { c.uni.set(l, v); U[k](l, v); } };
+    g.uniform1f = sc('uniform1f', Math.fround); g.uniform1i = sc('uniform1i', v => v | 0);
+    const vc = (k, n, cv) => (l, ...a) => {
+      if (l == null) return;
+      let o = c.uni.get(l), d = !o;
+      if (d) c.uni.set(l, o = new Array(n));
+      for (let i = 0; i < n; i++) { const v = cv(a[i]); if (o[i] !== v) { o[i] = v; d = true; } }
+      if (d) U[k](l, ...a);
+    };
+    g.uniform3f = vc('uniform3f', 3, Math.fround); g.uniform4f = vc('uniform4f', 4, Math.fround); g.uniform4i = vc('uniform4i', 4, v => v | 0);
+    const ac = (k, mat) => mat ? (l, tr, v) => { if (l == null) return; if (chg(l, v)) U[k](l, tr, v); } : (l, v) => { if (l == null) return; if (chg(l, v)) U[k](l, v); };
+    function chg(l, v) {
+      let o = c.uni.get(l);
+      if (!o || o.length !== v.length) { c.uni.set(l, Float32Array.from(v)); return true; }
+      let d = false;
+      for (let i = 0; i < v.length; i++) { const x = Math.fround(v[i]); if (o[i] !== x) { o[i] = x; d = true; } }
+      return d;
+    }
+    g.uniform1fv = ac('uniform1fv'); g.uniform3fv = ac('uniform3fv'); g.uniform4fv = ac('uniform4fv');
+    g.uniformMatrix3fv = ac('uniformMatrix3fv', true); g.uniformMatrix4fv = ac('uniformMatrix4fv', true);
+    // vertex attributes (step 4): enabled set + pointers shadowed per vertex array object. attrBegin() starts a draw's attribute
+    // setup (replaces "disable all 8"); attributes not re-enabled before the next draw call are disabled lazily at that draw.
+    const NA = {}; for (const k of ['enableVertexAttribArray', 'disableVertexAttribArray', 'vertexAttribPointer', 'drawArrays', 'drawElements']) NA[k] = g[k];
+    const vs = () => { const k = c.vao || 'null'; let v = c.vas.get(k); if (!v) c.vas.set(k, v = { en: 0, want: 0, pend: false, ptr: [] }); return v; };
+    g.attrBegin = () => { const v = vs(); v.want = 0; v.pend = true; };
+    g.enableVertexAttribArray = l => { const v = vs(), b = 1 << l; v.want |= b; if (!(v.en & b)) { v.en |= b; NA.enableVertexAttribArray(l); } };
+    g.disableVertexAttribArray = l => { const v = vs(), b = 1 << l; v.want &= ~b; if (v.en & b) { v.en &= ~b; NA.disableVertexAttribArray(l); } };
+    g.vertexAttribPointer = (l, sz, ty, no, st, off) => {
+      const v = vs(), ab = c.buf.get(raw.ARRAY_BUFFER), p = v.ptr[l];
+      if (p && p[0] === ab && p[1] === sz && p[2] === ty && p[3] === no && p[4] === st && p[5] === off && ab !== undefined) return;
+      v.ptr[l] = [ab, sz, ty, no, st, off]; NA.vertexAttribPointer(l, sz, ty, no, st, off);
+    };
+    const flushAttr = () => { const v = vs(); if (!v.pend) return; v.pend = false; let x = v.en & ~v.want; for (let l = 0; x; l++, x >>= 1) if (x & 1) { NA.disableVertexAttribArray(l); v.en &= ~(1 << l); } };
+    g.drawArrays = (m, f, n) => { flushAttr(); NA.drawArrays(m, f, n); };
+    g.drawElements = (m, n, t, o) => { flushAttr(); NA.drawElements(m, n, t, o); };
+    // stream uploads (step 4): orphan with bufferData each time (as before step 4). A grow-only buffer refilled with
+    // bufferSubData was measured slower: writing into storage the previous draw still reads makes the driver
+    // (SwiftShader, and typically mobile GPUs) wait for that draw (24.8 -> 47.9 ms/frame on the hw path).
+    g.streamData = (t, b, data) => g.bufferData(t, data, raw.STREAM_DRAW);
+    raw.canvas.addEventListener('webglcontextlost', () => g.cacheReset());
+    raw.canvas.addEventListener('webglcontextrestored', () => g.cacheReset(true));
+    return g;
+  }
+  R.glCacheReset = () => gl && gl.cacheReset && gl.cacheReset();
   // ------------------------------------------------------------- framebuffer
   let fbo, colorTex, depthRb, dstTex, vbo; const streamBufs = {};
   const streamBuf = name => streamBufs[name] || (streamBufs[name] = gl.createBuffer());
@@ -810,6 +978,8 @@ void main(){
     W = w; H = h; FH = Math.max(h, R.fbMinH != null ? R.fbMinH : R.fbTex); OY = FH - h;
     gl = canvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' });
     if (!gl) throw new Error('WebGL2 is not available in this browser');
+    gl = makeCachedGL(gl);
+    gl.bindVertexArray(gl.createVertexArray()); // one persistent VAO; attribute state is shadowed in makeCachedGL
     R.webgl = gl;
     S = initialState(); C = mkClient();
     colorTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, colorTex); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, w, FH);
@@ -854,7 +1024,7 @@ void main(){
     gl.viewport(S.viewport[0], S.viewport[1] + OY, S.viewport[2], S.viewport[3]);
     gl.colorMask(S.colorMask[0], S.colorMask[1], S.colorMask[2], false);
   }
-  const tmpM = new Float32Array(16), nm3 = new Float32Array(9);
+  const tmpM = new Float32Array(16), nm3 = new Float32Array(9), litS = { 1: new Float32Array(8), 3: new Float32Array(24), 4: new Float32Array(32) };
   function setUniforms(P) {
     const mv = top(stacks.mv), pj = top(stacks.pj);
     matmul(tmpM, pj, mv);
@@ -876,7 +1046,7 @@ void main(){
       if (u.kind === 2) { gl.activeTexture(gl.TEXTURE0 + NU + i); if (t.dirty) applyTexParams(t); gl.bindTexture(gl.TEXTURE_CUBE_MAP, t.t); }
       else {
         gl.activeTexture(gl.TEXTURE0 + i); if (t.dirty) applyTexParams(t); gl.bindTexture(gl.TEXTURE_2D, t.t);
-        if (u.filt === 'L') { let ml = 0; while (t.levels[ml + 1]) ml++; gl.uniform4i(P.u.tp[i], t.min, t.mag, t.ws, t.wt); gl.uniform1i(P.u.tl[i], Math.min(ml, t.maxLevel)); }
+        if (u.sampFn) { let ml = 0; while (t.levels[ml + 1]) ml++; gl.uniform1i(P.u.tl[i], Math.min(ml, t.maxLevel)); }
       }
     }
     if (P.lit) {
@@ -885,7 +1055,7 @@ void main(){
       const L = S.lights.filter(l => l.en);
       gl.uniform1i(P.u.u_nl, L.length);
       if (L.length) {
-        const cat = (f, n) => { const a = new Float32Array(L.length * n); L.forEach((l, i) => a.set(f(l), i * n)); return a; };
+        const cat = (f, n) => { const a = litS[n].subarray(0, L.length * n); for (let i = 0; i < L.length; i++) { const v = f(L[i]); for (let k = 0; k < n; k++) a[i * n + k] = v[k]; } return a; };
         gl.uniform4fv(P.u.L.u_lAmb, cat(l => l.amb, 4)); gl.uniform4fv(P.u.L.u_lDif, cat(l => l.dif, 4)); gl.uniform4fv(P.u.L.u_lSpec, cat(l => l.spec, 4));
         gl.uniform4fv(P.u.L.u_lPos, cat(l => l.pos, 4)); gl.uniform3fv(P.u.L.u_lSdir, cat(l => l.sdir, 3)); gl.uniform3fv(P.u.L.u_lAtt, cat(l => l.att, 3));
         gl.uniform1fv(P.u.L.u_lSexp, cat(l => [l.sexp], 1)); gl.uniform1fv(P.u.L.u_lScos, cat(l => [Math.cos(l.scut * Math.PI / 180)], 1)); gl.uniform1fv(P.u.L.u_lScut, cat(l => [l.scut], 1));
@@ -908,7 +1078,7 @@ void main(){
     gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, W, FH);
     R.glStats.copies++;
   }
-  function disableAllAttribs() { for (let i = 0; i < 8; i++) gl.disableVertexAttribArray(i); }
+  function disableAllAttribs() { gl.attrBegin(); }
   let primPer = 0;
   function issue(P, mode, count, idx) {
     R.glStats.draws++;
@@ -937,7 +1107,7 @@ void main(){
     applyFixedState();
     setUniforms(P);
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-    gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, count * VSZ), gl.STREAM_DRAW);
+    gl.streamData(gl.ARRAY_BUFFER, vbo, data.subarray(0, count * VSZ));
     const st = VSZ * 4;
     disableAllAttribs();
     const A = (n, size, off) => { const l = P.a[n]; if (l >= 0) { gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, size, gl.FLOAT, false, st, off * 4); } };
@@ -1081,6 +1251,13 @@ void main(){
   R.glclientactivetexture = R.glclientactivetexturearb;
   const glType = t => t === GLC.UNSIGNED_BYTE ? gl.UNSIGNED_BYTE : t === GLC.UNSIGNED_SHORT ? gl.UNSIGNED_SHORT : t === 0x1404 ? gl.INT : gl.FLOAT;
   const typeSize = t => t === GLC.UNSIGNED_BYTE ? 1 : t === GLC.UNSIGNED_SHORT ? 2 : 4;
+  // reused client-side index scratch arrays (one per index type, grown on demand)
+  const idxS = {};
+  const idxScratch = (type, n) => {
+    const Ctor = type === GLC.UNSIGNED_SHORT ? Uint16Array : type === GLC.UNSIGNED_BYTE ? Uint8Array : Uint32Array;
+    let a = idxS[type]; if (!a || a.length < n) { a = idxS[type] = new Ctor(Math.max(1024, n * 2)); }
+    return a.subarray(0, n);
+  };
   R.gldrawelements = (mode, count, type, p) => {
     touch();
     if (count <= 0) return;
@@ -1091,7 +1268,7 @@ void main(){
       if (B.idx) { for (let i = 0; i < count; i++) { const v = B.idx[offset / 2 + i]; if (v > maxIdx) maxIdx = v; } }
     } else {
       const q = R.unptr(p); const src = q.a;
-      idxData = type === GLC.UNSIGNED_SHORT ? new Uint16Array(count) : type === GLC.UNSIGNED_BYTE ? new Uint8Array(count) : new Uint32Array(count);
+      idxData = idxScratch(type, count);
       for (let i = 0; i < count; i++) { const v = src[q.o + i]; idxData[i] = v; if (v > maxIdx) maxIdx = v; }
       idxBuf = streamBuf('idx');
     }
@@ -1108,7 +1285,7 @@ void main(){
       const ts = typeSize(A.type), stride = A.stride || A.size * ts;
       if (A.buf) { gl.bindBuffer(gl.ARRAY_BUFFER, bufs.get(A.buf).b); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, A.size, glType(A.type), normalized, A.stride, A.ptr ? R.unptr(A.ptr).o * 4 : 0); return; }
       const d = bytesOf(A.ptr, stride * nv); if (!d) { gl.disableVertexAttribArray(l); return; }
-      gl.bindBuffer(gl.ARRAY_BUFFER, streamBuf(name)); gl.bufferData(gl.ARRAY_BUFFER, d, gl.STREAM_DRAW);
+      const sb = streamBuf(name); gl.bindBuffer(gl.ARRAY_BUFFER, sb); gl.streamData(gl.ARRAY_BUFFER, sb, d);
       gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, A.size, glType(A.type), normalized, A.stride, 0);
     };
     const c = S.color, n = S.normal;
@@ -1117,7 +1294,7 @@ void main(){
     bind('a_nrm', C.na, 3, C.na.type !== GLC.FLOAT, [n[0], n[1], n[2], 0]);
     for (let i = 0; i < NU; i++) { const t = S.tc[i]; bind('a_tc' + i, C.ta[i], 4, false, [t[0], t[1], t[2], t[3]]); }
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
-    if (idxData) gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idxData, gl.STREAM_DRAW);
+    if (idxData) gl.streamData(gl.ELEMENT_ARRAY_BUFFER, idxBuf, idxData);
     const gmode = mode === GLC.TRIANGLES ? gl.TRIANGLES : mode === GLC.LINES ? gl.LINES : mode === GLC.POINTS ? gl.POINTS : mode === GLC.TRIANGLE_STRIP ? gl.TRIANGLE_STRIP : gl.TRIANGLES;
     primPer = 3;
     issue(P, gmode, count, { count, type: glType(type), offset, bpe });
@@ -1491,8 +1668,8 @@ precision highp float; in vec2 v_uv; uniform sampler2D u_t; out vec4 o; void mai
     gl.viewport(0, 0, W, FH);
     gl.disable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
     disableAllAttribs();
-    gl.bindBuffer(gl.ARRAY_BUFFER, streamBuf('blit'));
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STREAM_DRAW);
+    const bq = streamBufs.blit; gl.bindBuffer(gl.ARRAY_BUFFER, streamBuf('blit'));
+    if (!bq) gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW); // unit quad, uploaded once
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     R.glStats.draws++;
@@ -1831,11 +2008,63 @@ function installMax2D(R) {
       glyph._image = TImage.load(pm.copy(), this._imageFlags, 0, 0, 0);
       return glyph;
     }
+    // Glyph atlas (perf): all baked glyphs of this font in one texture, so a string is one texture binding and the GL layer
+    // batches its quads into one draw (draw order inside a draw is preserved, so blending is unchanged). Each glyph sits in its
+    // own cell with a 1-texel border that replicates its edge texels, i.e. exactly what the per-glyph texture gives the bilinear
+    // footprint (CLAMP_TO_EDGE + the pow2 padding of TGLImageFrame.createFromPixmap). Only used for unscaled, unrotated text,
+    // where sampling is level 0 only (LOD 0), so the atlas has no mipmaps (min filter LINEAR / NEAREST instead of the per-glyph
+    // *_MIPMAP_*); scaled/rotated text keeps the original per-glyph textures. ?fontatlas=0 disables it.
+    atlas() {
+      if (this._atlas && this._atlas.seq === graphicsSeq) return this._atlas;
+      if (this._isDefault || !this._byIndex || !R.fontAtlas) return null;
+      const items = [];
+      for (const i of [...this._byIndex.keys()].sort((a, b) => a - b)) { const g = this.loadglyph(i); if (g._image) items.push(g); }
+      if (!items.length) return null;
+      // shelf packing, tallest first; cell = glyph + 1 texel border on each side
+      const order = items.slice().sort((a, b) => b._image.height - a._image.height || b._image.width - a._image.width);
+      let A = 128, pos;
+      for (;;) {
+        pos = new Map(); let x = 0, y = 0, sh = 0, ok = true;
+        for (const g of order) {
+          const cw = g._image.width + 2, ch = g._image.height + 2;
+          if (cw > A) { ok = false; break; }
+          if (x + cw > A) { x = 0; y += sh; sh = 0; }
+          if (y + ch > A) { ok = false; break; }
+          pos.set(g, [x + 1, y + 1]); x += cw; sh = Math.max(sh, ch);
+        }
+        if (ok) break; A *= 2; if (A > 4096) return null;
+      }
+      const pm = R.createpixmap(A, A, R.PF.RGBA8888);
+      for (const [g, [ax, ay]] of pos) {
+        const src = g._image.lock(0, 1, 0), w = src.width, h = src.height;
+        pm.paste(src, ax, ay);
+        pm.paste(src.window(0, 0, 1, h), ax - 1, ay); pm.paste(src.window(w - 1, 0, 1, h), ax + w, ay);
+        pm.paste(pm.window(ax - 1, ay, w + 2, 1), ax - 1, ay - 1); pm.paste(pm.window(ax - 1, ay + h - 1, w + 2, 1), ax - 1, ay + h);
+      }
+      const flags = this._imageFlags & FILTEREDIMAGE;
+      const name = CreateTex(A, A, flags); UploadTex(pm, flags);
+      const sc = F(1 / A);
+      this._atlas = { seq: graphicsSeq, name, sc, pos };
+      return this._atlas;
+    }
     draw(text, x, y, ix_, iy_, jx_, jy_) {
+      const at = (ix_ === 1 && iy_ === 0 && jx_ === 0 && jy_ === 1 && ix === 1 && iy === 0 && jx === 0 && jy === 1) ? this.atlas() : null;
       for (let i = 0; i < text.length; i++) {
         const n = this.chartoglyph(text.charCodeAt(i)); if (n < 0) continue;
         const glyph = this.loadglyph(n), image = glyph._image;
-        if (image) {
+        const ap = at && image && at.pos.get(glyph);
+        if (ap) {
+          // = TGLImageFrame.draw(0, 0, w, h, x + gx, y + gy) with identity transform, texcoords offset into the atlas
+          const w = image.width, h = image.height, tx = F(x + glyph._x), ty = F(y + glyph._y);
+          const u0 = F(ap[0] * at.sc), v0 = F(ap[1] * at.sc), u1 = F((ap[0] + w) * at.sc), v1 = F((ap[1] + h) * at.sc);
+          EnableTex(at.name);
+          R.glbegin(GL.QUADS);
+          R.gltexcoord2f(u0, v0); R.glvertex2f(F(0 + tx), F(0 + ty));
+          R.gltexcoord2f(u1, v0); R.glvertex2f(F(w + tx), F(0 + ty));
+          R.gltexcoord2f(u1, v1); R.glvertex2f(F(w + tx), F(h + ty));
+          R.gltexcoord2f(u0, v1); R.glvertex2f(F(0 + tx), F(h + ty));
+          R.glend();
+        } else if (image) {
           const frame = image.frame(0);
           if (frame) {
             const tx = F(F(glyph._x * ix_) + F(glyph._y * iy_)), ty = F(F(glyph._x * jx_) + F(glyph._y * jy_));
@@ -1847,6 +2076,7 @@ function installMax2D(R) {
     }
   }
   R.timagefont = TImageFont;
+  R.fontAtlas = !(typeof location !== 'undefined' && new URLSearchParams(location.search).get('fontatlas') === '0');
   R.loadimagefont = (url, size, style = SMOOTHFONT) => {
     const db = R.assets && R.assets.fontGlyphs; if (!db) return null;
     const s = db.sizes[String(size)]; if (!s) { console.warn('font size not baked', size); return null; }
@@ -2262,6 +2492,20 @@ function installInput(R) {
     window.addEventListener('mousemove', e => { if (e.target !== el) { const [x, y] = pos(e); R.inputMouseMove(x, y); } });
     el.addEventListener('mousedown', e => { e.preventDefault(); el.focus && el.focus(); R.inputMouseButton(e.button, true); });
     window.addEventListener('mouseup', e => R.inputMouseButton(e.button, false));
+    // Touch / pen -> left mouse button (tap = click, drag = drag). preventDefault on pointerdown suppresses the browser's
+    // synthesized mouse events; the release is held until the app has polled at least one frame with the button down,
+    // because a quick tap can begin and end between two frames (the app polls MouseDown, not events).
+    let tid = null, tFrame = 0;
+    const fnow = () => (R.sys ? R.sys.frame : 0);
+    const tUp = () => { if (fnow() > tFrame || !R.sys) R.inputMouseButton(0, false); else requestAnimationFrame(tUp); };
+    el.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' || tid !== null) return;
+      e.preventDefault(); tid = e.pointerId; try { el.setPointerCapture(e.pointerId); } catch (_) {}
+      const [x, y] = pos(e); R.inputMouseMove(x, y); el.focus && el.focus(); R.inputMouseButton(0, true); tFrame = fnow();
+    });
+    el.addEventListener('pointermove', e => { if (e.pointerId !== tid) return; e.preventDefault(); const [x, y] = pos(e); R.inputMouseMove(x, y); });
+    const tEnd = e => { if (e.pointerId !== tid) return; tid = null; tUp(); };
+    el.addEventListener('pointerup', tEnd); el.addEventListener('pointercancel', tEnd);
     el.addEventListener('contextmenu', e => e.preventDefault());
     el.addEventListener('wheel', e => { e.preventDefault(); R.inputWheel(e.deltaY < 0 ? 1 : -1); }, { passive: false });
   };
@@ -39403,6 +39647,55 @@ return {main:$main,classes:{"tglobal":C_tglobal,"tentity":C_tentity,"tcamera":C_
     else { data = new Uint8Array(n * 3); for (let i = 0; i < n; i++) { data[i * 3] = rgba[i * 4]; data[i * 3 + 1] = rgba[i * 4 + 1]; data[i * 3 + 2] = rgba[i * 4 + 2]; } }
     return { width: bmp.width, height: bmp.height, format: fmt, data };
   }
+  // ---- GPU capability probe (temporary context; the app's own context is created by Graphics3D later)
+  function probeCaps() {
+    const out = { webgl2: false };
+    try {
+      const c = document.createElement('canvas'); c.width = c.height = 1;
+      const g = c.getContext('webgl2');
+      if (!g) return out;
+      out.webgl2 = true;
+      out.maxTex = g.getParameter(g.MAX_TEXTURE_SIZE); out.maxRb = g.getParameter(g.MAX_RENDERBUFFER_SIZE);
+      out.maxVp = Array.from(g.getParameter(g.MAX_VIEWPORT_DIMS));
+      const pf = (sh, t) => { const f = g.getShaderPrecisionFormat(sh, t); return f ? [f.rangeMin, f.rangeMax, f.precision] : null; };
+      out.fsHighFloat = pf(g.FRAGMENT_SHADER, g.HIGH_FLOAT); out.fsMedFloat = pf(g.FRAGMENT_SHADER, g.MEDIUM_FLOAT);
+      out.fsHighInt = pf(g.FRAGMENT_SHADER, g.HIGH_INT); out.fsMedInt = pf(g.FRAGMENT_SHADER, g.MEDIUM_INT);
+      out.intOK = !!(out.fsHighInt && out.fsHighInt[1] >= 30);
+      const dbg = g.getExtension('WEBGL_debug_renderer_info');
+      out.renderer = dbg ? g.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER);
+      out.vendor = dbg ? g.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : g.getParameter(g.VENDOR);
+      out.ext = ['EXT_color_buffer_float', 'EXT_color_buffer_half_float', 'OES_texture_float_linear', 'EXT_disjoint_timer_query_webgl2'].filter(e => g.getSupportedExtensions().includes(e));
+      const lc = g.getExtension('WEBGL_lose_context'); if (lc) lc.loseContext();
+    } catch (e) { out.error = String(e); }
+    return out;
+  }
+  function isMobileDevice() {
+    const ua = navigator.userAgent || '';
+    if (navigator.userAgentData && navigator.userAgentData.mobile) return true;
+    if (/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua)) return true;
+    return /Macintosh/.test(ua) && navigator.maxTouchPoints > 1; // iPadOS reports a desktop Safari UA
+  }
+  // ?diag=1: small overlay with the caps, mode and frame rate (for screenshots from a phone)
+  function startDiag(R, caps, mobile) {
+    const d = document.createElement('pre'); d.id = 'diag';
+    d.style.cssText = 'position:fixed;left:4px;bottom:4px;margin:0;padding:4px 6px;background:rgba(0,0,0,.75);color:#9f9;font:10px/1.25 monospace;z-index:10;pointer-events:none;white-space:pre-wrap;max-width:96vw';
+    document.body.appendChild(d);
+    let lf = 0, lt = performance.now(), fps = 0;
+    const upd = () => {
+      const now = performance.now(), f = R.sys ? R.sys.frame : 0;
+      if (now - lt >= 1000) { fps = (f - lf) * 1000 / (now - lt); lf = f; lt = now; }
+      const c = document.getElementById('screen'), r = c ? c.getBoundingClientRect() : { width: 0, height: 0 };
+      d.textContent = ['fps ' + fps.toFixed(1) + '  frame ' + f, 'mobile ' + mobile + '  res ' + R.fbTex + '  lod ' + (R.lodMode || 'exact') + '  blend ' + (R.blendMode || 'exact') + '  lines ' + (R.lineMode || 'exact'),
+        'canvas 1024x768 shown ' + Math.round(r.width) + 'x' + Math.round(r.height) + '  window ' + innerWidth + 'x' + innerHeight + '  dpr ' + devicePixelRatio,
+        'gpu ' + (caps.renderer || '?') + ' / ' + (caps.vendor || '?'),
+        'maxTex ' + caps.maxTex + '  maxRB ' + caps.maxRb + '  maxVP ' + caps.maxVp,
+        'fs highp float ' + caps.fsHighFloat + '  mediump float ' + caps.fsMedFloat,
+        'fs highp int ' + caps.fsHighInt + '  mediump int ' + caps.fsMedInt,
+        'ext ' + (caps.ext || []).join(' '), navigator.userAgent].join('\n');
+      setTimeout(upd, 500);
+    };
+    upd();
+  }
   async function boot() {
     const A = window.BLITZ_ASSETS;
     if (!A) throw new Error('assets missing');
@@ -39440,15 +39733,26 @@ return {main:$main,classes:{"tglobal":C_tglobal,"tentity":C_tentity,"tcamera":C_
     if (params.has('symmetry')) H.symmetry = parseInt(params.get('symmetry'), 10);
     if (params.get('norAF') === '1') H.noRaf = true;
     if (params.get('trace') === '1') R.glTrace = [];
-    if (params.get('lod')) R.lodMode = params.get('lod');
-    if (params.get('blend')) R.blendMode = params.get('blend');
-    if (params.get('lines')) R.lineMode = params.get('lines');
-    // feedback texture resolution: ?res=512 = the original (pixel-faithful) size; default 1024 (sharper, deliberate departure)
+    // GPU capabilities + mobile mode. Mobile (auto-detected, or ?mobile=1) defaults to res=512 and the plain hardware
+    // sampler/blend/line paths (the llvmpipe-exact emulation shaders are heavy). Explicit URL flags always win; ?mobile=0 forces desktop.
+    const caps = probeCaps();
+    const mobile = params.get('mobile') === '1' ? true : params.get('mobile') === '0' ? false : isMobileDevice();
+    window.__blitz.caps = caps; window.__blitz.mobile = mobile;
+    const hwDefault = mobile || !caps.intOK ? 'hw' : null; // intOK: fragment highp int has 32 bits (required by the exact sampler)
+    if (params.get('lod') || hwDefault) R.lodMode = params.get('lod') || hwDefault;
+    if (params.get('blend') || hwDefault) R.blendMode = params.get('blend') || hwDefault;
+    if (params.get('lines') || hwDefault) R.lineMode = params.get('lines') || hwDefault;
+    if (params.get('emulint16') === '1') R.emulInt16 = true; // debug: simulate 16-bit mediump ints in the exact sampler
+    // feedback texture resolution: ?res=512 = the original (pixel-faithful) size; default 1024 (sharper, deliberate departure), 512 on mobile
     { let saved = null; try { saved = localStorage.getItem('blitzvj.res'); } catch (e) {}
-      let res = parseInt(params.get('res') || saved || '1024', 10);
-      if (![256, 512, 1024, 2048].includes(res)) res = 1024;
+      let res = parseInt(params.get('res') || saved || (mobile ? '512' : '1024'), 10);
+      if (![256, 512, 1024, 2048].includes(res)) res = mobile ? 512 : 1024;
+      const lim = Math.min(caps.maxTex || 4096, caps.maxRb || 4096, caps.maxVp ? caps.maxVp[1] : 4096);
+      while (res > 256 && res > lim) res >>= 1; // GPU limits (never hit on WebGL2 hardware, which guarantees >= 2048)
       R.fbTex = res; R.fbMinH = res; window.__blitz.res = res;
       const rb = $('resbtn'); if (rb) rb.textContent = 'Feedback ' + res; }
+    console.log('[blitz] caps ' + JSON.stringify(caps) + ' mobile=' + mobile + ' res=' + R.fbTex + ' lod=' + (R.lodMode || 'exact') + ' blend=' + (R.blendMode || 'exact') + ' lines=' + (R.lineMode || 'exact'));
+    if (params.get('diag') === '1') startDiag(R, caps, mobile);
     if (params.has('shots')) H.shots = new Set(params.get('shots').split(',').map(Number));
     if (params.has('edit')) H.edit = parseInt(params.get('edit'), 10);
     H.t0 = params.has('t0') ? parseInt(params.get('t0'), 10) : 0;
