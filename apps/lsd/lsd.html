@@ -79,6 +79,12 @@
       border-radius: 6px;
       padding: 8px 12px;
       backdrop-filter: blur(8px);
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+    body.title-away .mark {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
     }
     h1 {
       margin: 0;
@@ -694,6 +700,34 @@
       padding-top: max(16px, env(safe-area-inset-top));
       padding-right: max(16px, env(safe-area-inset-right));
     }
+    body.idle header,
+    body.idle {
+      cursor: none;
+    }
+    body.idle,
+    body.idle * {
+      cursor: none !important;
+    }
+    body.idle header {
+      opacity: 0;
+      visibility: hidden;
+    }
+    @media (max-width: 639px) {
+      .mini {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
+        grid-template-areas:
+          "drag pick value max"
+          "range range range range";
+        align-items: center;
+        gap: 2px 8px;
+      }
+      .mini-drag { grid-area: drag; }
+      .mini select { grid-area: pick; width: 100%; max-width: none; }
+      .mini b { grid-area: value; min-width: 3.2em; }
+      #mini-max { grid-area: max; }
+      .mini .range { grid-area: range; width: 100%; min-width: 0; }
+    }
     @media (min-width: 640px) {
       header { padding: 24px; }
       h1 { font-size: 2.25rem; }
@@ -709,7 +743,7 @@
   <canvas id="field" aria-hidden="true"></canvas>
   <header>
     <div class="mark">
-      <h1>LSD <span class="ver" id="version">v1_11</span></h1>
+      <h1>LSD <span class="ver" id="version">v1_17</span></h1>
       <p class="eyebrow" id="scene-label">Scene 1 · Ball</p>
     </div>
     <div class="tools">
@@ -782,12 +816,12 @@
         <button type="button" class="section-title" id="toggle-feedback" aria-pressed="true">Feedback</button>
         <div class="grid" id="sliders"></div>
       </section>
-      <p class="note">Click the image to hide the panels. Click it again, or press Enter, to bring them back. Keys 1–9 switch scenes, 0 is noise, N is sparse noise, T is text, C is circuits, O is orbits, K is checks. Key I brings the opening image back. S saves a set. Left and right move between favourites. Up and down move between saved sets.</p>
+      <p class="note">Click the image to hide the panels. Click it again, or press Enter, to bring them back. Keys 1–9 switch scenes, 0 is noise, N is sparse noise, T is text, C is circuits, O is orbits, K is checks, W is worms. Key I brings the opening image back. S saves a set. Left and right move between favourites. On a touch screen, swipe left or right to do the same. Up and down move between saved sets.</p>
     </section>
   </div>
   <script>
   (() => {
-    const APP_VERSION = "v1_11";
+    const APP_VERSION = "v1_17";
     document.getElementById("version").textContent = APP_VERSION;
     const panelEl = document.getElementById("panel");
     const panelDrag = document.getElementById("panel-drag");
@@ -956,6 +990,11 @@
         setScene(15);
         return;
       }
+      if (event.key === "w" || event.key === "W") {
+        event.preventDefault();
+        setScene(16);
+        return;
+      }
       if (event.key === "s" || event.key === "S") {
         event.preventDefault();
         document.getElementById("set-save").click();
@@ -1050,6 +1089,7 @@
         [13, "Circuits", "Scene 13, light pulses travel along a dark circuit. Key C"],
         [14, "Orbits", "Scene 14, five orbs with darker cores and particles orbiting them in 3D. Key O"],
         [15, "Checks", "Scene 15, a black and white checker plane that warps and ripples. Scale sets the number of checks, Waves sets the ripples. Key K"],
+        [16, "Worms", "Scene 16, spheres with a highlight and a shadow wind in smooth loops and wrap around the screen. Key W"],
       ];
       for (const [id, label, help] of scenes) {
         const button = document.createElement("button");
@@ -1900,6 +1940,130 @@
       }
     }
 
+    const WORM_SEG = 11;
+    const WORM_HIST = 180;
+    const worms = [];
+    let wormTime = 0;
+
+    function wrap01(value) {
+      return value - Math.floor(value);
+    }
+
+    function wrapDelta(a, b) {
+      let d = a - b;
+      d -= Math.round(d);
+      return d;
+    }
+
+    function wormCount() {
+      return Math.max(1, Math.min(Math.floor(PARTICLE_N / (WORM_SEG * 2)), Math.round(8 * state.amount)));
+    }
+
+    function makeWorm(i, total) {
+      const ang = Math.random() * Math.PI * 2;
+      let x = Math.random();
+      let y = Math.random();
+      const hist = new Array(WORM_HIST);
+      for (let h = WORM_HIST - 1; h >= 0; h--) {
+        hist[h] = { x, y, ang };
+        x = wrap01(x - Math.cos(ang) * 0.004);
+        y = wrap01(y - Math.sin(ang) * 0.004);
+      }
+      return {
+        x: hist[WORM_HIST - 1].x,
+        y: hist[WORM_HIST - 1].y,
+        ang,
+        phase: Math.random() * Math.PI * 2,
+        loop: (i % 2 ? 1 : -1) * (0.22 + (i % 5) * 0.05),
+        boost: (i % 4) * 0.012,
+        hue: (i + 0.35) / Math.max(1, total),
+        hist,
+        hi: 0,
+      };
+    }
+
+    function resetWorms() {
+      worms.length = 0;
+      wormTime = 0;
+      const n = wormCount();
+      for (let i = 0; i < n; i++) worms.push(makeWorm(i, n));
+    }
+
+    function stepWorms(dt) {
+      const rate = Math.max(0.2, state.speed / 0.38);
+      const step = dt * rate;
+      wormTime += step;
+      const n = wormCount();
+      while (worms.length < n) worms.push(makeWorm(worms.length, n));
+      const aspect = Math.max(0.55, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
+      const curlAmp = 0.7 + state.waves * 0.32;
+      for (let i = 0; i < n; i++) {
+        const worm = worms[i];
+        const curl = Math.sin(wormTime * 0.62 + worm.phase) * curlAmp
+          + Math.sin(wormTime * 0.23 + worm.phase * 1.8) * curlAmp * 0.45;
+        worm.ang += curl * step + worm.loop * step;
+        const spd = (0.1 + worm.boost) * step;
+        worm.x = wrap01(worm.x + (Math.cos(worm.ang) * spd) / aspect);
+        worm.y = wrap01(worm.y + Math.sin(worm.ang) * spd);
+        worm.hist[worm.hi] = { x: worm.x, y: worm.y, ang: worm.ang };
+        worm.hi = (worm.hi + 1) % WORM_HIST;
+      }
+    }
+
+    function wormPoint(worm, dist) {
+      let left = dist;
+      let idx = (worm.hi - 1 + WORM_HIST) % WORM_HIST;
+      let prev = worm.hist[idx];
+      if (!prev) return { x: worm.x, y: worm.y, ang: worm.ang };
+      for (let n = 0; n < WORM_HIST - 1 && left > 0.0001; n++) {
+        const next = worm.hist[(idx - 1 + WORM_HIST) % WORM_HIST];
+        if (!next) break;
+        const dx = wrapDelta(prev.x, next.x);
+        const dy = wrapDelta(prev.y, next.y);
+        const d = Math.hypot(dx, dy);
+        if (d >= left) {
+          const t = d > 1e-6 ? left / d : 0;
+          return { x: wrap01(prev.x - dx * t), y: wrap01(prev.y - dy * t), ang: prev.ang };
+        }
+        left -= d;
+        prev = next;
+        idx = (idx - 1 + WORM_HIST) % WORM_HIST;
+      }
+      return prev;
+    }
+
+    function writeWorms() {
+      const n = wormCount();
+      let index = 0;
+      for (let w = 0; w < n; w++) {
+        const worm = worms[w];
+        if (!worm) continue;
+        for (let s = 0; s < WORM_SEG; s++) {
+          const p = wormPoint(worm, s * 0.02);
+          const taper = 1 - s / (WORM_SEG - 1);
+          const rad = 6 + taper * 9;
+          const nx = -Math.sin(p.ang);
+          const ny = Math.cos(p.ang);
+          const ox = (0.72 + nx * 0.45) * 0.007;
+          const oy = (0.72 + ny * 0.45) * 0.007;
+          const hue = worm.hue + wormTime * 0.015 + s * 0.008;
+          sparkData[index * 4] = wrap01(p.x + ox);
+          sparkData[index * 4 + 1] = wrap01(p.y + oy);
+          sparkData[index * 4 + 2] = rad;
+          sparkData[index * 4 + 3] = 0.78 + taper * 0.22;
+          sparkHue[index] = hue - Math.floor(hue);
+          index += 1;
+          sparkData[index * 4] = wrap01(p.x - ox * 0.22);
+          sparkData[index * 4 + 1] = wrap01(p.y - oy * 0.22);
+          sparkData[index * 4 + 2] = rad * 1.35;
+          sparkData[index * 4 + 3] = -(0.42 + taper * 0.22);
+          sparkHue[index] = hue - Math.floor(hue);
+          index += 1;
+        }
+      }
+      for (let i = index; i < PARTICLE_N; i++) sparkData[i * 4 + 3] = 0;
+    }
+
     const blobs = [];
     let stuccoTime = 0;
 
@@ -2166,7 +2330,7 @@
       ["Lime", [0.4, 0.7, 0.2], [0.3, 0.3, 0.1], [1, 2, 0], [0.2, 0.3, 0.1]],
       ["Prism", [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [3, 2, 1], [0, 0.33, 0.67]],
     ].map(([name, a, b, c, d]) => ({ name, a, b, c, d }));
-    const scenePalettes = { 1: 0, 2: 4, 3: 1, 4: 5, 5: 0, 6: 2, 7: 1, 8: 3, 9: 6, 10: 0, 11: 4, 12: 5, 13: 6, 14: 18, 15: 0 };
+    const scenePalettes = { 1: 0, 2: 4, 3: 1, 4: 5, 5: 0, 6: 2, 7: 1, 8: 3, 9: 6, 10: 0, 11: 4, 12: 5, 13: 6, 14: 18, 15: 0, 16: 19 };
     let paletteSelectReady = false;
 
     function paletteCss(palette) {
@@ -2235,13 +2399,13 @@
 
     function snapshotPalettes() {
       const out = {};
-      for (let id = 1; id <= 15; id++) out[id] = scenePalettes[id];
+      for (let id = 1; id <= 16; id++) out[id] = scenePalettes[id];
       return out;
     }
 
     function applyPalettes(next) {
       if (!next || typeof next !== "object") return;
-      for (let id = 1; id <= 15; id++) {
+      for (let id = 1; id <= 16; id++) {
         const index = Math.round(Number(next[id] != null ? next[id] : next[String(id)]));
         if (!Number.isFinite(index)) continue;
         scenePalettes[id] = Math.min(PALETTES.length - 1, Math.max(0, index));
@@ -2268,7 +2432,7 @@
       markFavDirty();
       layers.foreground = true;
       state.scene = n;
-      const titles = { 1: "Scene 1 · Ball", 2: "Scene 2 · Fireworks", 3: "Scene 3 · Flock", 4: "Scene 4 · Stars", 5: "Scene 5 · Cube", 6: "Scene 6 · Flame", 7: "Scene 7 · Snow", 8: "Scene 8 · Grid", 9: "Scene 9 · Stucco", 10: "Scene 10 · Noise", 11: "Scene 11 · Text", 12: "Scene 12 · Sparse", 13: "Scene 13 · Circuits", 14: "Scene 14 · Orbits", 15: "Scene 15 · Checks" };
+      const titles = { 1: "Scene 1 · Ball", 2: "Scene 2 · Fireworks", 3: "Scene 3 · Flock", 4: "Scene 4 · Stars", 5: "Scene 5 · Cube", 6: "Scene 6 · Flame", 7: "Scene 7 · Snow", 8: "Scene 8 · Grid", 9: "Scene 9 · Stucco", 10: "Scene 10 · Noise", 11: "Scene 11 · Text", 12: "Scene 12 · Sparse", 13: "Scene 13 · Circuits", 14: "Scene 14 · Orbits", 15: "Scene 15 · Checks", 16: "Scene 16 · Worms" };
       sceneLabel.textContent = titles[n] || titles[1];
       if (n === 2) {
         spawnBurst();
@@ -2284,6 +2448,7 @@
       if (n === 11) resetText();
       if (n === 13) resetCircuit();
       if (n === 14) resetOrbits();
+      if (n === 16) resetWorms();
       paintChips();
       paintPalettes();
     }
@@ -2639,6 +2804,9 @@ const PHOTO_TEX = {
     let bgTexB = 0;
     let bgTexBlend = 2;
     let bgTexRate = 1;
+    let fgTexA = 0;
+    let fgTexB = 0;
+    let fgTexBlend = 2;
     let texPos = 0;
     let texPos2 = 0;
     let texPreviewSlow = 0;
@@ -2817,8 +2985,24 @@ const PHOTO_TEX = {
       g.fillStyle = "#000";
       g.fillRect(0, 0, w, h);
       if (pat && pat.feedback) {
-        const field = document.getElementById("field");
-        if (field && field.width) g.drawImage(field, 0, 0, w, h);
+        g.fillStyle = "#070708";
+        g.fillRect(0, 0, w, h);
+        const cx = w * 0.5;
+        const cy = h * 0.5;
+        for (let i = 7; i >= 0; i--) {
+          const t = (i + texPos * 2) / 8;
+          const z = 0.22 + (t % 1) * 1.15;
+          g.save();
+          g.translate(cx, cy);
+          g.rotate(t * 0.55);
+          g.scale(z, z);
+          g.globalAlpha = 0.22 + (1 - (t % 1)) * 0.55;
+          g.fillStyle = "hsl(" + ((200 + t * 160) % 360) + " 92% 62%)";
+          g.beginPath();
+          g.arc(-w * 0.16, 0, Math.min(w, h) * 0.2, 0, Math.PI * 2);
+          g.fill();
+          g.restore();
+        }
         return;
       }
       if (!pat || !pat.canvas) return;
@@ -2864,20 +3048,31 @@ const PHOTO_TEX = {
       list.push(item);
       return { wrap, item };
     }
-    BG_PATS.forEach((pat, index) => {
+    const texOrder = BG_PATS.map((_, index) => index);
+    const feedbackAt = BG_PATS.findIndex((pat) => pat.feedback);
+    if (feedbackAt > 1) {
+      texOrder.splice(feedbackAt, 1);
+      texOrder.splice(1, 0, feedbackAt);
+    }
+    texOrder.forEach((index) => {
+      const pat = BG_PATS[index];
       const opt = document.createElement("button");
       opt.type = "button";
       opt.className = "tex-opt";
+      opt.dataset.index = String(index);
       const swatch = makeTexSwatch(index, 96, 96, texPreviewItems);
       const label = document.createElement("span");
       label.textContent = pat.name;
       opt.append(swatch.wrap, label);
       opt.addEventListener("click", () => {
         if (texSlot === "a") bgTexA = index;
-        else bgTexB = index;
+        else if (texSlot === "b") bgTexB = index;
+        else if (texSlot === "fa") fgTexA = index;
+        else fgTexB = index;
         texPop.hidden = true;
         paintTexUi();
-        commitBgTex();
+        if (texSlot === "fa" || texSlot === "fb") commitFgTex();
+        else commitBgTex();
       });
       texOpts.push(opt);
       texPop.appendChild(opt);
@@ -2900,8 +3095,8 @@ const PHOTO_TEX = {
           const rect = button.getBoundingClientRect();
           texPop.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 336)) + "px";
           texPop.style.top = rect.bottom + 4 + "px";
-          const current = slot === "a" ? bgTexA : bgTexB;
-          texOpts.forEach((opt, index) => opt.classList.toggle("on", index === current));
+          const current = slot === "b" ? bgTexB : slot === "fa" ? fgTexA : slot === "fb" ? fgTexB : bgTexA;
+          texOpts.forEach((opt) => opt.classList.toggle("on", Number(opt.dataset.index) === current));
           animateTexSwatches();
         }
       });
@@ -2909,11 +3104,24 @@ const PHOTO_TEX = {
     }
     const texBtnA = makeTexButton("a", "Background texture");
     const texBtnB = makeTexButton("b", "Background texture 2");
+    const texBtnFgA = makeTexButton("fa", "Foreground texture");
+    const texBtnFgB = makeTexButton("fb", "Foreground texture 2");
+    function commitFgTex() {
+      setMix = null;
+      markFavDirty();
+      if (setIndex >= 0 && sets[setIndex]) {
+        sets[setIndex].foreground = { texA: fgTexA, texB: fgTexB, texBlend: fgTexBlend };
+      }
+    }
     function animateTexSwatches() {
       if (panelHidden || panelMode !== "full") return;
       const rnd = [Math.random(), Math.random()];
       drawTexSwatch(previewButtons[0].canvas, BG_PATS[bgTexA], rnd);
       drawTexSwatch(previewButtons[1].canvas, BG_PATS[bgTexB], rnd);
+      if (previewButtons[2]) {
+        drawTexSwatch(previewButtons[2].canvas, BG_PATS[fgTexA], rnd);
+        drawTexSwatch(previewButtons[3].canvas, BG_PATS[fgTexB], rnd);
+      }
       if (!texPop.hidden) {
         for (const item of texPreviewItems) drawTexSwatch(item.canvas, BG_PATS[item.index], rnd);
       }
@@ -2921,6 +3129,11 @@ const PHOTO_TEX = {
     function paintTexUi() {
       texBtnA.querySelector("span").textContent = (BG_PATS[bgTexA] || BG_PATS[0]).name;
       texBtnB.querySelector("span").textContent = (BG_PATS[bgTexB] || BG_PATS[0]).name;
+      if (texBtnFgA) {
+        texBtnFgA.querySelector("span").textContent = (BG_PATS[fgTexA] || BG_PATS[0]).name;
+        texBtnFgB.querySelector("span").textContent = (BG_PATS[fgTexB] || BG_PATS[0]).name;
+        fgTexBlendSelect.value = String(fgTexBlend);
+      }
       texBlendSelect.value = String(bgTexBlend);
       if (texRateInput) {
         texRateInput.value = String(bgTexRate);
@@ -2930,7 +3143,7 @@ const PHOTO_TEX = {
       animateTexSwatches();
     }
     document.addEventListener("pointerdown", (event) => {
-      if (!texPop.hidden && !texPop.contains(event.target) && !texBtnA.contains(event.target) && !texBtnB.contains(event.target)) texPop.hidden = true;
+      if (!texPop.hidden && !texPop.contains(event.target) && !texBtnA.contains(event.target) && !texBtnB.contains(event.target) && !texBtnFgA.contains(event.target) && !texBtnFgB.contains(event.target)) texPop.hidden = true;
     });
     const texPicks = document.createElement("div");
     texPicks.className = "tex-picks";
@@ -2979,6 +3192,41 @@ const PHOTO_TEX = {
     texRate.append(texRateName, texRateInput, texRateValue);
     texControls.append(texBlendSelect, texRate);
     texBlendRow.append(texBlendLabel, texControls);
+    const fgTexBlendSelect = document.createElement("select");
+    fgTexBlendSelect.className = "blend";
+    fgTexBlendSelect.setAttribute("aria-label", "Foreground texture blend");
+    TEX_BLENDS.forEach((item) => {
+      const option = document.createElement("option");
+      option.value = String(item.value);
+      option.textContent = item.name;
+      fgTexBlendSelect.appendChild(option);
+    });
+    fgTexBlendSelect.value = "2";
+    fgTexBlendSelect.addEventListener("change", () => {
+      const value = Math.round(Number(fgTexBlendSelect.value));
+      fgTexBlend = TEX_BLENDS.some((item) => item.value === value) ? value : 2;
+      commitFgTex();
+    });
+    const fgTexRow = document.createElement("div");
+    fgTexRow.className = "palette-row";
+    const fgTexLabel = document.createElement("span");
+    fgTexLabel.className = "row";
+    const fgTexName = document.createElement("span");
+    fgTexName.textContent = "Textures";
+    fgTexLabel.append(fgTexName);
+    const fgTexPicks = document.createElement("div");
+    fgTexPicks.className = "tex-picks";
+    fgTexPicks.append(texBtnFgA, texBtnFgB);
+    const fgTexBlendRow = document.createElement("div");
+    fgTexBlendRow.className = "palette-row";
+    const fgTexBlendLabel = document.createElement("span");
+    fgTexBlendLabel.className = "row";
+    const fgTexBlendName = document.createElement("span");
+    fgTexBlendName.textContent = "Blend";
+    fgTexBlendLabel.append(fgTexBlendName);
+    fgTexBlendRow.append(fgTexBlendLabel, fgTexBlendSelect);
+    fgTexRow.append(fgTexLabel, fgTexPicks, fgTexBlendRow);
+    document.getElementById("foreground-sliders").before(fgTexRow);
     paintTexUi();
     const bgTools = document.createElement("div");
     bgTools.className = "bg-tools";
@@ -3296,6 +3544,7 @@ const PHOTO_TEX = {
       panel.hidden = !showFull;
       miniEl.hidden = !showMini;
       dockMin.hidden = true;
+      document.body.classList.toggle("title-away", !showFull);
       if (!showFull) {
         oscPanel.hidden = true;
         colorPanel.hidden = true;
@@ -3305,8 +3554,36 @@ const PHOTO_TEX = {
     }
 
     canvas.addEventListener("click", () => {
+      if (swipeMoved) {
+        swipeMoved = false;
+        return;
+      }
       if (document.fullscreenElement || document.webkitFullscreenElement) return;
       setPanelHidden(!panelHidden);
+    });
+    let swipe = null;
+    let swipeMoved = false;
+    canvas.addEventListener("touchstart", (event) => {
+      if (event.touches.length !== 1) {
+        swipe = null;
+        return;
+      }
+      const t = event.touches[0];
+      swipe = { x: t.clientX, y: t.clientY, at: performance.now() };
+    }, { passive: true });
+    canvas.addEventListener("touchend", (event) => {
+      if (!swipe || !event.changedTouches.length) return;
+      const t = event.changedTouches[0];
+      const dx = t.clientX - swipe.x;
+      const dy = t.clientY - swipe.y;
+      const dt = performance.now() - swipe.at;
+      swipe = null;
+      if (dt > 650 || Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+      swipeMoved = true;
+      stepFavCursor(dx < 0 ? -1 : 1);
+    }, { passive: true });
+    canvas.addEventListener("touchcancel", () => {
+      swipe = null;
     });
 
     const fullBtn = document.getElementById("full");
@@ -3331,12 +3608,34 @@ const PHOTO_TEX = {
       fullBtn.setAttribute("aria-label", on ? "Exit full screen" : "Full screen");
       fullBtn.querySelector('[data-icon="enter"]').toggleAttribute("hidden", on);
       fullBtn.querySelector('[data-icon="exit"]').toggleAttribute("hidden", !on);
-      if (on) holdWake();
-      else {
+      if (on) {
+        holdWake();
+        armIdle();
+      } else {
         dropWake();
+        clearIdle();
         setPanelHidden(false);
       }
     }
+    let idleTimer = 0;
+    function clearIdle() {
+      clearTimeout(idleTimer);
+      document.body.classList.remove("idle");
+    }
+    function armIdle() {
+      clearTimeout(idleTimer);
+      if (!(document.fullscreenElement || document.webkitFullscreenElement)) return;
+      idleTimer = setTimeout(() => {
+        if (document.fullscreenElement || document.webkitFullscreenElement) document.body.classList.add("idle");
+      }, 5000);
+    }
+    function wakeIdle() {
+      if (!(document.fullscreenElement || document.webkitFullscreenElement)) return;
+      document.body.classList.remove("idle");
+      armIdle();
+    }
+    window.addEventListener("mousemove", wakeIdle);
+    window.addEventListener("pointerdown", wakeIdle);
     fullBtn.addEventListener("click", () => {
       const root = document.documentElement;
       if (document.fullscreenElement || document.webkitFullscreenElement) {
@@ -3706,15 +4005,22 @@ const PHOTO_TEX = {
     });
     function placeMini() {
       const rect = panel.getBoundingClientRect();
-      const width = Math.min(440, Math.max(260, Math.min(rect.width, window.innerWidth - 16)));
+      const view = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+      const avail = Math.max(160, view - 16);
+      const narrow = view < 640;
+      const width = narrow ? avail : Math.min(440, Math.max(300, Math.min(rect.width || avail, avail)));
       miniEl.style.position = "fixed";
       miniEl.style.margin = "0";
       miniEl.style.width = width + "px";
-      const left = Math.min(window.innerWidth - width - 8, Math.max(8, rect.left));
-      const top = Math.min(window.innerHeight - 60, Math.max(8, rect.bottom - 60));
+      miniEl.style.maxWidth = "calc(100vw - 16px)";
+      const left = narrow ? 8 : Math.min(view - width - 8, Math.max(8, rect.left));
+      const top = Math.min(window.innerHeight - (narrow ? 108 : 60), Math.max(8, rect.bottom - (narrow ? 108 : 60)));
       miniEl.style.left = left + "px";
       miniEl.style.top = top + "px";
     }
+    window.addEventListener("resize", () => {
+      if (panelMode === "compact" && !panelHidden) placeMini();
+    });
     document.getElementById("panel-min").addEventListener("click", () => {
       placeMini();
       panelMode = "compact";
@@ -3806,7 +4112,7 @@ const PHOTO_TEX = {
       for (const [key, item] of Object.entries(oscs)) {
         osc[key] = { on: item.on, range: item.range, wave: item.wave, rate: item.rate, phase: item.phase };
       }
-      return { scene: state.scene, values, osc, order: oscOrder.slice(), focus: oscKey, background: snapshotBackground(), palettes: snapshotPalettes() };
+      return { scene: state.scene, values, osc, order: oscOrder.slice(), focus: oscKey, background: snapshotBackground(), foreground: { texA: fgTexA, texB: fgTexB, texBlend: fgTexBlend }, palettes: snapshotPalettes() };
     }
 
     function readCorner(raw) {
@@ -3868,7 +4174,7 @@ const PHOTO_TEX = {
       const fgBlend = Number(incoming.fgBlend);
       values.fgBlend = Number.isFinite(fgBlend) ? Math.min(BLENDS.length - 1, Math.max(0, Math.round(fgBlend))) : 1;
       const sceneNumber = Math.round(Number(raw.scene));
-      const scene = sceneNumber >= 1 && sceneNumber <= 15 ? sceneNumber : 1;
+      const scene = sceneNumber >= 1 && sceneNumber <= 16 ? sceneNumber : 1;
       const oscIn = raw.oscillators && typeof raw.oscillators === "object" ? raw.oscillators : raw.osc;
       const osc = {};
       if (oscIn && typeof oscIn === "object") {
@@ -3903,10 +4209,10 @@ const PHOTO_TEX = {
       }
       const extra = {};
       for (const [key, value] of Object.entries(raw)) {
-        if (key === "scene" || key === "values" || key === "osc" || key === "oscillators" || key === "order" || key === "focus" || key === "background" || key === "palettes") continue;
+        if (key === "scene" || key === "values" || key === "osc" || key === "oscillators" || key === "order" || key === "focus" || key === "background" || key === "foreground" || key === "palettes") continue;
         extra[key] = value;
       }
-      return { scene, values, osc, order, focus, background: backgroundSet, palettes: raw.palettes && typeof raw.palettes === "object" ? raw.palettes : null, extra };
+      return { scene, values, osc, order, focus, background: backgroundSet, foreground: raw.foreground && typeof raw.foreground === "object" ? raw.foreground : null, palettes: raw.palettes && typeof raw.palettes === "object" ? raw.palettes : null, extra };
     }
 
     function setsDocument() {
@@ -3922,6 +4228,7 @@ const PHOTO_TEX = {
           order: set.order,
           focus: set.focus,
           background: set.background,
+          foreground: set.foreground,
           palettes: set.palettes,
         })),
       };
@@ -4011,6 +4318,19 @@ const PHOTO_TEX = {
       if (panelHidden || panelMode !== "full") oscPanel.hidden = true;
     }
 
+    function applyForegroundTextures(next) {
+      const src = next && typeof next === "object" ? next : {};
+      const readTex = (value) => {
+        const index = Math.round(Number(value));
+        return Number.isFinite(index) ? Math.max(0, Math.min(BG_PATS.length - 1, index)) : 0;
+      };
+      fgTexA = Object.prototype.hasOwnProperty.call(src, "texA") ? readTex(src.texA) : 0;
+      fgTexB = Object.prototype.hasOwnProperty.call(src, "texB") ? readTex(src.texB) : 0;
+      const blendValue = Object.prototype.hasOwnProperty.call(src, "texBlend") ? Math.round(Number(src.texBlend)) : 2;
+      fgTexBlend = TEX_BLENDS.some((item) => item.value === blendValue) ? blendValue : 2;
+      paintTexUi();
+    }
+
     function finishSet(target) {
       for (const [key] of SLIDERS) {
         bases[key] = target.values[key];
@@ -4030,6 +4350,7 @@ const PHOTO_TEX = {
       }
       if (oscKey && !panelHidden && panelMode === "full") paintOsc();
       if (target.background) applyBackground(target.background);
+      applyForegroundTextures(target.foreground);
     }
 
     function startMix(target, dur, fav) {
@@ -4037,7 +4358,7 @@ const PHOTO_TEX = {
       paintHeart();
       const fromScene = state.scene;
       const fromFg = paletteAt(scenePalettes[fromScene] || 0);
-      const targetScene = target.scene >= 1 && target.scene <= 15 ? target.scene : fromScene;
+      const targetScene = target.scene >= 1 && target.scene <= 16 ? target.scene : fromScene;
       const targetPals = target.palettes || {};
       const toFgRaw = targetPals[targetScene] != null ? targetPals[targetScene] : targetPals[String(targetScene)];
       const toFg = paletteAt(Number.isFinite(Number(toFgRaw)) ? toFgRaw : scenePalettes[targetScene] || 0);
@@ -4072,6 +4393,7 @@ const PHOTO_TEX = {
         }
       } else {
         setMix = { from, to: target, fromOsc, fromBg: snapshotBackground(), t: 0, dur, fav: !!fav, pal: { fromFg, toFg, fromBgPal, toBgPal, fromBgOn, toBgOn } };
+        applyForegroundTextures(target.foreground);
         livePalette = { fg: fromFg, bg: fromBgPal, bgOn: fromBgOn };
       }
     }
@@ -4336,6 +4658,9 @@ uniform vec4 uPatB;
 uniform vec2 uPatTime;
 uniform vec4 uPatRnd;
 uniform float uPatBlend;
+uniform vec4 uFgPatA;
+uniform vec4 uFgPatB;
+uniform float uFgPatBlend;
 uniform float uWaves;
 uniform float uWavePhase;
 
@@ -5263,6 +5588,10 @@ vec3 blendPat(vec3 a, vec3 b, float mode) {
   if (mode < 4.5) return vec3(clamp(dot(a - 0.5, b - 0.5) + 0.5, 0.0, 1.0));
   return min(vec3(1.0), a * b * 2.0);
 }
+vec3 fgPattern(vec2 uv) {
+  vec3 pat = blendPat(samplePat(uFgPatA, uv, uPatRnd.xy), samplePat(uFgPatB, uv, uPatRnd.zw), uFgPatBlend);
+  return pat.x < 0.0 ? vec3(1.0) : max(pat, vec3(0.0));
+}
 void main() {
   vec2 viewUv = symmetry(vUv);
   vec2 uv = uBulge != 0.0 ? bulgeWarp(viewUv, uBulge) : viewUv;
@@ -5335,6 +5664,7 @@ void main() {
   vec2 px = viewUv * uResolution;
   float ink = uLight * 2.0 - 1.0;
   if (uFgOn > 0.5) {
+  vec3 fgPat = fgPattern(viewUv);
   if ((uScene > 9.5 && uScene < 10.5) || (uScene > 11.5 && uScene < 12.5)) {
     vec2 cell = floor(gl_FragCoord.xy * 0.5 / max(uSize, 0.05));
     float frame = floor(uNoiseTime * 60.0);
@@ -5344,7 +5674,7 @@ void main() {
     float mag = abs(ink);
     float show = uScene > 11.5 ? step(hash12(cell + frame * vec2(3.17, 19.13) + 40.0), 0.0625) : 1.0;
     float amount = abs(grain) * 0.25 * mag * show * uAlpha;
-    if (grain >= 0.0) col = mix(col, vec3(1.15), amount);
+    if (grain >= 0.0) col = mix(col, fgPat * 1.15, amount);
     else col = mix(col, vec3(0.0), amount);
   }
   if (uScene > 14.5 && uScene < 15.5) {
@@ -5362,7 +5692,7 @@ void main() {
     p += p * ripple * amp * 0.85;
     float cells = max(uSize, 0.05) * 8.0;
     float white = checksMask(p * cells);
-    vec3 tone = clamp(palette(fract(t * 0.035)), 0.0, 1.0);
+    vec3 tone = clamp(palette(fract(t * 0.035)) * fgPat, 0.0, 1.0);
     vec3 glow = tone * white;
     vec3 shade = vec3(1.0 - white);
     if (ink < 0.0) {
@@ -5404,6 +5734,8 @@ void main() {
       float halo = exp(-0.5 * span * span);
       deposit(palette(fract(uPathHue)) * halo * 0.16 * ink, fgGlow, fgShade);
     }
+    fgGlow *= fgPat;
+    fgShade *= fgPat;
     col = compositeFg(col, fgGlow, fgShade, uFgBlend);
     }
     col = shoulder(col);
@@ -5425,6 +5757,8 @@ void main() {
         accumSpark(int(idn) - 1, px, ink, fgGlow, fgShade);
       }
     }
+    fgGlow *= fgPat;
+    fgShade *= fgPat;
     col = shoulder(compositeFg(col, fgGlow, fgShade, uFgBlend));
   }
   }
@@ -5542,6 +5876,9 @@ void main() {
           patTime: gl.getUniformLocation(feedback, "uPatTime"),
           patRnd: gl.getUniformLocation(feedback, "uPatRnd"),
           patBlend: gl.getUniformLocation(feedback, "uPatBlend"),
+          fgPatA: gl.getUniformLocation(feedback, "uFgPatA"),
+          fgPatB: gl.getUniformLocation(feedback, "uFgPatB"),
+          fgPatBlend: gl.getUniformLocation(feedback, "uFgPatBlend"),
           resolution: gl.getUniformLocation(feedback, "uResolution"),
           zoom: gl.getUniformLocation(feedback, "uZoom"),
           spin: gl.getUniformLocation(feedback, "uSpin"),
@@ -5746,6 +6083,7 @@ void main() {
           if (scene === 13) return circuitBudget().total;
           if (scene === 14) return ORBIT_BODIES * (2 + orbitMoons());
           if (scene === 15) return 0;
+          if (scene === 16) return wormCount() * WORM_SEG * 2;
           return particleCount(SPARK_N);
         }
 
@@ -6109,6 +6447,7 @@ void main() {
           if (state.scene === 9) writeStucco();
           if (state.scene === 13) writeCircuit();
           if (state.scene === 14) writeOrbits();
+          if (state.scene === 16) writeWorms();
           if (state.scene === 10 || state.scene === 12) writeSpinText();
           if (state.scene === 11) writeText();
           if (state.scene !== 1 && state.scene !== 15) foldSparks(tile);
@@ -6135,6 +6474,11 @@ void main() {
           const infoB = patInfo(bgTexB);
           gl.uniform4f(fu.patA, infoA[0], infoA[1], infoA[2], infoA[3]);
           gl.uniform4f(fu.patB, infoB[0], infoB[1], infoB[2], infoB[3]);
+          const fgA = patInfo(fgTexA);
+          const fgB = patInfo(fgTexB);
+          gl.uniform4f(fu.fgPatA, fgA[0], fgA[1], fgA[2], fgA[3]);
+          gl.uniform4f(fu.fgPatB, fgB[0], fgB[1], fgB[2], fgB[3]);
+          gl.uniform1f(fu.fgPatBlend, fgTexBlend);
           const texRate = Math.max(0.2, state.speed / 0.38) * dt * 60 * bgTexRate;
           texPos = (texPos + 0.01 * texRate) % 1;
           texPos2 = (texPos2 + 0.0002 * texRate) % 1;
@@ -6223,6 +6567,7 @@ void main() {
               else if (state.scene === 13) stepCircuit(1 / 60);
               else if (state.scene === 14) stepOrbits(1 / 60);
               else if (state.scene === 15) stepChecks(1 / 60);
+              else if (state.scene === 16) stepWorms(1 / 60);
               else stepBall(1 / 60);
               draw(1 / 60);
             }
@@ -6249,6 +6594,7 @@ void main() {
             else if (state.scene === 13) stepCircuit(dt);
             else if (state.scene === 14) stepOrbits(dt);
             else if (state.scene === 15) stepChecks(dt);
+            else if (state.scene === 16) stepWorms(dt);
             else stepBall(dt);
             draw(dt);
           } else {
