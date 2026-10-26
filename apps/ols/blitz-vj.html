@@ -26,6 +26,7 @@
   #tools:hover, body.mousemoved #tools { opacity: 0.9; }
   @media (hover: none) { #tools { opacity: 0.6; } } /* touch screens have no hover: keep the menu faintly visible */
   body.fs #tools { display: none; }
+  body.fs.pfs #tools { display: block; } /* pseudo full screen (no Fullscreen API): keep a way out */
   body.fs #screen { cursor: default; }
   #tools button, #tools label { background: #222; color: #ccc; border: 1px solid #444; padding: 2px 6px; cursor: pointer; }
 </style>
@@ -35,7 +36,7 @@
 <div id="status">Loading…</div>
 <div id="saved"></div>
 <div id="tools">
-  <button onclick="window.blitzFullscreen()" title="Full screen (Enter in performance mode, or Alt+Enter)">Full screen</button>
+  <button onclick="window.blitzFullscreen()" title="Full screen (Enter in performance mode, or Alt+Enter). Touch, in full screen: swipe left/right = next/previous pattern, up/down = next/previous performance, long hold = edit UI">Full screen</button>
   <button id="viewbtn" onclick="window.blitzCycleView()" title="View: Fit (scale to the window, 4:3) / 1:1 (actual 1024x768 pixels) / Stretch (fill the window). Remembered.">View: Fit</button>
   <button id="resbtn" onclick="window.blitzToggleRes()" title="Feedback texture resolution: 1024 (sharper, default) or 512 (original, pixel-faithful). Reloads.">Feedback 1024</button>
   <button onclick="window.blitzExport()" title="Download performances saved in this browser">Export</button>
@@ -70,14 +71,19 @@
     var v = q === '1' ? 'fit' : q === '0' ? '1:1' : q === 'stretch' ? 'stretch' : (saved || 'fit');
     applyView(v);
   })();
+  // Full screen. Where the Fullscreen API is missing (iPhone Safari) a pseudo full screen is used instead: the page
+  // fills the window like full screen (body.pfs), the tools menu stays (faintly) visible so it can be left again.
   window.blitzFullscreen = function () {
-    var d = document;
+    var d = document, b = d.body;
     if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+    if (b.classList.contains('pfs')) { b.classList.remove('pfs'); onChange(); return; }
     var el = d.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
     if (req) { var r = req.call(el, { navigationUI: 'hide' }); if (r && r.catch) r.catch(function () {}); }
+    else { b.classList.add('pfs'); onChange(); }
   };
+  window.blitzIsFs = function () { return !!(document.fullscreenElement || document.webkitFullscreenElement) || document.body.classList.contains('pfs'); };
   function onChange() {
-    var on = !!(document.fullscreenElement || document.webkitFullscreenElement), b = document.body;
+    var on = window.blitzIsFs(), b = document.body;
     b.classList.toggle('fs', on); // full screen scales like fit (or stretch); leaving it restores the chosen view mode
     var c = document.getElementById('screen'); if (c && c.focus) c.focus();
   }
@@ -97,15 +103,15 @@
   function perfMode() {
     try { var a = window.__blitz && window.__blitz.prog && window.__blitz.prog.get('g_app'); return !!a && !a.editmode; } catch (e) { return false; }
   }
-  function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); } // real full screen (Escape)
   var swallowed = {};
   window.addEventListener('keydown', function (e) {
     var enter = e.code === 'Enter' || e.code === 'NumpadEnter';
-    var take = (enter && e.altKey) || (enter && !e.ctrlKey && !e.metaKey && perfMode()) || (e.code === 'Escape' && isFs());
+    var take = (enter && e.altKey) || (enter && !e.ctrlKey && !e.metaKey && perfMode()) || (e.code === 'Escape' && window.blitzIsFs());
     if (!take) return;
     e.preventDefault(); e.stopImmediatePropagation(); swallowed[e.code] = true;
     if (e.repeat) return;
-    if (e.code === 'Escape') { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    if (e.code === 'Escape') { if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else window.blitzFullscreen(); return; }
     window.blitzFullscreen();
   }, true);
   window.addEventListener('keyup', function (e) {
@@ -2490,22 +2496,80 @@ function installInput(R) {
     window.addEventListener('blur', () => R.inputReset());
     el.addEventListener('mousemove', e => { const [x, y] = pos(e); R.inputMouseMove(x, y); });
     window.addEventListener('mousemove', e => { if (e.target !== el) { const [x, y] = pos(e); R.inputMouseMove(x, y); } });
-    el.addEventListener('mousedown', e => { e.preventDefault(); el.focus && el.focus(); R.inputMouseButton(e.button, true); });
-    window.addEventListener('mouseup', e => R.inputMouseButton(e.button, false));
+    el.addEventListener('mousedown', e => { if (gp.size) { e.preventDefault(); return; } e.preventDefault(); el.focus && el.focus(); R.inputMouseButton(e.button, true); });
+    window.addEventListener('mouseup', e => { if (!gp.size) R.inputMouseButton(e.button, false); });
     // Touch / pen -> left mouse button (tap = click, drag = drag). preventDefault on pointerdown suppresses the browser's
     // synthesized mouse events; the release is held until the app has polled at least one frame with the button down,
     // because a quick tap can begin and end between two frames (the app polls MouseDown, not events).
     let tid = null, tFrame = 0;
     const fnow = () => (R.sys ? R.sys.frame : 0);
     const tUp = () => { if (fnow() > tFrame || !R.sys) R.inputMouseButton(0, false); else requestAnimationFrame(tUp); };
+    // ---- Full-screen gestures (performance mode only; R.gestureActive(pointerType) is set by boot.js).
+    // Each gesture is turned into the key the original app already reads in performance mode (app.bmx, keyDownCount = 1):
+    //   swipe left  -> Right arrow = currentPerformance.nextEvent()      (next pattern)
+    //   swipe right -> Left arrow  = currentPerformance.previousEvent()  (previous pattern)
+    //   swipe up    -> Down arrow  = nextPerformance(True)                (next performance)
+    //   swipe down  -> Up arrow    = previousPerformance()                (previous performance)
+    //   long hold   -> Enter       = editMode = True                      (the UI; same as a click)
+    // The key is held until the app has polled one frame with it down, then released; queued gestures follow in order.
+    // Gesture touches are never delivered as mouse input. Multi-touch cancels the gesture.
+    const GS = { SWIPE: 50, SLOP: 15, HOLD: 600 };
+    const keyQ = []; let keyBusy = false;
+    const pumpKeys = () => {
+      if (keyBusy || !keyQ.length) return;
+      keyBusy = true; const vk = keyQ.shift(); setKey(vk, true); const f0 = fnow();
+      const rel = () => { if (fnow() > f0 || !R.sys) { setKey(vk, false); keyBusy = false; pumpKeys(); } else requestAnimationFrame(rel); };
+      requestAnimationFrame(rel);
+    };
+    R.inputTapKey = vk => { keyQ.push(vk); pumpKeys(); };
+    const gp = new Map(); // active gesture pointers
+    let g = null;         // { id, x0, y0, t0, timer, dead }
+    R.gestureLog = [];
+    const gestureFire = (name, vk) => {
+      R.gestureLog.push(name); if (R.gestureLog.length > 50) R.gestureLog.shift();
+      R.inputTapKey(vk);
+      if (R.onGesture) try { R.onGesture(name); } catch (_) {}
+    };
+    const gEnd = (e, cancelled) => {
+      if (!gp.has(e.pointerId)) return false;
+      gp.delete(e.pointerId);
+      if (g && g.id === e.pointerId) {
+        clearTimeout(g.timer);
+        if (!cancelled && !g.dead) {
+          const dx = e.clientX - g.x0, dy = e.clientY - g.y0, ax = Math.abs(dx), ay = Math.abs(dy);
+          if (Math.max(ax, ay) >= GS.SWIPE) {
+            if (ax > ay) dx < 0 ? gestureFire('swipe-left', 39) : gestureFire('swipe-right', 37);
+            else if (ay > ax) dy < 0 ? gestureFire('swipe-up', 40) : gestureFire('swipe-down', 38);
+          }
+        }
+        g = null;
+      }
+      return true;
+    };
     el.addEventListener('pointerdown', e => {
+      if (gp.size || (tid === null && R.gestureActive && R.gestureActive(e.pointerType))) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        try { el.setPointerCapture(e.pointerId); } catch (_) {}
+        gp.set(e.pointerId, 1);
+        if (gp.size > 1) { if (g) { clearTimeout(g.timer); g.dead = true; } return; } // multi-touch: ignore
+        g = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), dead: false };
+        g.timer = setTimeout(() => { if (g && !g.dead) { g.dead = true; gestureFire('hold', 13); } }, GS.HOLD);
+        return;
+      }
       if (e.pointerType === 'mouse' || tid !== null) return;
       e.preventDefault(); tid = e.pointerId; try { el.setPointerCapture(e.pointerId); } catch (_) {}
       const [x, y] = pos(e); R.inputMouseMove(x, y); el.focus && el.focus(); R.inputMouseButton(0, true); tFrame = fnow();
     });
-    el.addEventListener('pointermove', e => { if (e.pointerId !== tid) return; e.preventDefault(); const [x, y] = pos(e); R.inputMouseMove(x, y); });
+    el.addEventListener('pointermove', e => {
+      if (gp.has(e.pointerId)) {
+        e.preventDefault();
+        if (g && g.id === e.pointerId && !g.dead && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) > GS.SLOP) clearTimeout(g.timer); // moving: not a hold
+        return;
+      }
+      if (e.pointerId !== tid) return; e.preventDefault(); const [x, y] = pos(e); R.inputMouseMove(x, y); });
     const tEnd = e => { if (e.pointerId !== tid) return; tid = null; tUp(); };
-    el.addEventListener('pointerup', tEnd); el.addEventListener('pointercancel', tEnd);
+    el.addEventListener('pointerup', e => { if (gEnd(e, false)) { e.preventDefault(); return; } tEnd(e); });
+    el.addEventListener('pointercancel', e => { if (gEnd(e, true)) return; tEnd(e); });
     el.addEventListener('contextmenu', e => e.preventDefault());
     el.addEventListener('wheel', e => { e.preventDefault(); R.inputWheel(e.deltaY < 0 ? 1 : -1); }, { passive: false });
   };
@@ -39771,6 +39835,17 @@ return {main:$main,classes:{"tglobal":C_tglobal,"tentity":C_tentity,"tcamera":C_
     if (params.get('dbg') === 'nofb') { const c = R.glcopyteximage2d; R.glcopyteximage2d = (...a) => { if (R.sys && R.sys.frame > 10 && a[5] === R.fbTex) return; return c(...a); }; } // debug: freeze the feedback copy after frame 10
     const prog = (params.get('minib3d') === '2020' ? $program2020 : $program)(R);
     window.__blitz.R = R; window.__blitz.prog = prog;
+    // Full-screen gestures (input.js): swipes change pattern / performance, long hold opens the UI. Only in full screen
+    // and performance mode, and only for touch/pen pointers. Default on for mobile or touch-capable devices; ?gestures=0
+    // turns them off; ?gestures=1 forces them on and also accepts mouse drags (desktop testing).
+    const gq = params.get('gestures');
+    const gOn = gq === '0' ? false : gq === '1' ? true : (mobile || (navigator.maxTouchPoints || 0) > 0);
+    window.__blitz.gestures = gOn;
+    if (gOn) R.gestureActive = type => {
+      if (type === 'mouse' && gq !== '1') return false;
+      if (!(window.blitzIsFs && window.blitzIsFs())) return false;
+      try { const a = prog.get('g_app'); return !!a && !a.editmode; } catch (e) { return false; }
+    };
     $('status').style.display = 'none';
     try { await prog.main(); }
     catch (e) { if (!(e instanceof R.EndSignal)) throw e; }
