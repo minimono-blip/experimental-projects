@@ -57,6 +57,42 @@ svg{width:18px;height:18px;fill:currentColor;flex:none}
 .progress-text{font-size:13px;color:var(--accent2);margin-bottom:6px}
 .progress-track{height:6px;background:var(--progress-track);border-radius:6px;overflow:hidden}
 .progress-bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2nd));transition:width .15s}
+/* round 18: indeterminate "busy" row shown before the scan's progress bar can start (folder picker open, browser reading the
+   folder, preparing / matching thousands of files). Always in the DOM as the live region; collapsed while idle. The spinner and
+   the sliding bar are transform animations, so they keep moving even while the page's main thread is busy. */
+.busy{height:0;overflow:hidden}
+.busy.on{height:auto;display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:9px;row-gap:6px;padding:10px 20px;background:var(--progress-bg);border-bottom:1px solid var(--line)}
+.busy-spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--progress-track);border-top-color:var(--accent2);border-right-color:var(--accent2);animation:busy-spin .75s linear infinite;will-change:transform}
+.busy-text{font-size:13px;color:var(--accent2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.busy-track{grid-column:1/-1;height:6px;background:var(--progress-track);border-radius:6px;overflow:hidden}
+.busy-track i{display:block;height:100%;width:35%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent-2nd));animation:busy-slide 1.3s ease-in-out infinite;will-change:transform}
+@keyframes busy-spin{to{transform:rotate(360deg)}}
+@keyframes busy-slide{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
+@keyframes busy-pulse{from{opacity:1}to{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.busy-spin{animation:busy-pulse 1.4s ease-in-out infinite alternate;border-color:var(--accent2)}.busy-track i{width:100%;transform:none;animation:busy-pulse 1.4s ease-in-out infinite alternate}}
+@media (max-width:600px){.busy.on{padding:9px 14px}}
+/* BPM & key detection: progress row with Cancel; detected values carry a faint dot, a cell being analysed a pulsing one */
+.dprog .dp-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.dprog .dp-txt{flex:1;min-width:0}
+.dprog .progress-text{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.dprog .dp-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.dprog .btn{flex:none}
+/* round 21: while a batch is still preparing (checking which tracks need analysing) the bar slides, like the scan's busy row */
+.dprog.prep .progress-bar{width:35%!important;transition:none;animation:busy-slide 1.3s ease-in-out infinite;will-change:transform}
+@media (prefers-reduced-motion: reduce){.dprog.prep .progress-bar{width:100%!important;transform:none;animation:busy-pulse 1.4s ease-in-out infinite alternate}}
+@media (max-width:600px){.dprog{padding:8px 14px}.dprog .dp-row{gap:8px}}
+.row .bpm{position:relative}
+.row .bpm.det,.row .mkey.det{background-image:radial-gradient(circle,color-mix(in srgb,var(--accent2) 75%,transparent) 0 1.6px,transparent 2.2px)!important;background-repeat:no-repeat!important;background-size:6px 6px!important;background-position:right 0 top 0!important}
+.row .bpm.detecting::before{content:'';position:absolute;left:3px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--accent2);animation:det-pulse .9s ease-in-out infinite alternate}
+.row .mkey.detecting{animation:det-fade .9s ease-in-out infinite alternate}
+@keyframes det-pulse{from{opacity:1;transform:scale(1)}to{opacity:.25;transform:scale(.6)}}
+@keyframes det-fade{from{opacity:1}to{opacity:.45}}
+@media (prefers-reduced-motion: reduce){.row .bpm.detecting::before{animation:busy-pulse 1.4s ease-in-out infinite alternate}}
+.det-th > span{display:block;flex:1}
+.det-in{display:flex;align-items:center;gap:6px;margin:2px 0 4px;font-size:13px}
+.det-in label{flex:1;cursor:default}
+.setting.det-th{cursor:default;padding-left:30px}
+.setting .det-in input{width:62px;height:auto;margin:0;padding:3px 6px;font:inherit;font-size:13px;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:6px;text-align:right}
 .banner{display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--banner-bg);border-bottom:1px solid var(--banner-line);color:var(--banner-text);flex-wrap:wrap}
 .banner .msg{flex:1;min-width:240px}
 .layout{flex:1;display:flex;min-height:0}
@@ -90,6 +126,18 @@ svg{width:18px;height:18px;fill:currentColor;flex:none}
 .card:hover .play-fab,.card .play-fab:focus{opacity:1;transform:none}
 .card .play-fab svg{width:22px;height:22px}
 /* albums with tracks that a folder scan did not find: grey-toned, with a badge that opens the remove menu */
+/* album cards holding the playing track: a 1.5px ring in the theme accent mixed into the card colour (~2:1 against the card) */
+:root{--np-ring:#534b7f}
+[data-theme=light]{--np-ring:#bfaeed}
+[data-theme=midnight]{--np-ring:#335581}
+[data-theme=solarized-dark]{--np-ring:#266582}
+[data-theme=solarized-light]{--np-ring:#92b1c1}
+[data-theme=nord]{--np-ring:#597383}
+[data-theme=dracula]{--np-ring:#6a5f88}
+[data-theme=gruvbox]{--np-ring:#705c2f}
+[data-theme=high-contrast]{--np-ring:#4c450a}
+[data-theme=sepia]{--np-ring:#c5a58e}
+.card.np-album{box-shadow:0 0 0 1.5px var(--np-ring)}
 .card.has-missing .cover{filter:grayscale(var(--miss-gray));opacity:var(--miss-op);transition:filter .15s,opacity .15s}
 .card.has-missing .card-title{color:var(--muted)}
 .card.has-missing:hover .cover,.card.has-missing:focus-within .cover{filter:grayscale(calc(var(--miss-gray) * .5));opacity:.9}
@@ -318,11 +366,16 @@ dialog menu{display:flex;flex-direction:row-reverse;gap:8px;margin:0;padding:0}
 [data-theme=light],[data-theme=solarized-light],[data-theme=sepia]{--tm-a:.18}
 [data-theme=high-contrast]{--tm-a:.17}
 /* one faint dot per track (rows of 10); past 40 tracks a slightly larger dot stands for ten; saturates at 300 */
-.tm{position:absolute;left:8%;bottom:8%;display:flex;flex-direction:column;gap:1px;line-height:0;--s:6px}
-.tm i{display:block;width:calc(var(--s) * var(--k));height:var(--s);background:radial-gradient(circle closest-side,rgba(255,255,255,var(--tm-a)) 62%,transparent 82%) 0 0/var(--s) var(--s) repeat-x}
-.tm i.b{--s:8px}
-.album-head .tm{--s:7px}
-.album-head .tm i.b{--s:9px}
+.tm{position:absolute;left:8%;bottom:8%;display:flex;flex-direction:column;gap:calc(var(--s) * .3);line-height:0;--s:min(12px,7.4cqw);opacity:var(--tm-a)}
+.tm i{display:block;width:calc(var(--s) * var(--k));height:var(--s);background:var(--g) 0 0/var(--s) var(--s) repeat-x}
+.tm i.g-o{--g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='%23fff'%3E%3Ccircle cx='6' cy='6' r='4.1'/%3E%3C/svg%3E")}
+.tm i.g-x{--g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='%23fff'%3E%3Cpath d='M2.6 2.6L9.4 9.4M9.4 2.6L2.6 9.4' stroke='%23fff' stroke-width='2.1' stroke-linecap='round'/%3E%3C/svg%3E")}
+.tm i.g-tr{--g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='%23fff'%3E%3Cpath d='M6 1.6L10.7 10H1.3z'/%3E%3C/svg%3E")}
+.tm i.g-sq{--g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='%23fff'%3E%3Crect x='2.3' y='2.3' width='7.4' height='7.4'/%3E%3C/svg%3E")}
+.tm i.g-dm{--g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='%23fff'%3E%3Cpath d='M6 1.1L10.9 6L6 10.9L1.1 6z'/%3E%3C/svg%3E")}
+.tm i.g-pl{--g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='%23fff'%3E%3Cpath d='M6 2.2V9.8M2.2 6H9.8' stroke='%23fff' stroke-width='2.1' stroke-linecap='round'/%3E%3C/svg%3E")}
+.cover{container-type:inline-size}
+.album-head .tm{--s:min(14px,7.4cqw)}
 /* selection checkbox (left of every track row) */
 .sel{display:grid;place-items:center;flex:none;width:22px;height:30px;margin:-4px -4px -4px -4px;cursor:pointer}
 .sel input{width:16px;height:16px;margin:0;accent-color:var(--accent-2nd);cursor:pointer}
@@ -368,8 +421,7 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
   .sel-panel{left:8px;right:8px;transform:none;max-width:none;bottom:calc(var(--player-h) + 8px);padding:5px 6px}
   .sel-panel .btn{padding:6px 9px}
   body.has-sel .main{padding-bottom:calc(var(--player-h) + 80px)}
-  .album-head .tm{--s:5px}
-  .album-head .tm i.b{--s:7px}
+  .album-head .tm{--s:min(10px,7.4cqw)}
 }
 @media (max-width:600px){
   .row{gap:5px;padding:6px 8px}
@@ -418,13 +470,23 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
 .scope-full .sf-panel button:hover{color:var(--text);background:var(--pop-hover)}
 .scope-full .sf-panel .sfp-all{color:var(--text);border-color:var(--pop-line);padding:5px 10px}
 .scope-full .sfp-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px}
+.scope-full .sfp-sec[hidden]{display:none}
+.scope-full .sfp-sec+.sfp-sec{border-top:1px solid var(--pop-line);margin-top:8px;padding-top:7px}
+.scope-full .sfp-sh{display:flex;align-items:center;gap:8px;margin:0 0 3px}
+.scope-full .sfp-sh b{flex:1;font-weight:600;font-size:12px;letter-spacing:.3px;color:var(--text)}
+.scope-full .sf-panel .sfp-sh .sfp-all{padding:3px 8px;font-size:11.5px}
+.scope-full .sfp-grp{margin:5px 0 1px;color:var(--text);opacity:.78;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase}
+.scope-full .sfp-row select{grid-column:2/4;width:100%;min-width:0;height:22px;padding:0 4px;border:1px solid var(--pop-line);border-radius:6px;background:var(--pop-bg);color:var(--text);font:inherit;cursor:pointer}
+.scope-full .sfp-row input[type=checkbox]{width:16px;height:16px;justify-self:start;accent-color:var(--accent2);-webkit-appearance:auto;appearance:auto}
+.scope-full .sfp-eff{grid-column:2/-1;margin:-3px 0 2px;font-size:11px;color:var(--text);opacity:.85}
+.scope-full .sfp-eff[hidden]{display:none}
 .scope-full .sfp-foot span{color:var(--text);font-size:11px}
 .scope-full .sf-panel :focus{outline:none}
 .scope-full .sf-panel :focus-visible,.scope-full .sf-panel input:focus{outline:2px solid var(--accent2);outline-offset:2px;border-radius:4px}
 .scope-full .sf-gear{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));width:36px;height:36px;padding:0;border-radius:50%;border:1px solid var(--pop-line);background:color-mix(in srgb,var(--pop-bg) 75%,transparent);color:var(--text);font-size:18px;line-height:34px;text-align:center;opacity:.6;cursor:pointer;z-index:2}
 .scope-full .sf-gear:hover,.scope-full .sf-gear[aria-expanded=true]{opacity:1}
 .scope-full .sf-gear:focus-visible{outline:2px solid var(--focus);outline-offset:2px;opacity:1}
-@media (max-width:700px){.scope-full .sf-panel{top:auto;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));width:auto;max-width:none;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 46px);max-height:min(56vh,calc(100% - 150px))}.scope-full .sfp-row{min-height:34px}.scope-full .sfp-row input{height:28px}.scope-full .sf-meta{max-width:calc(100% - 90px)}}
+@media (max-width:700px){.scope-full .sfp-row select{height:30px}.scope-full .sfp-row input[type=checkbox]{width:20px;height:20px}.scope-full .sf-panel{top:auto;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));width:auto;max-width:none;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 46px);max-height:min(56vh,calc(100% - 150px))}.scope-full .sfp-row{min-height:34px}.scope-full .sfp-row input{height:28px}.scope-full .sf-meta{max-width:calc(100% - 90px)}}
 .scope-full canvas[hidden]{display:none}
 .scope-full canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .scope-full .sf-meta{position:absolute;left:max(20px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom));max-width:calc(100% - 40px);color:var(--muted);font-size:13px;line-height:1.35;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -438,7 +500,7 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
   <header class="topbar">
     <div class="brand"><span class="logo">♪</span> MyTunes</div>
     <div class="top-actions">
-      <button class="btn primary" data-action="pick-folder" title="Pick your music folder (imports all audio files inside it: MP3, Ogg)"><i data-icon="folder"></i><span id="pickLabel">Choose music folder</span></button>
+      <button class="btn primary" data-action="pick-folder" title="Pick your music folder (imports all audio files inside it: MP3, Ogg, FLAC, WAV)"><i data-icon="folder"></i><span id="pickLabel">Choose music folder</span></button>
       <button class="btn" id="saveBtn" data-action="save-library" title="Export ratings, albums and track orders to mytunes-library.json"><i data-icon="save"></i>Save library</button>
       <button class="btn" data-action="import-json" title="Load a library file backup (any .json, e.g. mytunes-library.json)"><i data-icon="upload"></i>Import library JSON</button>
       <button class="btn" id="settingsBtn" data-action="settings" title="Settings" aria-haspopup="true"><i data-icon="gear"></i><span class="lbl-settings">Settings</span></button>
@@ -446,7 +508,9 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
     <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
     <input type="file" id="jsonInput" accept=".json,application/json" hidden>
   </header>
+  <div id="busy" class="busy" role="status" aria-live="polite"></div>
   <div id="progress" class="progress hidden"><div class="progress-text" id="progressText"></div><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div></div>
+  <div id="detectProg" class="progress dprog hidden"><div class="dp-row"><span class="busy-spin" aria-hidden="true"></span><div class="dp-txt"><div class="progress-text" id="detectText" role="status"></div><div class="dp-sub" id="detectSub"></div></div><button class="btn sm" data-action="detect-cancel" id="detectCancel" title="Stop detecting; values found so far are kept">Cancel</button></div><div class="progress-track" id="detectTrack" role="progressbar" aria-label="BPM and key detection" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar" id="detectBar"></div></div></div>
   <div id="banner" class="banner hidden"></div>
   <div class="layout">
     <nav id="sidebar" class="sidebar" aria-label="Library"></nav>
@@ -472,7 +536,7 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
     </div>
   </footer>
 </div>
-<div class="scope-full" id="scopeFull" hidden role="dialog" aria-modal="true" aria-label="Oscilloscope, full screen" tabindex="-1"><canvas id="scopeFullCv" class="idle" aria-hidden="true"></canvas><canvas id="scopeFx" hidden aria-hidden="true"></canvas><div class="sf-meta" id="sfMeta"></div><div class="sf-mode" id="sfMode" aria-live="polite"></div><div class="sf-fx" id="sfFx" aria-live="polite"></div><div class="sf-panel" id="sfPanel" hidden role="group" aria-labelledby="sfpTitle"><div class="sfp-head"><b id="sfpTitle">Feedback</b><button type="button" class="sfp-x" aria-label="Close settings" title="Close settings (Enter or Esc)">✕</button></div><div class="sfp-note" id="sfpNote" hidden></div><div id="sfpRows"></div><div class="sfp-foot"><button type="button" class="sfp-all">Reset all</button><span>Double-click a slider to reset it</span></div></div><button type="button" class="sf-gear" id="sfGear" hidden aria-label="Effect settings" aria-expanded="false" aria-controls="sfPanel" title="Effect settings (Enter)">⚙</button><div class="sf-close"><span class="sf-fine">← → or 1–<span class="sf-n">2</span> mode · ↑ ↓ effect<span class="sf-enter" hidden> · Enter settings</span> · Click or Esc to close</span><span class="sf-touch">Swipe ↔ mode · ↕ effect · Tap to close</span></div></div>
+<div class="scope-full" id="scopeFull" hidden role="dialog" aria-modal="true" aria-label="Oscilloscope, full screen" tabindex="-1"><canvas id="scopeFullCv" class="idle" aria-hidden="true"></canvas><canvas id="scopeFx" hidden aria-hidden="true"></canvas><div class="sf-meta" id="sfMeta"></div><div class="sf-mode" id="sfMode" aria-live="polite"></div><div class="sf-fx" id="sfFx" aria-live="polite"></div><div class="sf-panel" id="sfPanel" hidden role="group" aria-labelledby="sfpHead"><div class="sfp-head"><b id="sfpHead">Settings</b><button type="button" class="sfp-x" aria-label="Close settings" title="Close settings (Enter or Esc)">✕</button></div><section class="sfp-sec" id="sfpScope" data-sec="scope" aria-labelledby="sfpScopeT"><div class="sfp-sh"><b id="sfpScopeT">Scope</b><button type="button" class="sfp-all" aria-label="Reset all scope settings">Reset all</button></div><div id="sfpScopeRows"></div></section><section class="sfp-sec" id="sfpFx" data-sec="fx" hidden aria-labelledby="sfpTitle"><div class="sfp-sh"><b id="sfpTitle">Feedback</b><button type="button" class="sfp-all" aria-label="Reset all effect settings">Reset all</button></div><div class="sfp-note" id="sfpNote" hidden></div><div id="sfpRows"></div></section><div class="sfp-foot"><span>Double-click a slider to reset it</span></div></div><button type="button" class="sf-gear" id="sfGear" hidden aria-label="Scope settings" aria-expanded="false" aria-controls="sfPanel" title="Settings (Enter)">⚙</button><div class="sf-close"><span class="sf-fine">← → or 1–<span class="sf-n">3</span> mode · ↑ ↓ effect<span class="sf-enter"> · Enter settings</span> · Click or Esc to close</span><span class="sf-touch">Swipe ↔ mode · ↕ effect · ⚙ settings · Tap to close</span></div></div>
 <div id="toasts" aria-live="polite"></div>
 <div id="selPanel" class="sel-panel hidden" role="toolbar" aria-label="Actions for the selected tracks"></div>
 <dialog id="dlg">
@@ -756,12 +820,112 @@ var ID3 = (function () {
     var d = oggDuration(h, g);
     return { tags: h.tags, duration: d, durationSource: d > 0 ? (g >= 0 ? 'ogg' : 'flac-streaminfo') : '', format: 'ogg', codec: h.codec, sampleRate: h.sampleRate };
   }
+  /* ---------- shared: read a byte range, from the head buffer when it is already there ---------- */
+  function rd(file, buf, a, n) {
+    if (a < 0 || n <= 0 || a >= file.size) return Promise.resolve(new Uint8Array(0));
+    if (buf && a + n <= buf.length) return Promise.resolve(buf.subarray(a, a + n));
+    return file.slice(a, Math.min(file.size, a + n)).arrayBuffer().then(function (x) { return new Uint8Array(x); });
+  }
+  var BLOCK_MAX = 16 * 1024 * 1024;
+  /* ---------- native FLAC: "fLaC" + metadata blocks (STREAMINFO, VORBIS_COMMENT; PICTURE etc. are skipped by length) ---------- */
+  function flacStreamInfo(b, i) {
+    if (!b || i + 18 > b.length) return null;
+    var sr = (b[i + 10] << 12) | (b[i + 11] << 4) | (b[i + 12] >> 4);
+    return { sampleRate: sr, channels: ((b[i + 12] >> 1) & 7) + 1, bits: (((b[i + 12] & 1) << 4) | (b[i + 13] >> 4)) + 1, totalSamples: (b[i + 13] & 15) * 4294967296 + u32(b, i + 14) };
+  }
+  /* off: where "fLaC" starts (after an ID3v2 tag some taggers prepend); pre: tags from that ID3 tag (FLAC's own comments win) */
+  async function readFlacInfo(file, buf, off, pre) {
+    var pos = off + 4, si = null, vc = null, n = 0, blocks = [];
+    while (n++ < 1024 && pos + 4 <= file.size) {
+      var h = await rd(file, buf, pos, 4); if (h.length < 4) break;
+      var last = h[0] & 0x80, type = h[0] & 0x7f, len = (h[1] << 16) | (h[2] << 8) | h[3], body = pos + 4;
+      if (type === 127) break;                                   // invalid block type: stop
+      blocks.push(type);
+      if (type === 0 && !si && len >= 18) si = flacStreamInfo(await rd(file, buf, body, Math.min(len, 34)), 0);
+      else if (type === 4 && !vc && len >= 8 && len <= BLOCK_MAX) vc = parseVorbisComment(await rd(file, buf, body, len), 0);
+      pos = body + len;
+      if (last) break;
+    }
+    var tags = {}, k; pre = pre || {};
+    for (k in pre) if (pre[k]) tags[k] = pre[k];
+    if (vc) for (k in vc) tags[k] = vc[k];
+    var tl = num(tags.tlen) / 1000; delete tags.tlen;
+    var d = si && si.sampleRate > 0 && si.totalSamples > 0 ? si.totalSamples / si.sampleRate : 0, src = d > 0 ? 'flac-streaminfo' : '';
+    if (!(d > 0) && tl > 0) { d = tl; src = 'tlen'; }
+    return { tags: tags, duration: d, durationSource: src, format: 'flac', codec: 'flac', sampleRate: si ? si.sampleRate : 0, channels: si ? si.channels : 0, bits: si ? si.bits : 0, audioStart: pos, blocks: blocks };
+  }
+  /* ---------- WAV: RIFF/WAVE (and RF64) chunk headers only; the data chunk is never read here ---------- */
+  var WAV_CODEC = { 1: 'pcm', 2: 'adpcm', 3: 'float', 6: 'alaw', 7: 'mulaw', 0x11: 'ima-adpcm', 0x31: 'gsm', 0x55: 'mp3' };
+  function wavCodec(tag) { return WAV_CODEC[tag] || ('wav-0x' + tag.toString(16)); }
+  function parseWavFmt(b) {
+    if (!b || b.length < 16) return null;
+    var tag = b[0] | (b[1] << 8), o = { tag: tag, channels: b[2] | (b[3] << 8), sampleRate: u32le(b, 4), byteRate: u32le(b, 8), blockAlign: b[12] | (b[13] << 8), bits: b[14] | (b[15] << 8) };
+    if (tag === 0xfffe && b.length >= 40) { o.extensible = true; o.validBits = b[18] | (b[19] << 8); o.tag = b[24] | (b[25] << 8); }   // WAVE_FORMAT_EXTENSIBLE: the real format is the sub-format GUID's first two bytes
+    o.codec = wavCodec(o.tag); return o;
+  }
+  var RIFF_INFO = { INAM: 'title', IART: 'artist', IPRD: 'album', ICRD: 'year', IPRT: 'track', ITRK: 'track', IGNR: 'genre' };
+  var utf8strict = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { fatal: true }) : null;
+  function riffText(b, s, e) {                                   // zero-terminated; UTF-8 when valid, otherwise Latin-1 (both are common)
+    var z = s; while (z < e && b[z] !== 0) z++; e = z;
+    if (utf8strict) { try { return utf8strict.decode(b.subarray(s, e)).trim(); } catch (x) { } }
+    return latin1(b, s, e).trim();
+  }
+  function parseInfoList(b) {                                    // b: a LIST chunk's body ("INFO" + sub-chunks)
+    var tags = {}; if (!b || b.length < 4 || latin1(b, 0, 4) !== 'INFO') return tags;
+    for (var i = 4, n = 0; i + 8 <= b.length && n < 256; n++) {
+      var id = latin1(b, i, i + 4), len = u32le(b, i + 4), st = i + 8, en = Math.min(b.length, st + len), k = RIFF_INFO[id];
+      if (k && !tags[k] && len > 0) { var v = riffText(b, st, en); if (v) tags[k] = v; }
+      i = st + len + (len & 1);                                  // sub-chunks are padded to an even size too
+    }
+    return tags;
+  }
+  var PCM_LIKE = { pcm: 1, float: 1, alaw: 1, mulaw: 1 };
+  async function readWavInfo(file, buf) {
+    var rf64 = latin1(buf, 0, 4) === 'RF64', pos = 12, fmt = null, data = null, fact = 0, ds64 = null, info = {}, id3 = null, n = 0, chunks = [];
+    while (n++ < 1024 && pos + 8 <= file.size) {
+      var h = await rd(file, buf, pos, 8); if (h.length < 8) break;
+      var id = latin1(h, 0, 4), size = u32le(h, 4), body = pos + 8;
+      if (!/^[\x20-\x7e]{4}$/.test(id)) break;                   // not a chunk header: corrupt or trailing junk
+      chunks.push(id);
+      if (id === 'ds64' && size >= 24) { var x = await rd(file, buf, body, 24); if (x.length >= 24) ds64 = { riff: u64le(x, 0), data: u64le(x, 8), samples: u64le(x, 16) }; }
+      else if (id === 'fmt ' && size >= 16 && size <= 4096) fmt = parseWavFmt(await rd(file, buf, body, size));
+      else if (id === 'fact' && size >= 4) { var f4 = await rd(file, buf, body, 4); if (f4.length === 4) fact = u32le(f4, 0); }
+      else if (id === 'LIST' && size >= 4 && size <= BLOCK_MAX) { var L = await rd(file, buf, body, size); var it = parseInfoList(L); for (var k in it) if (!info[k]) info[k] = it[k]; }
+      else if ((id === 'id3 ' || id === 'ID3 ' || id === 'ID32') && size >= 10 && size <= BLOCK_MAX) { var r = parseV2(await rd(file, buf, body, size)); if (r) id3 = r.tags; }
+      else if (id === 'data' && !data) {
+        if (rf64 && size === 0xffffffff && ds64) size = ds64.data;
+        var avail = Math.max(0, file.size - body), open = size === 0xffffffff || (size === 0 && avail > 0);   // streamed: the data runs to the end
+        data = { start: body, size: open ? avail : Math.min(size, avail), declared: size, truncated: !open && size > avail };
+        if (open) break;
+      }
+      pos = body + size + (size & 1);                            // odd-sized chunks carry a pad byte
+    }
+    var tags = {}, k2;
+    for (k2 in info) tags[k2] = info[k2];
+    if (id3) for (k2 in id3) if (id3[k2]) tags[k2] = id3[k2];    // an embedded ID3 tag (TBPM, TKEY, …) wins over LIST/INFO
+    delete tags.tlen;
+    var d = 0;
+    if (fmt && data && fmt.sampleRate > 0) {
+      if (PCM_LIKE[fmt.codec] && fmt.blockAlign > 0) d = Math.floor(data.size / fmt.blockAlign) / fmt.sampleRate;
+      else if (fact > 0) d = fact / fmt.sampleRate;
+      else if (fmt.byteRate > 0) d = data.size / fmt.byteRate;
+    }
+    return { tags: tags, duration: d, durationSource: d > 0 ? 'wav' : '', format: 'wav', codec: fmt ? fmt.codec : '', sampleRate: fmt ? fmt.sampleRate : 0, channels: fmt ? fmt.channels : 0, bits: fmt ? (fmt.validBits || fmt.bits) : 0, rf64: rf64,
+      wav: fmt && data ? { codec: fmt.codec, tag: fmt.tag, channels: fmt.channels, sampleRate: fmt.sampleRate, blockAlign: fmt.blockAlign, bits: fmt.bits, start: data.start, size: data.size } : null, chunks: chunks };
+  }
+  function isWavHead(b) { var m = latin1(b, 0, 4); return b.length >= 12 && (m === 'RIFF' || m === 'RF64' || m === 'BW64') && latin1(b, 8, 12) === 'WAVE'; }
   /* Read tags + duration from a File/Blob: only small slices (head, audio start, last 128 bytes) */
   async function readInfo(file) {
     var HEAD = 128 * 1024, MAXTAG = 16 * 1024 * 1024, SCAN = 64 * 1024;
     var buf = new Uint8Array(await file.slice(0, Math.min(HEAD, file.size)).arrayBuffer());
     if (buf.length >= 4 && isPage(buf, 0)) return readOggInfo(file, buf);   // Ogg container (by content, whatever the extension)
+    if (buf.length >= 4 && latin1(buf, 0, 4) === 'fLaC') return readFlacInfo(file, buf, 0, null);
+    if (isWavHead(buf)) return readWavInfo(file, buf);
     var r = parseV2(buf), tags = r ? r.tags : {};
+    if (r && r.total + 4 <= file.size && latin1(await rd(file, buf, r.total, 4), 0, 4) === 'fLaC') {   // FLAC with an ID3v2 tag in front
+      if (r.truncated && r.total <= MAXTAG) { r = parseV2(await rd(file, null, 0, r.total)) || r; }
+      return readFlacInfo(file, buf, r.total, r.tags);
+    }
     if (r && r.truncated && !(tags.title && tags.artist && tags.album) && r.total <= MAXTAG && r.total > buf.length) {
       buf = new Uint8Array(await file.slice(0, Math.min(r.total, file.size)).arrayBuffer());
       r = parseV2(buf); tags = r ? r.tags : {};
@@ -787,14 +951,14 @@ var ID3 = (function () {
     return { tags: tags, duration: duration, durationSource: source, mpeg: m, format: 'mp3', codec: m ? 'mp3' : '' };
   }
   async function readTags(file) { return (await readInfo(file)).tags; }
-  return { oggPackets: oggPackets, oggHeaders: oggHeaders, parseVorbisComment: parseVorbisComment, lastGranule: lastGranule, oggDuration: oggDuration, readOggInfo: readOggInfo, parseV2: parseV2, parseV1: parseV1, decodeText: decodeText, readTags: readTags, readInfo: readInfo, frameHeader: frameHeader, mpegInfo: mpegInfo, num: num, year: year, date: date };
+  return { readFlacInfo: readFlacInfo, flacStreamInfo: flacStreamInfo, readWavInfo: readWavInfo, parseWavFmt: parseWavFmt, parseInfoList: parseInfoList, isWavHead: isWavHead, PCM_LIKE: PCM_LIKE, oggPackets: oggPackets, oggHeaders: oggHeaders, parseVorbisComment: parseVorbisComment, lastGranule: lastGranule, oggDuration: oggDuration, readOggInfo: readOggInfo, parseV2: parseV2, parseV1: parseV1, decodeText: decodeText, readTags: readTags, readInfo: readInfo, frameHeader: frameHeader, mpegInfo: mpegInfo, num: num, year: year, date: date };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = ID3;
 </script>
 
 <script id="autorate">
 /* ---------- Autorate: star markers in the file name -> positive rating (rule version 2) ----------
-   Only the file's base name is used (folders and the .mp3 / .ogg / .oga / .opus extension are ignored; leading/trailing spaces are ignored).
+   Only the file's base name is used (folders and the .mp3 / .ogg / .oga / .opus / .flac / .wav extension are ignored; leading/trailing spaces are ignored).
    A marker run is one or more consecutive '*' and/or '_' characters at the very END or very START of the name:
      'Song*' = 1, 'Song *' = 1, 'Song_' = 1, 'My_Song_' = 1, 'Song ***' = 3, 'Song *_*' = 3, 'Song_____' = 5,
      '*Song' = 1, '_Intro' = 1, '** Song' = 2 (a leading track number such as '01 ', '01 - ' or '01. ' is skipped first).
@@ -804,7 +968,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = ID3;
    ('*' itself is not allowed in Windows file names). */
 var Autorate = (function () {
   var MAX = 5, RULE = 2;
-  function base(name) { return String(name == null ? '' : name).split(/[\\/]/).pop().replace(/\.(mp3|ogg|oga|opus)$/i, '').trim(); }
+  function base(name) { return String(name == null ? '' : name).split(/[\\/]/).pop().replace(/\.(mp3|ogg|oga|opus|flac|wav|wave)$/i, '').trim(); }
   function norm(s) { return s.replace(/[\uFF0A\u2217\u204E\u2731]/g, '*').replace(/\uFF3F/g, '_'); }
   function parse(name) {
     var b = norm(base(name));
@@ -821,6 +985,325 @@ var Autorate = (function () {
 if (typeof module !== 'undefined') module.exports = Autorate;
 </script>
 
+<script id="detect-dsp" type="text/plain">/* BPM & key detector, run in Web Workers from a Blob URL (same DSP as experiments/tempo-key.html, trimmed). */
+'use strict';
+// Tempo/key DSP. Plain JS, no dependencies. Algorithms after:
+//  Ellis (2007) "Beat tracking by dynamic programming" (onset envelope, tempo prior, DP),
+//  Laroche (2003) "Efficient tempo and beat tracking in audio recordings" (flux, octave handling),
+//  Krumhansl–Schmuckler key finding with chroma / HPCP-style peak mapping and tuning estimation.
+
+// ---------- FFT (iterative radix-2, cached tables) ----------
+const fftCache = new Map();
+function getFFT(n) {
+  let f = fftCache.get(n); if (f) return f;
+  const lev = Math.log2(n) | 0, rev = new Uint32Array(n);
+  for (let i = 1; i < n; i++) rev[i] = (rev[i >> 1] >> 1) | ((i & 1) << (lev - 1));
+  const cos = new Float64Array(n >> 1), sin = new Float64Array(n >> 1);
+  for (let i = 0; i < n >> 1; i++) { cos[i] = Math.cos(2 * Math.PI * i / n); sin[i] = Math.sin(2 * Math.PI * i / n); }
+  f = { n, rev, cos, sin }; fftCache.set(n, f); return f;
+}
+function fft(re, im, f) {
+  const n = f.n, rev = f.rev, cs = f.cos, sn = f.sin;
+  for (let i = 0; i < n; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+  for (let size = 2; size <= n; size <<= 1) {
+    const half = size >> 1, step = n / size;
+    for (let i = 0; i < n; i += size) {
+      for (let j = i, k = 0; j < i + half; j++, k += step) {
+        const l = j + half, c = cs[k], s = sn[k];
+        const tr = re[l] * c + im[l] * s, ti = im[l] * c - re[l] * s;
+        re[l] = re[j] - tr; im[l] = im[j] - ti; re[j] += tr; im[j] += ti;
+      }
+    }
+  }
+}
+// two real frames packed into one complex FFT -> two power spectra (0..N/2)
+function separatePower(re, im, N, pA, pB) {
+  const h = N >> 1, m = N - 1;
+  for (let k = 0; k <= h; k++) {
+    const j = (N - k) & m, zr = re[k], zi = im[k], wr = re[j], wi = im[j];
+    const ar = (zr + wr) * .5, ai = (zi - wi) * .5, br = (zi + wi) * .5, bi = (wr - zr) * .5;
+    pA[k] = ar * ar + ai * ai; pB[k] = br * br + bi * bi;
+  }
+}
+const winCache = new Map();
+function hann(N) { let w = winCache.get(N); if (w) return w; w = new Float64Array(N); for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N); winCache.set(N, w); return w; }
+
+// ---------- onset envelope: log-mel spectral flux ----------
+function melBank(N, sr, nMel, fmin, fmax) {
+  const h2m = f => 2595 * Math.log10(1 + f / 700), m2h = m => 700 * (10 ** (m / 2595) - 1);
+  const a = h2m(fmin), b = h2m(fmax), pts = [];
+  for (let i = 0; i < nMel + 2; i++) pts.push(m2h(a + (b - a) * i / (nMel + 1)));
+  const bands = [];
+  for (let m = 0; m < nMel; m++) {
+    const lo = pts[m], c = pts[m + 1], hi = pts[m + 2];
+    let k0 = Math.ceil(lo * N / sr), k1 = Math.floor(hi * N / sr);
+    const ws = [];
+    for (let k = k0; k <= k1; k++) { const f = k * sr / N; ws.push(f <= c ? (f - lo) / (c - lo) : (hi - f) / (hi - c)); }
+    if (!ws.length || ws.every(w => w <= 0)) { k0 = Math.round(c * N / sr); ws.length = 0; ws.push(1); }
+    bands.push({ k0, w: Float64Array.from(ws) });
+  }
+  return bands;
+}
+const melCache = new Map();
+function onsetEnvelope(x, sr, hopDiv = 8) {
+  const N = sr >= 16000 ? 1024 : 512, hop = N / hopDiv | 0, fr = sr / hop, nMel = 40;
+  const nF = x.length >= N ? Math.floor((x.length - N) / hop) + 1 : 0;
+  const mk = N + ':' + sr; let bands = melCache.get(mk);
+  if (!bands) { bands = melBank(N, sr, nMel, 30, Math.min(8000, sr / 2)); melCache.set(mk, bands); }
+  const win = hann(N), f = getFFT(N), re = new Float64Array(N), im = new Float64Array(N);
+  const pA = new Float64Array(N / 2 + 1), pB = new Float64Array(N / 2 + 1);
+  const mel = new Float32Array(nF * nMel); let mx = -1e9;
+  // flatten the filterbank into typed arrays so the hot loop stays monomorphic
+  const bK0 = new Int32Array(nMel), bLen = new Int32Array(nMel), bOff = new Int32Array(nMel);
+  let tot = 0; for (let m = 0; m < nMel; m++) { bK0[m] = bands[m].k0; bLen[m] = bands[m].w.length; bOff[m] = tot; tot += bLen[m]; }
+  const bW = new Float64Array(tot); for (let m = 0; m < nMel; m++) bW.set(bands[m].w, bOff[m]);
+  const LN10 = 10 / Math.LN10;
+  for (let t = 0; t < nF; t += 2) {
+    const s1 = t * hop, two = t + 1 < nF, s2 = s1 + hop;
+    if (two) for (let i = 0; i < N; i++) { const w = win[i]; re[i] = x[s1 + i] * w; im[i] = x[s2 + i] * w; }
+    else for (let i = 0; i < N; i++) { re[i] = x[s1 + i] * win[i]; im[i] = 0; }
+    fft(re, im, f); separatePower(re, im, N, pA, pB);
+    for (let q = 0; q < (two ? 2 : 1); q++) {
+      const p = q ? pB : pA, base = (t + q) * nMel;
+      for (let m = 0; m < nMel; m++) {
+        const k0 = bK0[m], o0 = bOff[m], L = bLen[m]; let e = 1e-10;
+        for (let i = 0; i < L; i++) e += bW[o0 + i] * p[k0 + i];
+        const v = LN10 * Math.log(e); mel[base + m] = v; if (v > mx) mx = v;
+      }
+    }
+  }
+  const floor = mx - 80;
+  for (let i = 0; i < mel.length; i++) if (mel[i] < floor) mel[i] = floor;
+  const env = new Float32Array(nF);
+  for (let t = 1; t < nF; t++) {
+    let s = 0; const a = t * nMel, b = a - nMel;
+    for (let m = 0; m < nMel; m++) { const d = mel[a + m] - mel[b + m]; if (d > 0) s += d; }
+    env[t] = s;
+  }
+  // high-pass (remove slow trend, ~1 s moving average) and normalise
+  const W = Math.max(3, Math.round(fr)), cs = new Float64Array(nF + 1);
+  for (let t = 0; t < nF; t++) cs[t + 1] = cs[t] + env[t];
+  const out = new Float32Array(nF); let ss = 0;
+  for (let t = 0; t < nF; t++) {
+    const a = Math.max(0, t - (W >> 1)), b = Math.min(nF, t + (W >> 1) + 1);
+    out[t] = env[t] - (cs[b] - cs[a]) / (b - a); ss += out[t] * out[t];
+  }
+  const sd = Math.sqrt(ss / Math.max(1, nF)) || 1;
+  for (let t = 0; t < nF; t++) out[t] /= sd;
+  // frame t's flux peaks roughly when an attack enters the window; latency calibrated on synthetic clicks
+  const t0 = (N * 0.75 - hop * 0.5) / sr;
+  return { env: out, fr, N, hop, t0 };
+}
+
+// ---------- tempo ----------
+function autocorr(x, maxLag) {
+  const L = x.length; let M = 1; while (M < L + maxLag + 1) M <<= 1;
+  const f = getFFT(M), re = new Float64Array(M), im = new Float64Array(M);
+  for (let i = 0; i < L; i++) re[i] = x[i];
+  fft(re, im, f);
+  for (let i = 0; i < M; i++) { re[i] = re[i] * re[i] + im[i] * im[i]; im[i] = 0; }
+  fft(re, im, f);
+  const ac = new Float64Array(maxLag + 1), z = re[0] || 1;
+  for (let l = 0; l <= maxLag; l++) ac[l] = re[l] / z;
+  return ac;
+}
+const HW = [1, 0.5, 0.33, 0.25], SUBW = [0.5, 0.25], HWS = 1 + 0.5 + 0.33 + 0.25 + 0.5 + 0.25;
+function tempoAnalysis(on, o) {
+  const { env, fr } = on, minW = 30, maxW = 300;
+  const maxLag = Math.ceil(4 * 60 * fr / minW) + 2;
+  const ac = autocorr(env, Math.min(maxLag, env.length - 1));
+  const nAc = ac.length;
+  const acI = l => { if (l >= nAc - 1) return 0; const i = l | 0, f = l - i; return ac[i] * (1 - f) + ac[i + 1] * f; };
+  // harmonic comb over multiples of the beat period plus its duple subdivisions (rewards a consistent metrical grid)
+  const raw = bpm => { const tau = 60 * fr / bpm; let s = 0; for (let k = 0; k < 4; k++) s += HW[k] * acI((k + 1) * tau); s += SUBW[0] * acI(tau / 2) + SUBW[1] * acI(tau / 4); return s / HWS; };
+  const prior = bpm => { const z = Math.log2(bpm / o.priorCenter) / o.priorWidth; return Math.exp(-0.5 * z * z); };
+  const score = bpm => Math.max(0, raw(bpm)) * prior(bpm);
+  // coarse grid
+  const step = 0.1, n = Math.round((maxW - minW) / step) + 1;
+  const curveRaw = new Float32Array(n), curveW = new Float32Array(n);
+  let best = -1, bestBpm = (o.lo + o.hi) / 2;
+  for (let i = 0; i < n; i++) {
+    const b = minW + i * step, r = raw(b); curveRaw[i] = r; const s = Math.max(0, r) * prior(b); curveW[i] = s;
+    if (b >= o.lo && b <= o.hi && s > best) { best = s; bestBpm = b; }
+  }
+  // fine refinement
+  const refine = (b0, span, fn) => { let bb = b0, bs = fn(b0); for (let b = b0 - span; b <= b0 + span; b += 0.005) { const s = fn(b); if (s > bs) { bs = s; bb = b; } } return [bb, bs]; };
+  [bestBpm, best] = refine(bestBpm, 0.12, score);
+  // alternates (metrical levels)
+  const alts = [];
+  for (const r of [0.5, 2, 2 / 3, 1.5, 1 / 3, 3]) {
+    const c = bestBpm * r; if (c < 40 || c > 250) continue;
+    const [ab, as] = refine(c, c * 0.01, score);
+    alts.push({ ratio: r, bpm: ab, rel: best > 0 ? as / best : 0 });
+  }
+  alts.sort((a, b) => b.rel - a.rel);
+  const tau = 60 * fr / bestBpm;
+  const periodicity = Math.max(0, raw(bestBpm));
+  const topAlt = alts.length ? alts[0].rel : 0;
+  const conf = Math.max(0, Math.min(1, periodicity / 0.3)) * (1 - 0.7 * Math.max(0, Math.min(1, (topAlt - 0.5) / 0.5)));
+  return { bpm: bestBpm, tau, alts, periodicity, conf, curve: { min: minW, step, raw: curveRaw, w: curveW } };
+}
+
+// Ellis 2007 dynamic-programming beat tracker
+function beatTrack(on, tau, alpha) {
+  const env = on.env, L = env.length;
+  // local score: onset envelope smoothed by a Gaussian of width tau/32 (as in Ellis)
+  const half = Math.max(1, Math.round(tau)), sig = tau / 32, g = new Float64Array(2 * half + 1);
+  for (let i = -half; i <= half; i++) g[i + half] = Math.exp(-0.5 * (i / sig) ** 2);
+  const gl = []; for (let i = 0; i < g.length; i++) if (g[i] > 1e-3) gl.push(i - half);
+  const ls = new Float32Array(L);
+  for (let t = 0; t < L; t++) { let s = 0; for (const d of gl) { const j = t + d; if (j >= 0 && j < L) s += env[j] * g[d + half]; } ls[t] = s; }
+  const pmin = Math.round(-2 * tau), pmax = Math.round(-tau / 2), np = pmax - pmin + 1;
+  const tx = new Float64Array(np);
+  for (let i = 0; i < np; i++) { const p = pmin + i; tx[i] = -alpha * Math.log(-p / tau) ** 2; }
+  const cs = new Float64Array(L), bl = new Int32Array(L).fill(-1);
+  for (let t = 0; t < L; t++) {
+    let bv = -Infinity, bi = -1;
+    const i0 = Math.max(0, -(t + pmin) > 0 ? -(t + pmin) : 0);
+    for (let i = i0; i < np; i++) { const j = t + pmin + i; if (j < 0) continue; const v = cs[j] + tx[i]; if (v > bv) { bv = v; bi = j; } }
+    if (bi >= 0 && bv > 0) { cs[t] = ls[t] + bv; bl[t] = bi; } else cs[t] = ls[t];
+  }
+  // start backtrace at the best cumulative score within the last beat period
+  let st = L - 1, sv = -Infinity;
+  for (let t = Math.max(0, L - Math.round(tau)); t < L; t++) if (cs[t] > sv) { sv = cs[t]; st = t; }
+  const bf = []; for (let t = st; t >= 0; t = bl[t]) bf.push(t); bf.reverse();
+  // sub-frame refinement (parabolic) and to seconds
+  const times = new Float32Array(bf.length);
+  for (let i = 0; i < bf.length; i++) {
+    const t = bf[i]; let d = 0;
+    if (t > 0 && t < L - 1) { const a = ls[t - 1], b = ls[t], c = ls[t + 1], den = a - 2 * b + c; if (den < 0) d = Math.max(-0.5, Math.min(0.5, 0.5 * (a - c) / den)); }
+    times[i] = (t + d) / on.fr + on.t0;
+  }
+  // tempo from beats: least-squares slope over the beat sequence
+  let bpmBeats = 0, ibiCv = 1;
+  if (times.length >= 8) {
+    const n = times.length; let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (let i = 0; i < n; i++) { sx += i; sy += times[i]; sxx += i * i; sxy += i * times[i]; }
+    const slope = (n * sxy - sx * sy) / (n * sxx - sx * sx); bpmBeats = 60 / slope;
+    let m = 0, v = 0; for (let i = 1; i < n; i++) m += times[i] - times[i - 1]; m /= n - 1;
+    for (let i = 1; i < n; i++) v += (times[i] - times[i - 1] - m) ** 2; ibiCv = Math.sqrt(v / (n - 1)) / m;
+  }
+  return { times, bpmBeats, ibiCv };
+}
+
+// ---------- key ----------
+const PROFILES = {
+  // [major, minor], index 0 = tonic: the EDMA profile (Faraldo et al.), which fits pop / electronic material best in the tester
+  edma: [[1.00, 0.29, 0.50, 0.40, 0.60, 0.56, 0.32, 0.80, 0.31, 0.45, 0.42, 0.39], [1.00, 0.31, 0.44, 0.58, 0.33, 0.49, 0.29, 0.78, 0.43, 0.29, 0.53, 0.32]]
+};
+// semitone offsets of the non-octave harmonics 3,5,6,7,9,10 (octaves 2,4,8 keep the pitch class and are left alone)
+const HARM_ST = [3, 5, 6, 7, 9, 10].map(h => 12 * Math.log2(h));
+function keyAnalysis(x, sr, o) {
+  const N = sr >= 16000 ? 8192 : 4096, hop = N >> 1, h = N >> 1;
+  const nF = x.length >= N ? Math.floor((x.length - N) / hop) + 1 : 0;
+  const win = hann(N), f = getFFT(N), re = new Float64Array(N), im = new Float64Array(N);
+  const pA = new Float64Array(h + 1), pB = new Float64Array(h + 1);
+  const kmin = Math.max(2, Math.ceil(o.fmin * N / sr)), kmax = Math.min(h - 2, Math.floor(Math.min(o.fmax, sr * 0.45) * N / sr));
+  // peaks stored per frame
+  const pkP = [], pkA = [], frStart = [0], frW = [];
+  const MP = Math.max(1, o.maxPeaks | 0), tk = new Int32Array(MP), tv = new Float64Array(MP), cP = new Float64Array(MP), cA = new Float64Array(MP), ord = new Int32Array(MP);
+  const doFrame = p => {
+    let mx = 0, lsum = 0, sum = 0; const cnt = kmax - kmin + 1;
+    let msum = 0, nl = 0;
+    for (let k = kmin; k <= kmax; k++) { const v = p[k]; if (v > mx) mx = v; sum += v; }
+    // magnitude-spectrum flatness (geometric / arithmetic mean) on every 4th bin is plenty for a tonalness weight
+    for (let k = kmin; k <= kmax; k += 4) { const v = p[k] + 1e-20; lsum += 0.5 * Math.log(v); msum += Math.sqrt(v); nl++; }
+    const flat = msum > 0 ? Math.exp(lsum / nl) / (msum / nl) : 1;
+    const thr = mx * 1e-5; // -50 dB (power)
+    // top-N local maxima by power, kept in a small array sorted descending (insertion)
+    let n = 0;
+    for (let k = kmin; k <= kmax; k++) {
+      const v = p[k]; if (v <= thr || v < p[k - 1] || v < p[k + 1]) continue;
+      if (n === MP && v <= tv[n - 1]) continue;
+      let j = n < MP ? n++ : n - 1;
+      while (j > 0 && tv[j - 1] < v) { tv[j] = tv[j - 1]; tk[j] = tk[j - 1]; j--; }
+      tv[j] = v; tk[j] = k;
+    }
+    for (let q = 0; q < n; q++) {
+      const k = tk[q], a = Math.log(p[k - 1] + 1e-20), b = Math.log(p[k] + 1e-20), c = Math.log(p[k + 1] + 1e-20);
+      const den = a - 2 * b + c, d = den < 0 ? 0.5 * (a - c) / den : 0;
+      cP[q] = 69 + 12 * Math.log2((k + d) * sr / N / 440); cA[q] = Math.exp(0.5 * (b - 0.25 * (a - c) * d));
+    }
+    // ascending pitch order
+    for (let q = 0; q < n; q++) { let j = q; while (j > 0 && cP[ord[j - 1]] > cP[q]) { ord[j] = ord[j - 1]; j--; } ord[j] = q; }
+    // harmonic suppression: a peak sitting on the 3rd/5th/6th/7th… harmonic of a stronger lower peak is
+    // mostly overtone, and would add a false fifth / major third / flat seventh to the chroma
+    for (let jj = 0; jj < n; jj++) {
+      const j = ord[jj]; let a = cA[j];
+      if (o.harmAtten < 1) outer: for (let ii = 0; ii < jj; ii++) {
+        const i = ord[ii]; if (cA[i] < a * 0.5) continue;
+        const iv = cP[j] - cP[i];
+        if (iv < 18.5) continue;
+        for (let hI = 0; hI < HARM_ST.length; hI++) if (Math.abs(iv - HARM_ST[hI]) < 0.3) { a *= o.harmAtten; break outer; }
+      }
+      pkP.push(cP[j]); pkA.push(a);
+    }
+    frStart.push(pkP.length); frW.push({ e: sum, flat });
+  };
+  for (let t = 0; t < nF; t += 2) {
+    const s1 = t * hop, two = t + 1 < nF, s2 = s1 + hop;
+    if (two) for (let i = 0; i < N; i++) { const w = win[i]; re[i] = x[s1 + i] * w; im[i] = x[s2 + i] * w; }
+    else for (let i = 0; i < N; i++) { re[i] = x[s1 + i] * win[i]; im[i] = 0; }
+    fft(re, im, f); separatePower(re, im, N, pA, pB);
+    doFrame(pA); if (two) doFrame(pB);
+  }
+  // tuning: magnitude-weighted circular mean of peak deviations from equal temperament
+  let cx = 0, cy = 0;
+  for (let i = 0; i < pkP.length; i++) { const ang = 2 * Math.PI * pkP[i]; cx += pkA[i] * Math.cos(ang); cy += pkA[i] * Math.sin(ang); }
+  const tune = Math.atan2(cy, cx) / (2 * Math.PI); // semitones, -0.5..0.5
+  // chroma: HPCP-like cos^2 weighting over a 4/3-semitone window, per-frame normalised, weighted by tonalness
+  const chroma = new Float64Array(12), fc = new Float64Array(12);
+  let maxE = 0; for (const w of frW) if (w.e > maxE) maxE = w.e;
+  const W = 4 / 3;
+  for (let fI = 0; fI < frW.length; fI++) {
+    const { e, flat } = frW[fI]; if (e < maxE * 1e-4) continue;
+    fc.fill(0); let fm = 0;
+    for (let i = frStart[fI]; i < frStart[fI + 1]; i++) {
+      const p = pkP[i] - tune, a = pkA[i], n0 = Math.round(p);
+      for (let nn = n0 - 1; nn <= n0 + 1; nn++) {
+        const d = p - nn; if (Math.abs(d) >= W / 2) continue;
+        const w = Math.cos(Math.PI * d / W) ** 2, pc = ((nn % 12) + 12) % 12; fc[pc] += a * a * w;
+      }
+    }
+    for (let i = 0; i < 12; i++) if (fc[i] > fm) fm = fc[i];
+    if (fm <= 0) continue;
+    const fw = o.harmonicWeight ? (1 - Math.min(1, flat)) ** 2 : 1;
+    for (let i = 0; i < 12; i++) chroma[i] += fw * Math.pow(fc[i] / fm, o.chromaPow);
+  }
+  let wSum = 0, nUsed = 0; for (let fI = 0; fI < frW.length; fI++) { const { e, flat } = frW[fI]; if (e >= maxE * 1e-4) { nUsed++; wSum += (1 - Math.min(1, flat)) ** 2; } }
+  const tonal = nUsed ? wSum / nUsed : 0;
+  let cm = 0; for (let i = 0; i < 12; i++) if (chroma[i] > cm) cm = chroma[i];
+  if (cm > 0) for (let i = 0; i < 12; i++) chroma[i] /= cm;
+  // Krumhansl–Schmuckler correlation with 24 rotated profiles
+  const prof = PROFILES[o.profile] || PROFILES.edma, corr = new Float64Array(24);
+  const pear = (a, b) => { let ma = 0, mb = 0; for (let i = 0; i < 12; i++) { ma += a[i]; mb += b[i]; } ma /= 12; mb /= 12; let n = 0, da = 0, db = 0; for (let i = 0; i < 12; i++) { const x = a[i] - ma, y = b[i] - mb; n += x * y; da += x * x; db += y * y; } return da && db ? n / Math.sqrt(da * db) : 0; };
+  const rot = new Float64Array(12);
+  for (let m = 0; m < 2; m++) for (let t = 0; t < 12; t++) { for (let i = 0; i < 12; i++) rot[i] = prof[m][((i - t) % 12 + 12) % 12]; corr[m * 12 + t] = pear(chroma, rot); }
+  const order = [...corr.keys()].sort((a, b) => corr[b] - corr[a]);
+  const k1 = order[0], k2 = order[1], r1 = corr[k1], r2 = corr[k2];
+  // confidence: margin over the runner-up × how well the best profile fits at all (drum-only material sits around r≈0.4–0.62)
+  const conf = Math.max(0, Math.min(1, (r1 - r2) / 0.12)) * Math.max(0, Math.min(1, (r1 - 0.5) / 0.3));
+  return { pc: k1 % 12, minor: k1 >= 12, r: r1, pc2: k2 % 12, minor2: k2 >= 12, r2, conf, tonal, chroma: Float32Array.from(chroma), corr: Float32Array.from(corr), tuningCents: tune * 100 };
+}
+
+// compact result for MyTunes: no plot data, no beat list
+function analyse(pcm, sr, o) {
+  const on = onsetEnvelope(pcm, sr, o.hopDiv || 8), tp = tempoAnalysis(on, o);
+  let bpm = tp.bpm, conf = tp.conf;
+  if (o.dp) {
+    const bt = beatTrack(on, tp.tau, o.alpha);
+    if (bt.bpmBeats && Math.abs(bt.bpmBeats / tp.bpm - 1) < 0.02) bpm = bt.bpmBeats;
+    if (bt.times.length >= 8) conf *= Math.max(0.3, 1 - 4 * bt.ibiCv);
+  }
+  const k = keyAnalysis(pcm, sr, o);
+  return { bpm, bpmConf: conf, pc: k.pc, minor: k.minor, keyConf: k.conf, r: k.r };
+}
+self.onmessage = e => {
+  const { id, pcm, sr, opts } = e.data;
+  try { self.postMessage({ id, ok: true, res: analyse(pcm, sr, opts) }); }
+  catch (err) { self.postMessage({ id, ok: false, err: String(err && err.message || err) }); }
+};
+</script>
 <script id="app-script">
 'use strict';
 /* ---------- helpers ---------- */
@@ -846,6 +1329,7 @@ const BPM_HINT = `a number from ${BPM_MIN} to ${BPM_MAX} (one decimal allowed)`;
 function bpmFrom(old, tags) {
   if (old && old.bpmSource === 'user') return { bpm: cleanBpm(old.bpm), bpmSource: 'user' };
   const tb = tagBpm(tags && tags.bpm); if (tb) return { bpm: tb, bpmSource: 'tag' };
+  if (old && old.bpm > 0 && old.bpmSource === 'detected') return { bpm: cleanBpm(old.bpm), bpmSource: 'detected' };   // detected values stay detected (a tag wins over them)
   if (old && old.bpm > 0 && old.bpmSource !== 'tag') return { bpm: cleanBpm(old.bpm), bpmSource: 'user' };
   return { bpm: 0 };
 }
@@ -884,6 +1368,7 @@ const cleanKey = v => KEY_RANK.has(v) ? v : (typeof v === 'string' ? parseKey(v)
 function keyFrom(old, tags) {
   if (old && old.mkeySource === 'user') return { mkey: cleanKey(old.mkey || ''), mkeySource: 'user' };
   const tk = parseKey(tags && tags.key); if (tk) return { mkey: tk, mkeySource: 'tag' };
+  if (old && old.mkey && old.mkeySource === 'detected' && cleanKey(old.mkey)) return { mkey: cleanKey(old.mkey), mkeySource: 'detected' };
   if (old && old.mkey && old.mkeySource !== 'tag') return { mkey: cleanKey(old.mkey), mkeySource: 'user' };
   return { mkey: '' };
 }
@@ -892,7 +1377,7 @@ function keyOptionsHTML(cur) {
   const o = k => `<option value="${k}"${k === cur ? ' selected' : ''}>${keyLabel(k)}</option>`;
   return `<option value=""${cur ? '' : ' selected'}>–</option><optgroup label="Major">${KEY_MAJ.map(o).join('')}</optgroup><optgroup label="Minor">${KEY_MIN.map(o).join('')}</optgroup>`;
 }
-const LIB_FILE = 'mytunes-library.json', LEGACY_LIB_FILE = 'library.json', LIB_VERSION = 5;
+const LIB_FILE = 'mytunes-library.json', LEGACY_LIB_FILE = 'library.json', LIB_VERSION = 6;   // v6: detected BPM / key (source 'detected' + per-track detection record)
 /* rating filter for All tracks */
 const RATING_FILTERS = [['all', 'Any rating'], ['pos', 'Positive (★+1 and up)'], ['ge2', '★+2 and up'], ['ge3', '★+3 and up'], ['ge4', '★+4 and up'], ['ge5', '★+5 only'],
   ['nonneg', 'Not negative'], ['rated', 'Rated (any)'], ['unrated', 'Unrated'], ['neg', 'Negative (★−1 and below)'], ['le2', '★−2 and below'], ['le3', '★−3 and below'], ['le4', '★−4 and below'], ['le5', '★−5 only']];
@@ -928,17 +1413,17 @@ function coverHTML(name, custom, count) {
   const ch = (n.match(/[\p{L}\p{N}]/u) || ['♪'])[0].toUpperCase();
   return `<div class="cover${custom ? ' custom' : ''}" style="--h:${hue(n)}"><span>${esc(ch)}</span>${marksHTML(count)}</div>`;
 }
-/* track-count marks on a cover: one faint dot per track in rows of 10 (up to 40). Bigger albums use a slightly
-   larger dot per ten plus small dots for the rest (exact up to 309); past that the tens stop at 30.
-   A few CSS gradients per cover (no per-dot elements), so hundreds of albums stay cheap. */
+/* track-count marks on a cover, by decimal place: one row per non-zero digit, largest first —
+   diamonds = ten-thousands, squares = thousands, triangles = hundreds, x's = tens, circles = units (1234 = 1 square,
+   2 triangles, 3 x's, 4 circles). Exact up to 99,999; from 100,000 it shows 9 of every shape plus a '+'.
+   One element per row, its glyphs a repeated SVG mask (crisp at any pixel ratio), so hundreds of covers stay cheap. */
+const TM_SHAPES = ['dm', 'sq', 'tr', 'x', 'o'];
 function marksHTML(n) {
   n = Math.floor(+n || 0); if (n <= 0) return '';
-  let big = 0, small = n;
-  if (n > 40) { big = Math.floor(n / 10); small = n % 10; if (big > 30) { big = 30; small = 0; } }
-  const rows = [];
-  for (let i = 0; i < big; i += 10) rows.push(`<i class="b" style="--k:${Math.min(10, big - i)}"></i>`);
-  for (let i = 0; i < small; i += 10) rows.push(`<i style="--k:${Math.min(10, small - i)}"></i>`);
-  const l = n + ' track' + (n === 1 ? '' : 's');
+  const cap = n > 99999, v = cap ? 99999 : n, rows = [];
+  String(v).padStart(5, '0').split('').forEach((d, i) => { if (+d) rows.push(`<i class="g-${TM_SHAPES[i]}" style="--k:${d}"></i>`); });
+  if (cap) rows.push('<i class="g-pl" style="--k:1"></i>');
+  const l = n.toLocaleString() + ' track' + (n === 1 ? '' : 's');
   return `<div class="tm" role="img" aria-label="${l}" title="${l}" data-n="${n}">${rows.join('')}</div>`;
 }
 const ICON = {
@@ -956,6 +1441,7 @@ const ICON = {
   album: '<path fill-rule="evenodd" d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 6.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z"/>',
   list: '<path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>',
   key: '<path d="M9 3v11.2A3.5 3.5 0 1 0 11 17V7h6V3H9z"/>',
+  detect: '<path d="M3 10h2v4H3zm4-3h2v10H7zm4-4h2v18h-2zm4 5h2v8h-2zm4-2h2v12h-2z"/>',
   pulse: '<path d="M2 11h4.4l2.2-5.2 4.3 12 2.9-6.8H22v2h-4.9l-4.2 9.6-4.3-12L7.7 13H2z"/>',
   star: '<path d="M12 3l2.7 5.9 6.3.7-4.7 4.3 1.3 6.3L12 17l-5.6 3.2 1.3-6.3L3 9.6l6.3-.7z"/>',
   shuffle: '<path d="M17 4l4 4-4 4V9h-2.5l-7 8H3v-2h3.6l7-8H17zM3 7h4.5l2.2 2.5-1.3 1.5L6.6 9H3zm10.3 7.5l1.2 1.5H17v-3l4 4-4 4v-3h-3.4l-1.6-2z"/>',
@@ -1024,12 +1510,13 @@ function albumFolder(id) {
   if (parts.length > 1 && /^(cd|disc|disk)\s*[-_]?\s*\d+$/i.test(parts[parts.length - 1])) parts.pop();
   return parts.join('/');
 }
+function autoKeyOf(t, folder = albumFolder(t.id), name = t.album || folder.split('/').pop() || 'Unknown album') { return 'a:' + name.toLowerCase() + '|' + folder; }
 function computeAuto() {
   const m = new Map();
   for (const t of S.tracks.values()) {
     const folder = albumFolder(t.id);
     const name = t.album || folder.split('/').pop() || 'Unknown album';
-    const key = 'a:' + name.toLowerCase() + '|' + folder;
+    const key = autoKeyOf(t, folder, name);
     let a = m.get(key);
     if (!a) { a = { key, name, folder, tracks: [], custom: false, addedAt: 0 }; m.set(key, a); }
     a.tracks.push(t);
@@ -1067,29 +1554,40 @@ function avgRating(tracks) { const r = tracks.filter(t => t.rating); return r.le
 function customArtist(tracks) { const s = new Set(tracks.map(t => t.artist).filter(Boolean)); return s.size === 1 ? [...s][0] : s.size ? 'Various Artists' : ''; }
 
 /* ---------- import folder ---------- */
-const AUDIO_EXT = /\.(mp3|ogg|oga|opus)$/i;
+const AUDIO_EXT = /\.(mp3|ogg|oga|opus|flac|wav|wave)$/i;
 const fileFormat = id => { const m = /\.([a-z0-9]+)$/i.exec(id || ''); return m ? m[1].toLowerCase() : ''; };
+/* the extension, unless the parser found a different container (Ogg / FLAC / WAV are recognised from the bytes) */
+const CONTAINER = { mp3: 'mp3', ogg: 'ogg', oga: 'ogg', opus: 'ogg', flac: 'flac', wav: 'wav', wave: 'wav' };
+const containerOf = (id, info) => { const f = fileFormat(id), g = info && info.format; return /^(ogg|flac|wav)$/.test(g || '') && CONTAINER[f] && CONTAINER[f] !== g ? g : f; };
 /* can this browser play the track? (Safari often can't play Ogg). Asked once per type via canPlayType. */
 const CAN_PLAY = new Map();
+const WAV_TAG = { pcm: 1, adpcm: 2, float: 3, alaw: 6, mulaw: 7, 'ima-adpcm': 17, gsm: 49, mp3: 85 };
+const isWavFmt = f => f === 'wav' || f === 'wave';
 function trackMime(t) {
   const c = t.codec || '', f = t.format || fileFormat(t.id);
+  if (isWavFmt(f)) {   // the browser plays PCM (8–32-bit), float and A/µ-law WAV; ask about anything else by its format tag (usually "no")
+    if (!c || c === 'pcm' || c === 'float' || c === 'alaw' || c === 'mulaw') return 'audio/wav';
+    const n = WAV_TAG[c] || parseInt(String(c).replace(/^wav-/, ''), 16) || 0; return `audio/wav; codecs="${n}"`;
+  }
+  if (f === 'flac') return 'audio/flac';
   if (f === 'mp3' || c === 'mp3') return 'audio/mpeg';
   if (c === 'opus' || (!c && f === 'opus')) return 'audio/ogg; codecs="opus"';
   if (c === 'flac') return 'audio/ogg; codecs="flac"';
   if (c === 'vorbis' || f === 'ogg' || f === 'oga') return 'audio/ogg; codecs="vorbis"';
   return '';
 }
-function formatLabel(t) { const c = t.codec, f = t.format || fileFormat(t.id); return f === 'mp3' ? 'MP3' : c === 'opus' ? 'Ogg Opus' : c === 'flac' ? 'Ogg FLAC' : c === 'vorbis' ? 'Ogg Vorbis' : (f || 'audio').toUpperCase(); }
+const WAV_LABEL = { pcm: 'PCM', float: 'float', alaw: 'A-law', mulaw: 'µ-law', adpcm: 'ADPCM', 'ima-adpcm': 'IMA ADPCM', gsm: 'GSM', mp3: 'MP3' };
+function formatLabel(t) { const c = t.codec, f = t.format || fileFormat(t.id); if (isWavFmt(f)) return c ? `WAV (${WAV_LABEL[c] || c})` : 'WAV'; if (f === 'flac') return 'FLAC'; return f === 'mp3' ? 'MP3' : c === 'opus' ? 'Ogg Opus' : c === 'flac' ? 'Ogg FLAC' : c === 'vorbis' ? 'Ogg Vorbis' : (f || 'audio').toUpperCase(); }
 function canPlay(t) {
   if (!t) return false; const m = trackMime(t); if (!m || m === 'audio/mpeg') return true;
   if (!CAN_PLAY.has(m)) CAN_PLAY.set(m, window.__forceNoOgg ? false : !!(canPlay.el || (canPlay.el = document.createElement('audio'))).canPlayType(m));
   return CAN_PLAY.get(m);
 }
 const playable = id => S.files.has(id) && canPlay(S.tracks.get(id));
-const cantPlayMsg = t => `“${t.title}” is ${formatLabel(t)}, which this browser can’t play.` + (/Safari/.test(navigator.userAgent) && !/Chrome|Chromium|Edg/.test(navigator.userAgent) ? ' Try Chrome, Edge or Firefox for Ogg files.' : '');
+const cantPlayMsg = t => `“${t.title}” is ${formatLabel(t)}, which this browser can’t play.` + (/Safari/.test(navigator.userAgent) && !/Chrome|Chromium|Edg/.test(navigator.userAgent) && /^(ogg|oga|opus)$/.test(t.format || fileFormat(t.id)) ? ' Try Chrome, Edge or Firefox for Ogg files.' : '');
 function fmtTag(t) {
   const f = t.format || fileFormat(t.id); if (!f || f === 'mp3') return '';
-  const lab = t.codec === 'opus' || (!t.codec && f === 'opus') ? 'OPUS' : t.codec === 'flac' ? 'FLAC' : 'OGG', ok = canPlay(t);
+  const lab = isWavFmt(f) ? 'WAV' : f === 'flac' ? 'FLAC' : t.codec === 'opus' || (!t.codec && f === 'opus') ? 'OPUS' : t.codec === 'flac' ? 'FLAC' : 'OGG', ok = canPlay(t);
   return `<span class="fmt${ok ? '' : ' bad'}" title="${esc(formatLabel(t))}${ok ? '' : ': this browser can’t play it'}">${lab}</span>`;
 }
 function buildTrack(id, f, info, old) {
@@ -1107,9 +1605,9 @@ function buildTrack(id, f, info, old) {
     rating: old ? clampRating(old.rating) : 0, addedAt: old && old.addedAt ? old.addedAt : Date.now(),
     duration: info.duration > 0 ? Math.round(info.duration * 1000) / 1000 : (old && old.duration > 0 ? old.duration : 0),
     durationSource: info.duration > 0 ? info.durationSource : (old && old.durationSource) || '',
-    format: fileFormat(id), codec: info.codec || (old && old.codec) || '',
+    format: containerOf(id, info), codec: info.codec || (old && old.codec) || '',
     missing: false, scanned: true, ...bpmFrom(old, tags), ...keyFrom(old, tags),
-    ...(old ? keepAutorate(old) : {})
+    ...(old ? keepAutorate(old) : {}), ...(old && old.detect ? { detect: old.detect } : {})
   };
 }
 function keepAutorate(o) {
@@ -1139,16 +1637,18 @@ async function handleFolder(fileList) {
   try {
     const rel = f => f.webkitRelativePath || f.name;
     const root = rel(all[0]).split('/')[0];
-    const mp3s = all.filter(f => AUDIO_EXT.test(f.name));   // MP3 + Ogg (Vorbis / Opus / FLAC-in-Ogg)
+    const mp3s = all.filter(f => AUDIO_EXT.test(f.name));   // MP3, Ogg (Vorbis / Opus / FLAC-in-Ogg), FLAC, WAV
     // mytunes-library.json (shallowest wins); an older library.json is used only when there is no new-name file
     const libsNamed = n => all.filter(f => f.name.toLowerCase() === n).sort((a, b) => rel(a).split('/').length - rel(b).split('/').length);
     let libs = libsNamed(LIB_FILE), legacy = false;
     if (!libs.length) { libs = libsNamed(LEGACY_LIB_FILE); legacy = libs.length > 0; }
     if (libs.length) {
+      busyShow(`Reading ${rel(libs[0]).split('/').pop()}…`); await nextPaint();
       try { await mergeLibrary(JSON.parse(await libs[0].text()), { auto: true, source: rel(libs[0]), legacy }); }
       catch (e) { toast('Found ' + rel(libs[0]) + ' but could not read it: ' + e.message, 'error', 7000); }
     }
-    if (!mp3s.length) { toast('No audio files (MP3, Ogg) found in “' + root + '”.', 'warn'); return; }
+    if (!mp3s.length) { toast('No audio files (MP3, Ogg, FLAC, WAV) found in “' + root + '”.', 'warn'); return; }
+    if (mp3s.length > 400) { busyShow(`Matching ${mp3s.length.toLocaleString()} audio files with your library…`); await nextPaint(); }
     showProgress(0, mp3s.length, root);
     S.files.clear();
     const seen = new Set();
@@ -1177,6 +1677,7 @@ async function handleFolder(fileList) {
       showProgress(Math.min(s + CHUNK, mp3s.length), mp3s.length, root);
       await sleep0();
     }
+    $('#progressText').textContent = `Saving “${root}”… ${mp3s.length.toLocaleString()} audio files`;
     let missing = 0;
     for (const t of S.tracks.values()) {
       if (!seen.has(t.id)) { if (!t.missing) { t.missing = true; changed.push(t); } missing++; }
@@ -1229,8 +1730,8 @@ function applyAutorate(ids) {
 function buildExport() {
   return {
     app: 'mp3-library', version: LIB_VERSION, ratingScale: [RMIN, RMAX], savedAt: new Date().toISOString(), rootFolder: S.meta.rootFolder,
-    settings: { autorateFromFileName: !!S.meta.autorate, theme: S.meta.theme || 'dark' },
-    tracks: [...S.tracks.values()].map(t => ({ id: t.id, title: t.title, artist: t.artist, albumArtist: t.albumArtist, album: t.album, trackNo: t.trackNo, discNo: t.discNo, year: t.year, date: t.date || '', rating: t.rating || 0, bpm: t.bpm || 0, ...(t.bpmSource ? { bpmSource: t.bpmSource } : {}), key: t.mkey || '', ...(t.mkeySource ? { keySource: t.mkeySource } : {}), ...keepAutorate(t), duration: t.duration || 0, format: t.format || fileFormat(t.id), ...(t.codec ? { codec: t.codec } : {}), size: t.size, lastModified: t.lastModified, addedAt: t.addedAt })),
+    settings: { autorateFromFileName: !!S.meta.autorate, theme: S.meta.theme || 'dark', detection: detectSettingsOut() },
+    tracks: [...S.tracks.values()].map(t => ({ id: t.id, title: t.title, artist: t.artist, albumArtist: t.albumArtist, album: t.album, trackNo: t.trackNo, discNo: t.discNo, year: t.year, date: t.date || '', rating: t.rating || 0, bpm: t.bpm || 0, ...(t.bpmSource ? { bpmSource: t.bpmSource } : {}), key: t.mkey || '', ...(t.mkeySource ? { keySource: t.mkeySource } : {}), ...keepAutorate(t), ...(t.detect ? { detect: t.detect } : {}), duration: t.duration || 0, format: t.format || fileFormat(t.id), ...(t.codec ? { codec: t.codec } : {}), size: t.size, lastModified: t.lastModified, addedAt: t.addedAt })),
     albums: [...S.albums.values()].map(a => ({ id: a.id, name: a.name, trackIds: a.trackIds.slice(), createdAt: a.createdAt, updatedAt: a.updatedAt })),
     // v3: hand-arranged "Album order" of folder albums (key = album name + folder, as used in the app)
     albumOrders: Object.entries(albumOrders()).filter(([k]) => S.autoMap.has(k)).map(([key, ids]) => { const a = S.autoMap.get(key); return { key, album: a.name, folder: a.folder, trackIds: ids.slice() }; })
@@ -1259,6 +1760,7 @@ function pickMeta(j) {
   const o = {};
   ['title', 'artist', 'albumArtist', 'album', 'year', 'date', 'codec'].forEach(k => { if (typeof j[k] === 'string') o[k] = j[k]; });
   ['trackNo', 'discNo', 'size', 'lastModified', 'duration'].forEach(k => { if (typeof j[k] === 'number' && isFinite(j[k]) && j[k] >= 0) o[k] = j[k]; });
+  if (typeof j.format === 'string' && /^[a-z0-9]{2,5}$/.test(j.format)) o.format = j.format;   // container (e.g. Ogg FLAC in a .flac file); codec says what is inside
   return o;
 }
 /* v4+ files carry every track's BPM (0 = not set); older files know nothing about BPM, so the browser's value is kept */
@@ -1266,6 +1768,7 @@ function takeBpm(t, j, data) {
   if (!('bpm' in j) && (+data.version || 0) < 4) return;
   t.bpm = cleanBpm(j.bpm);
   if (j.bpmSource === 'tag' && t.bpm) t.bpmSource = 'tag';
+  else if (j.bpmSource === 'detected' && t.bpm) t.bpmSource = 'detected';
   else if (t.bpm || j.bpmSource === 'user') t.bpmSource = 'user';
   else delete t.bpmSource;
 }
@@ -1275,8 +1778,14 @@ function takeKey(t, j, data) {
   if (!('key' in j) && (+data.version || 0) < 5) return;
   t.mkey = cleanKey(j.key);
   if (j.keySource === 'tag' && t.mkey) t.mkeySource = 'tag';
+  else if (j.keySource === 'detected' && t.mkey) t.mkeySource = 'detected';
   else if (t.mkey || j.keySource === 'user') t.mkeySource = 'user';
   else delete t.mkeySource;
+}
+/* v6+ files carry each track's detection record (or none); older files know nothing about detection, so the browser's is kept */
+function takeDetect(t, j, data) {
+  const d = cleanDetect(j.detect);
+  if (d) t.detect = d; else if ((+data.version || 0) >= 6) delete t.detect;
 }
 async function mergeLibrary(data, opts = {}) {
   if (!data || !Array.isArray(data.tracks)) throw new Error('not a library file (no tracks list)');
@@ -1292,11 +1801,13 @@ async function mergeLibrary(data, opts = {}) {
   // one entry (and so one rating) per track id; if a hand-edited file repeats an id, the last entry wins
   const byId = new Map();
   for (const j of data.tracks) if (j && typeof j.id === 'string') byId.set(j.id, j);
+  let nj = 0;
   for (const j of byId.values()) {
+    if (++nj % 2000 === 0) await sleep0();
     let t = S.tracks.get(j.id);
     if (t) {
       t.rating = clampRating(j.rating);
-      takeBpm(t, j, data); takeKey(t, j, data);
+      takeBpm(t, j, data); takeKey(t, j, data); takeDetect(t, j, data);
       Object.assign(t, keepAutorate(j));
       if (!t.scanned) Object.assign(t, pickMeta(j));
       else if (!(t.duration > 0) && j.duration > 0) t.duration = j.duration;
@@ -1305,7 +1816,7 @@ async function mergeLibrary(data, opts = {}) {
       t.title = t.title || j.id.split('/').pop().replace(AUDIO_EXT, '');
       t.album = t.album || albumFolder(j.id).split('/').pop() || '';
       t.rating = clampRating(j.rating);
-      t.bpm = 0; takeBpm(t, j, data); t.mkey = ''; takeKey(t, j, data);
+      t.bpm = 0; takeBpm(t, j, data); t.mkey = ''; takeKey(t, j, data); takeDetect(t, j, data);
       Object.assign(t, keepAutorate(j));
       S.tracks.set(j.id, t);
     }
@@ -1330,6 +1841,7 @@ async function mergeLibrary(data, opts = {}) {
   if (!S.meta.rootFolder && data.rootFolder) S.meta.rootFolder = data.rootFolder;
   if (data.settings && typeof data.settings.autorateFromFileName === 'boolean') S.meta.autorate = data.settings.autorateFromFileName;
   if (data.settings && THEMES.some(t => t.id === data.settings.theme)) applyTheme(data.settings.theme);
+  if (data.settings && data.settings.detection) detectSettingsIn(data.settings.detection);
   await saveMeta();
   if (S.view.name === 'album' && S.view.key.startsWith('c:') && !S.albums.has(S.view.key)) S.view = { name: 'albums' };
   computeAuto(); renderAll();
@@ -1415,6 +1927,7 @@ function editBpm(btn) {
   });
   inp.addEventListener('blur', () => {
     if (done) return; const v = parseBpm(inp.value);
+    if (v === (t.bpm || 0) && t.bpmSource === 'detected') { close(); return; }   // just looked: a detected value stays detected
     if (Number.isNaN(v)) { close(); toast(`BPM not saved: it must be ${BPM_HINT}.`, 'warn', 4000); } else close(v);
   });
   ['click', 'mousedown', 'dblclick', 'pointerdown'].forEach(ev => inp.addEventListener(ev, e => e.stopPropagation()));
@@ -1439,7 +1952,7 @@ function refreshKeyViews(id) {
   const t = S.tracks.get(id); if (!t) return;
   document.querySelectorAll(`select.mkey[data-mkey="${CSS.escape(id)}"]`).forEach(b => { if (b === document.activeElement) { syncKeySel(b, t); return; } const n = document.createElement('div'); n.innerHTML = keyCell(t); b.replaceWith(n.firstElementChild); });
 }
-function syncKeySel(sel, t) { sel.value = t.mkey || ''; sel.classList.toggle('unset', !t.mkey); sel.title = keyTitle(t); }
+function syncKeySel(sel, t) { sel.value = t.mkey || ''; sel.classList.toggle('unset', !t.mkey); sel.classList.toggle('det', !!t.mkey && t.mkeySource === 'detected'); sel.classList.toggle('detecting', DET_BUSY.has(t.id)); sel.title = keyTitle(t); }
 function setKey(id, v) {
   const t = S.tracks.get(id); if (!t) return false;
   v = cleanKey(v || '');
@@ -1473,7 +1986,417 @@ async function keyMany(ids) {
   toast(v ? `Set ${plural(ts.length, 'track')} to ${keyName(v)}.` : `Cleared the key of ${plural(ts.length, 'track')}.`, 'ok', 7000,
     { label: 'Undo', run: () => { apply(t => prev.get(t.id)); toast('Keys restored.', 'info', 2500); } });
 }
-function saveAlbum(a) { a.updatedAt = Date.now(); DB.put('albums', a); touch(); }
+/* ---------- BPM & key detection ----------
+   Fills empty BPM / key fields from the audio itself: a 60 s excerpt from the middle of the track is decoded at 11025 Hz
+   (for MP3 and WAV only the bytes of that excerpt are read and decoded) and analysed in Web Workers (tempo 60–180 BPM with beat tracking,
+   key by the EDMA profile with overtone suppression), the same DSP as experiments/tempo-key.html. It decodes the file on
+   its own and never touches the <audio> element or its playback graph.
+   Provenance is user > tag > detected: a detected value only goes into an empty field that is not user-set, user-cleared
+   or tagged, and a result below its confidence threshold leaves the field unset.
+   t.detect = { v, at, bpm, bpmConf, key, keyConf, r, bpmLow, keyLow[, undone] } or { v, at, err } is the last analysis:
+   a track is not analysed again on every play, and a lowered threshold can use the stored result without re-analysing. */
+const DETECT_V = 1;                 // detector version: bump when the analysis changes so tracks are analysed again
+const DETECT_DEF = { play: true, next: true, bpmMin: 25, keyMin: 10 };   // thresholds in % (see the round-20 calibration)
+const KEY_R_MIN = 0.6;              // the best key profile must also fit this well (drum-only material stays ≤ 0.51)
+const DETECT_START_MS = 2500;       // playback detection starts after this much uninterrupted play
+const clampPct = v => Math.max(0, Math.min(100, Math.round(+v || 0)));
+function detectCfg() { const d = S.meta.detect || {}, o = {}; for (const k in DETECT_DEF) o[k] = typeof d[k] === typeof DETECT_DEF[k] ? d[k] : DETECT_DEF[k]; return o; }
+function setDetectCfg(ch) { S.meta.detect = Object.assign(detectCfg(), ch); touch(); if (!S.meta.detect.play) playDetectDisarm(); else playDetectArm(); }
+function detectSettingsOut() { const c = detectCfg(); return { whilePlaying: c.play, nextTrack: c.next, bpmMinConfidence: c.bpmMin, keyMinConfidence: c.keyMin }; }
+function detectSettingsIn(x) {
+  if (!x || typeof x !== 'object') return; const c = detectCfg();
+  if (typeof x.whilePlaying === 'boolean') c.play = x.whilePlaying;
+  if (typeof x.nextTrack === 'boolean') c.next = x.nextTrack;
+  if (typeof x.bpmMinConfidence === 'number') c.bpmMin = clampPct(x.bpmMinConfidence);
+  if (typeof x.keyMinConfidence === 'number') c.keyMin = clampPct(x.keyMinConfidence);
+  S.meta.detect = c;
+}
+function cleanDetect(d) {
+  if (!d || typeof d !== 'object' || !(+d.v >= 1)) return null;
+  const n = (v, lo, hi) => typeof v === 'number' && isFinite(v) ? Math.max(lo, Math.min(hi, v)) : 0;
+  const o = { v: Math.floor(+d.v), at: n(d.at, 0, 1e15) };
+  if (typeof d.err === 'string' && d.err) { o.err = d.err.slice(0, 120); return o; }
+  Object.assign(o, { bpm: cleanBpm(n(d.bpm, 0, 999)), bpmConf: n(d.bpmConf, 0, 1), key: cleanKey(d.key || ''), keyConf: n(d.keyConf, 0, 1), r: n(d.r, -1, 1), bpmLow: !!d.bpmLow, keyLow: !!d.keyLow });
+  if (d.undone) o.undone = true;
+  return o;
+}
+const Detect = (() => {
+  const SR = 11025, EX = 60, OPTS = { lo: 60, hi: 180, priorCenter: 120, priorWidth: 1, dp: true, alpha: 100, fmin: 65, fmax: 5000, harmonicWeight: true, maxPeaks: 30, chromaPow: 0.5, harmAtten: 0.25, hopDiv: 4, profile: 'edma' };
+  let url = '', idle = [], idleT = 0, seq = 0, busy = 0;
+  function worker() {
+    clearTimeout(idleT);
+    if (idle.length) return idle.pop();
+    if (!url) url = URL.createObjectURL(new Blob([document.getElementById('detect-dsp').textContent], { type: 'text/javascript' }));
+    const w = new Worker(url);
+    w.onmessage = e => { const r = w.job; w.job = null; if (r) r(e.data); };
+    w.onerror = e => { e.preventDefault(); const r = w.job; w.job = null; if (r) r({ ok: false, err: e.message || 'worker error', crash: true }); };
+    return w;
+  }
+  function release(w, crashed) {
+    if (crashed) w.terminate(); else idle.push(w);
+    clearTimeout(idleT); idleT = setTimeout(() => { idle.forEach(x => x.terminate()); idle = []; }, 30000);   // free idle workers
+  }
+  function analyse(pcm) {
+    const w = worker(); busy++;
+    return new Promise(res => { w.job = res; w.postMessage({ id: ++seq, pcm, sr: SR, opts: OPTS }, [pcm.buffer]); })
+      .then(r => { busy--; release(w, r.crash); if (!r.ok) throw new Error(r.err || 'analysis failed'); return r.res; });
+  }
+  // MP3 frame / Xing parsing, so only the excerpt's bytes are decoded
+  const BR1 = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320], BR2 = [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160];
+  const SRT = { 3: [44100, 48000, 32000], 2: [22050, 24000, 16000], 0: [11025, 12000, 8000] };
+  function hdr(u, i) {
+    if (i + 4 > u.length || u[i] !== 0xFF || (u[i + 1] & 0xE0) !== 0xE0) return null;
+    const ver = (u[i + 1] >> 3) & 3, layer = (u[i + 1] >> 1) & 3, bi = u[i + 2] >> 4, si = (u[i + 2] >> 2) & 3, pad = (u[i + 2] >> 1) & 1;
+    if (ver === 1 || layer !== 1 || bi === 0 || bi === 15 || si === 3) return null;
+    const br = (ver === 3 ? BR1 : BR2)[bi], sr = SRT[ver][si], spf = ver === 3 ? 1152 : 576;
+    return { ver, br, sr, spf, len: Math.floor(spf / 8 * br * 1000 / sr) + pad, mono: (u[i + 3] >> 6) === 3 };
+  }
+  function sync(u, from, ref) {
+    for (let i = from; i < u.length - 4; i++) {
+      const h = hdr(u, i); if (!h || (ref && (h.ver !== ref.ver || h.sr !== ref.sr))) continue;
+      const h2 = hdr(u, i + h.len); if (h2 && h2.ver === h.ver && h2.sr === h.sr) return [i, h];
+    }
+    return [-1, null];
+  }
+  const id3Len = u => u[0] === 0x49 && u[1] === 0x44 && u[2] === 0x33 ? 10 + ((u[6] << 21) | (u[7] << 14) | (u[8] << 7) | u[9]) + ((u[5] & 0x10) ? 10 : 0) : 0;
+  // u: the start of the file (ID3 tag + the first frames); end: where the audio ends in the whole file
+  function info(u, end) {
+    const p = id3Len(u);
+    const [first, h] = sync(u.subarray(0, Math.min(u.length, p + 65536)), p, null);
+    if (first < 0) return null;
+    const side = h.ver === 3 ? (h.mono ? 17 : 32) : (h.mono ? 9 : 17), x = first + 4 + side;
+    const tag = String.fromCharCode(u[x], u[x + 1], u[x + 2], u[x + 3]);
+    let frames = 0, bytes = end - first, toc = null, start = first;
+    if (tag === 'Xing' || tag === 'Info') {
+      const dv = new DataView(u.buffer, u.byteOffset); const fl = dv.getUint32(x + 4); let q = x + 8;
+      if (fl & 1) { frames = dv.getUint32(q); q += 4; } if (fl & 2) { bytes = dv.getUint32(q); q += 4; } if (fl & 4) toc = u.slice(q, q + 100);
+      start = first + h.len;   // the Xing frame carries no audio
+    }
+    const dur = frames ? frames * h.spf / h.sr : (end - start) * 8 / (h.br * 1000);
+    return { first, start, end, bytes: Math.min(bytes, end - first), dur, toc, h };
+  }
+  function byteAt(f, t) {
+    const fr = Math.max(0, Math.min(1, t / f.dur));
+    if (f.toc) { const pc = fr * 100, i = Math.min(99, Math.floor(pc)), a = f.toc[i], b = i < 99 ? f.toc[i + 1] : 256; return f.first + Math.round((a + (b - a) * (pc - i)) / 256 * f.bytes); }
+    return f.start + Math.round(fr * (f.end - f.start));
+  }
+  const bytes = async (file, a, b) => new Uint8Array(await file.slice(a, b).arrayBuffer());
+  /* a 44-byte WAV header for a run of whole sample frames cut out of a PCM / float / A-law / µ-law data chunk */
+  const WAV_HDR_TAG = { pcm: 1, float: 3, alaw: 6, mulaw: 7 };
+  function wavWrap(w, seg) {
+    const out = new Uint8Array(44 + seg.length), dv = new DataView(out.buffer), str = (o, x) => { for (let i = 0; i < 4; i++) out[o + i] = x.charCodeAt(i); };
+    str(0, 'RIFF'); dv.setUint32(4, 36 + seg.length, true); str(8, 'WAVE'); str(12, 'fmt '); dv.setUint32(16, 16, true);
+    dv.setUint16(20, WAV_HDR_TAG[w.codec], true); dv.setUint16(22, w.channels, true); dv.setUint32(24, w.sampleRate, true);
+    dv.setUint32(28, w.sampleRate * w.blockAlign, true); dv.setUint16(32, w.blockAlign, true); dv.setUint16(34, w.bits, true);
+    str(36, 'data'); dv.setUint32(40, seg.length, true); out.set(seg, 44); return out;
+  }
+
+  const crc8 = (u, a, b) => { let c = 0; for (let i = a; i < b; i++) { c ^= u[i]; for (let k = 0; k < 8; k++) c = c & 0x80 ? ((c << 1) ^ 0x07) & 0xff : (c << 1) & 0xff; } return c; };
+  /* the first FLAC frame header at or after i in u (sync code, sane fields, matching CRC-8), or -1 */
+  function flacSync(u, i, ch, bps) {
+    for (; i + 16 < u.length; i++) {
+      if (u[i] !== 0xff || (u[i + 1] & 0xfe) !== 0xf8) continue;
+      const b2 = u[i + 2], b3 = u[i + 3], bs = b2 >> 4, sr = b2 & 15, ca = b3 >> 4, ss = (b3 >> 1) & 7;
+      if (!bs || sr === 15 || ca > 10 || ss === 3 || (b3 & 1)) continue;
+      if ((ca < 8 ? ca + 1 : 2) !== ch) continue;
+      if (ss && [0, 8, 12, 0, 16, 20, 24, 32][ss] !== bps) continue;
+      let p = i + 4, x = u[p];   // the UTF-8-style frame / sample number
+      let n = x < 0x80 ? 0 : x >= 0xfe ? 6 : x >= 0xfc ? 5 : x >= 0xf8 ? 4 : x >= 0xf0 ? 3 : x >= 0xe0 ? 2 : x >= 0xc0 ? 1 : -1;
+      if (n < 0) continue; p++; let ok = true; for (let k = 0; k < n; k++, p++) if ((u[p] & 0xc0) !== 0x80) { ok = false; break; } if (!ok) continue;
+      if (bs === 6) p += 1; else if (bs === 7) p += 2;
+      if (sr === 12) p += 1; else if (sr === 13 || sr === 14) p += 2;
+      if (p < u.length && crc8(u, i, p) === u[p]) return i;
+    }
+    return -1;
+  }
+  /* FLAC: the ~61 s of frames in the middle behind a copy of STREAMINFO (sample count unknown), or null to decode the file whole */
+  async function flacExcerpt(file) {
+    let p = 4, si = null, last = false;
+    if (String.fromCharCode(...await bytes(file, 0, 4)) !== 'fLaC') return null;
+    for (let k = 0; !last && k < 256; k++) {   // metadata blocks: read their 4-byte headers only (a cover picture can be MBs)
+      const h = await bytes(file, p, p + 4); if (h.length < 4) return null;
+      last = !!(h[0] & 0x80); const len = (h[1] << 16) | (h[2] << 8) | h[3];
+      if ((h[0] & 0x7f) === 0) { if (len < 34) return null; si = await bytes(file, p + 4, p + 38); }
+      p += 4 + len;
+    }
+    if (!last || !si) return null;
+    const sr = (si[10] << 12) | (si[11] << 4) | (si[12] >> 4), ch = ((si[12] >> 1) & 7) + 1, bps = (((si[12] & 1) << 4) | (si[13] >> 4)) + 1;
+    const total = (si[13] & 15) * 4294967296 + ((si[14] << 24) | (si[15] << 16) | (si[16] << 8) | si[17]) >>> 0;
+    if (!sr || !total) return null;
+    const dur = total / sr; if (dur <= EX + 8) return null;
+    const a0 = p, span = file.size - a0, ts = Math.max(0, (dur - EX) / 2 - 0.5);
+    const a = a0 + Math.floor(span * ts / dur), e = Math.min(file.size, a0 + Math.ceil(span * (ts + EX + 1.5) / dur) + 262144);
+    const seg = await bytes(file, a, e), s = flacSync(seg, 0, ch, bps);
+    if (s < 0 || seg.length - s < 65536) return null;
+    const hdr = new Uint8Array(42); hdr.set([0x66, 0x4c, 0x61, 0x43, 0x80, 0, 0, 34]); hdr.set(si.subarray(0, 18), 8);
+    hdr[8 + 13] &= 0xf0; hdr.fill(0, 8 + 14, 42);   // total samples and MD5: unknown for the excerpt
+    const out = new Uint8Array(42 + seg.length - s); out.set(hdr); out.set(seg.subarray(s), 42); return out.buffer;
+  }
+  const isFlacHead = u => u[0] === 0x66 && u[1] === 0x4c && u[2] === 0x61 && u[3] === 0x43;
+  const WHOLE_MAX = 512 * 1024 * 1024;   // a file that can't be cut (FLAC, Ogg, compressed WAV…) is decoded whole: refuse absurd sizes
+  const BIG = 64 * 1024 * 1024; let bigQ = Promise.resolve();   // …and decode big ones one at a time (file + decoded audio can pass 100s of MB)
+  async function decode(file, mp3) {
+    if (file.size <= BIG || mp3) return decode1(file, mp3);
+    const h = await bytes(file, 0, 12); if (ID3.isWavHead(h) || isFlacHead(h)) return decode1(file, mp3);   // MP3 / WAV are cut, not decoded whole
+    const run = bigQ.then(() => decode1(file, mp3)); bigQ = run.catch(() => { }); return run;
+  }
+  /* an MP3 is read in pieces: its head (tags + first frames), the last 128 bytes, and the ~61 s of frames that are decoded,
+     so a long or large file never sits in memory whole. A WAV (round 21: and a FLAC, at a frame header) is cut the same way from its chunk layout (format-agnostic:
+     the container is recognised from the bytes, not the extension); anything else is decoded whole by the browser. */
+  async function decode1(file, mp3) {
+    let buf = null, sliced = false, flac = false;
+    const h12 = await bytes(file, 0, 12);
+    if (ID3.isWavHead(h12)) {
+      const w = (await ID3.readInfo(file)).wav;
+      if (w && WAV_HDR_TAG[w.codec] && w.blockAlign > 0 && w.sampleRate > 0 && w.channels > 0 && w.bits > 0) {
+        const frames = Math.floor(w.size / w.blockAlign), want = Math.ceil((EX + 1) * w.sampleRate);
+        let a = 0, n = frames;
+        if (frames > want) { a = Math.floor((frames - want) / 2); n = want; sliced = true; }
+        if (n > 0) buf = wavWrap(w, await bytes(file, w.start + a * w.blockAlign, w.start + (a + n) * w.blockAlign)).buffer;
+      }
+    }
+    else if (isFlacHead(h12) && file.size > 200000) { buf = await flacExcerpt(file); sliced = flac = !!buf; }
+    else if (mp3 && file.size > 200000) {
+      const size = file.size, head = await bytes(file, 0, Math.min(size, id3Len(await bytes(file, 0, 10)) + 70000));
+      const tail = await bytes(file, Math.max(0, size - 128), size);
+      const f = info(head, tail.length === 128 && tail[0] === 0x54 && tail[1] === 0x41 && tail[2] === 0x47 ? size - 128 : size);
+      if (f && f.dur > EX + 8) {
+        const ts = Math.max(0, (f.dur - EX) / 2 - 0.5), a = Math.max(f.start, byteAt(f, ts)), e = Math.min(f.end, byteAt(f, ts + EX + 1));
+        if (e > a) { const seg = await bytes(file, a, e), [s] = sync(seg, 0, f.h); if (s >= 0 && seg.length - s > 4096) { buf = seg.buffer.slice(s); sliced = true; } }
+      }
+    }
+    if (!buf) { if (file.size > WHOLE_MAX) throw new Error('file too large to analyse'); buf = await file.arrayBuffer(); }
+    let ab; try { ab = await new OfflineAudioContext(1, 1, SR).decodeAudioData(buf); }
+    catch (e) { if (!flac) throw e; sliced = false; if (file.size > WHOLE_MAX) throw e; ab = await new OfflineAudioContext(1, 1, SR).decodeAudioData(await file.arrayBuffer()); }   // an excerpt the decoder refused: the whole file
+    buf = null;
+    const nCh = ab.numberOfChannels; let a = 0, n = ab.length;
+    if (!sliced && ab.duration > EX) { a = Math.floor((ab.duration - EX) / 2 * SR); n = Math.floor(EX * SR); }
+    if (sliced) n = Math.min(n, Math.floor((EX + 1) * SR));
+    const mono = new Float32Array(n);
+    for (let c = 0; c < nCh; c++) { const d = ab.getChannelData(c); for (let i = 0; i < n; i++) mono[i] += d[a + i]; }
+    if (nCh > 1) { const g = 1 / nCh; for (let i = 0; i < n; i++) mono[i] *= g; }
+    return mono;
+  }
+  async function run(file, mp3) {
+    const pcm = await decode(file, mp3);
+    if (pcm.length < SR * 4) throw new Error('too short to analyse');
+    return analyse(pcm);   // the PCM is transferred to the worker, never kept here
+  }
+  const whole = (file, mp3, fmt) => file.size > BIG && !mp3 && !/^(wav|wave|flac)$/.test(fmt || '');
+  return { run, whole, busy: () => busy, workers: () => idle.length + busy, OPTS, SR, EX };
+})();
+const r3 = v => Math.round(v * 1000) / 1000, detWait = ms => new Promise(r => setTimeout(r, ms));
+function detectRecord(r) {
+  let bpm = Math.round(r.bpm * 10) / 10; if (Math.abs(bpm - Math.round(bpm)) < 0.2) bpm = Math.round(bpm);
+  return { v: DETECT_V, at: Date.now(), bpm: cleanBpm(bpm), bpmConf: r3(r.bpmConf), key: keyOf(r.pc, r.minor), keyConf: r3(r.keyConf), r: r3(r.r) };
+}
+const detectErr = e => ({ v: DETECT_V, at: Date.now(), err: String(e && e.message || e || 'failed').slice(0, 120) });
+const detBpmOk = (d, c) => d.bpm > 0 && d.bpmConf * 100 >= c.bpmMin - 1e-6;
+const detKeyOk = (d, c) => !!d.key && d.r >= KEY_R_MIN && d.keyConf * 100 >= c.keyMin - 1e-6;
+// a field the detector may fill: not user-set / user-cleared / tagged, and empty (or, when re-detecting, holding a detected value)
+const bpmOpen = (t, redo) => t.bpmSource !== 'user' && t.bpmSource !== 'tag' && (!(t.bpm > 0) || (!!redo && t.bpmSource === 'detected'));
+const keyOpen = (t, redo) => t.mkeySource !== 'user' && t.mkeySource !== 'tag' && (!t.mkey || (!!redo && t.mkeySource === 'detected'));
+const isMp3 = t => trackMime(t) === 'audio/mpeg';
+/* write a detection result into a track: returns { b, k } = 'set' | 'low' | '' for BPM and key */
+function applyDetect(t, d, redo) {
+  const c = detectCfg(), o = { b: '', k: '' };
+  if (d.err) { t.detect = d; return o; }
+  d = Object.assign({}, d, { bpmLow: !detBpmOk(d, c), keyLow: !detKeyOk(d, c) }); delete d.undone; t.detect = d;
+  if (bpmOpen(t, redo)) { if (!d.bpmLow) { t.bpm = d.bpm; t.bpmSource = 'detected'; o.b = 'set'; } else if (!(t.bpm > 0)) o.b = 'low'; }
+  if (keyOpen(t, redo)) { if (!d.keyLow) { t.mkey = d.key; t.mkeySource = 'detected'; o.k = 'set'; } else if (!t.mkey) o.k = 'low'; }
+  return o;
+}
+/* what playback detection should do for a track: 'scan' (analyse), 'stored' (an earlier result now passes the thresholds) or '' */
+function detectNeed(t) {
+  if (!t || t.missing || !S.files.has(t.id) || !(bpmOpen(t) || keyOpen(t)) || !canPlay(t)) return '';
+  const d = t.detect;
+  if (!d || !(d.v >= DETECT_V)) return 'scan';
+  if (d.err || d.undone) return '';
+  const c = detectCfg();
+  return (bpmOpen(t) && detBpmOk(d, c)) || (keyOpen(t) && detKeyOk(d, c)) ? 'stored' : '';
+}
+const DET_BUSY = new Set();   // track ids being analysed right now (their BPM cell shows a pulsing dot)
+function refreshDetectViews(id) { refreshBpmViews(id); refreshKeyViews(id); }
+function refreshDetectViewsMany(ids) {   // ids: a Set, emptied
+  if (ids.size < 6) { ids.forEach(refreshDetectViews); ids.clear(); return; }
+  const cell = (b, html) => { const n = document.createElement('div'); n.innerHTML = html; b.replaceWith(n.firstElementChild); };
+  document.querySelectorAll('button.bpm[data-bpm]').forEach(b => { const t = ids.has(b.dataset.bpm) && S.tracks.get(b.dataset.bpm); if (t) cell(b, bpmCell(t)); });
+  document.querySelectorAll('select.mkey[data-mkey]').forEach(b => { const t = ids.has(b.dataset.mkey) && S.tracks.get(b.dataset.mkey); if (!t) return; if (b === document.activeElement) syncKeySel(b, t); else cell(b, keyCell(t)); });
+  ids.clear();
+}
+let detSortT = 0, detSortAt = 0, detUserAt = 0;
+['pointerdown', 'wheel', 'keydown', 'touchstart'].forEach(ev => addEventListener(ev, () => { detUserAt = Date.now(); }, { capture: true, passive: true }));
+/* keep a list sorted by BPM / key in order as values arrive (throttled; never while a BPM box or key picker is in use) */
+function detectSortSoon() {
+  const ctx = S.view.name === 'tracks' ? 'tracks' : S.view.name === 'album' ? 'album' : '';
+  if (!ctx || !getSort(ctx).some(k => k.k === 'bpm' || k.k === 'key') || detSortT) return;
+  const gap = Batch ? 8000 : 2500;   // a big batch re-sorts less often: each re-sort re-renders the list
+  detSortT = setTimeout(function go() {
+    const a = document.activeElement;
+    if ((a && a.closest && a.closest('#main') && /^(INPUT|SELECT)$/.test(a.tagName)) || Date.now() - detUserAt < 1500) { detSortT = setTimeout(go, 1500); return; }   // not while the user scrolls / types / clicks
+    detSortT = 0; detSortAt = Date.now(); rerenderKeepScroll();
+  }, Math.max(300, gap - (Date.now() - detSortAt)));
+}
+/* analyse one track (playback path); returns the outcome or null when nothing was done */
+async function detectOne(id) {
+  const t = S.tracks.get(id), need = detectNeed(t);
+  if (!need || DET_BUSY.has(id) || (Batch && Batch.ids.has(id))) return null;
+  let d = t.detect;
+  if (need === 'scan') {
+    DET_BUSY.add(id); refreshDetectViews(id);
+    try { d = detectRecord(await Detect.run(S.files.get(id), isMp3(t))); } catch (e) { d = detectErr(e); console.warn('BPM/key detection failed for', id, e); }
+    DET_BUSY.delete(id);
+  }
+  const t2 = S.tracks.get(id); if (!t2) return null;   // removed meanwhile
+  const o = applyDetect(t2, d, false);                  // fields are re-checked now: a user edit made meanwhile wins
+  DB.put('tracks', t2); refreshDetectViews(id);
+  if (o.b === 'set' || o.k === 'set') { touch(); detectSortSoon(); }
+  return o;
+}
+/* playback: after DETECT_START_MS of play, analyse the current track if it lacks a BPM or key; one job at a time */
+const PlayDet = { timer: 0, running: false, pend: null };
+function playDetectDisarm() { clearTimeout(PlayDet.timer); PlayDet.timer = 0; }
+function playDetectArm() {
+  playDetectDisarm();
+  const t = currentTrack(); if (!t || audio.paused || !detectCfg().play) return;
+  const nextNeeds = () => { const j = playableFrom(S.qi + 1, 1); return j >= 0 && detectNeed(S.tracks.get(S.queue[j])); };
+  if (!detectNeed(t) && !(detectCfg().next && nextNeeds())) return;
+  PlayDet.timer = setTimeout(() => { PlayDet.timer = 0; const c = currentTrack(); if (c && c.id === t.id && !audio.paused && detectCfg().play) playDetectRun(c.id); }, DETECT_START_MS);
+}
+async function playDetectRun(id) {
+  if (PlayDet.running) { PlayDet.pend = id; return; }
+  PlayDet.running = true;
+  try {
+    await detectOne(id);
+    const j = playableFrom(S.qi + 1, 1), nid = j >= 0 ? S.queue[j] : null;   // optionally the next track too, so it is ready when it starts
+    if (detectCfg().next && detectCfg().play && nid && nid !== id && !PlayDet.pend) await detectOne(nid);
+  } catch (e) { console.warn(e); }
+  finally { PlayDet.running = false; const p = PlayDet.pend; PlayDet.pend = null; if (p) playDetectRun(p); }
+}
+/* multi-select "Detect BPM & key": background lanes (decode → analyse), a determinate progress bar, Cancel, a summary with Undo */
+let Batch = null;
+function detectLanes() {
+  const hw = navigator.hardwareConcurrency || 4, max = Math.max(1, Math.min(4, hw - 1));
+  return audio.src && !audio.paused ? Math.max(1, Math.min(2, max >> 1)) : max;   // fewer while music plays
+}
+function fmtLeft(s) { return s < 60 ? 'under a minute left' : s < 3600 ? `about ${Math.round(s / 60)} min left` : `about ${Math.floor(s / 3600)} h ${Math.round(s % 3600 / 60)} min left`; }
+function detectProgress(force) {
+  const B = Batch; if (!B) return; const now = performance.now();
+  if (!force && now - B.paintAt < 200) return; B.paintAt = now;
+  const el = $('#detectProg'); el.classList.remove('hidden'); el.classList.toggle('prep', !!B.prep);
+  if (B.prep) {   // still checking which tracks need analysing (the first ones are already being analysed)
+    $('#detectText').textContent = `Preparing ${B.n.toLocaleString()} track${B.n === 1 ? '' : 's'}…`;
+    $('#detectSub').textContent = `${B.checked.toLocaleString()} of ${B.n.toLocaleString()} checked` + (B.done ? ` · ${B.done.toLocaleString()} analysed` : '');
+    $('#detectTrack').removeAttribute('aria-valuenow'); return;
+  }
+  const n = B.done, N = B.total, secs = (now - B.t0) / 1000, rate = n / Math.max(secs, 0.001);
+  $('#detectText').textContent = `Detecting BPM & key… ${n.toLocaleString()} / ${N.toLocaleString()}`;
+  $('#detectSub').textContent = n >= 2 && secs > 2 ? `${Math.round(rate * 60).toLocaleString()} tracks/min · ${fmtLeft((N - n) / rate)}${audio.src && !audio.paused ? ' · slower while music plays' : ''}` : 'Starting…';
+  $('#detectBar').style.width = (N ? n / N * 100 : 0) + '%';
+  $('#detectTrack').setAttribute('aria-valuenow', Math.round(N ? n / N * 100 : 0));
+}
+async function detectMany(ids) {
+  if (Batch) { toast('BPM & key detection is already running (see the progress bar at the top).', 'info', 4000); return; }
+  const ts = ids.map(id => S.tracks.get(id)).filter(Boolean); if (!ts.length) return;
+  const anyDet = ts.some(t => t.bpmSource === 'detected' || t.mkeySource === 'detected');
+  const ans = await modal({
+    title: `Detect BPM & key for ${plural(ts.length, 'track')}`,
+    message: 'Each track is analysed in the background from a minute of audio in its middle. Only empty BPM and key fields are filled: values you entered or cleared and values from file tags are never changed, and results below the confidence thresholds in Settings are left unset.',
+    check: anyDet ? { label: 'Re-detect values that were detected before', note: 'Analyses those tracks again and replaces their detected BPM / key. Tag values are never replaced.', checked: false } : null, okLabel: 'Detect'
+  });
+  if (!ans) return;
+  const redo = !!ans.checked, c = { bpm: 0, key: 0, low: 0, skip: 0, na: 0, np: 0, fail: 0 }, undo = new Map(), todo = [], writes = [];
+  // round 21: the bar shows straight away ("Preparing N tracks…", Cancel live); the per-track checks below run in ~8 ms slices
+  // and feed the lanes as they go, so analysis starts with the first eligible track instead of after the whole selection
+  const B = Batch = { ids: new Set(), total: 0, done: 0, t0: performance.now(), paintAt: 0, cancel: false, scanMs: 0, prep: true, checked: 0, n: ts.length };
+  const waiters = [], wake = () => waiters.splice(0).forEach(f => f()), sleep = () => new Promise(r => waiters.push(r));
+  B.wake = wake;   // Cancel wakes idle lanes
+  $('#detectCancel').disabled = false; detectProgress(true);
+  const snap = t => { if (!undo.has(t.id)) undo.set(t.id, { bpm: t.bpm || 0, bs: t.bpmSource, mkey: t.mkey || '', ks: t.mkeySource }); };
+  const tally = (o, d) => { if (d.err) c.fail++; else { if (o.b === 'set') c.bpm++; if (o.k === 'set') c.key++; if (o.b === 'low' || o.k === 'low') c.low++; } };
+  let changed = false, prepDone = false, next = 0, heavyOn = 0;
+  const flush = () => { while (writes.length) DB.putMany('tracks', writes.splice(0, 100)); if (changed) { touch(); changed = false; detectSortSoon(); } };
+  const shown = new Set();   // stored results applied in this slice: their cells are refreshed in one pass
+  // between slices: repaint the bar, refresh the cells of stored results, save in small transactions — each its own task
+  const settle = async all => {
+    detectProgress(); await detWait(0);
+    if (shown.size) { refreshDetectViewsMany(shown); await detWait(0); }
+    while (writes.length >= (all ? 1 : 100)) { DB.putMany('tracks', writes.splice(0, 100)); await detWait(0); }
+  };
+  async function prepare() {
+    await new Promise(r => { let k = 0; const go = () => { if (!k++) setTimeout(r, 0); }; requestAnimationFrame(go); setTimeout(go, 50); });   // the bar paints first
+    let t0 = performance.now();
+    for (let i = 0; i < ts.length && !B.cancel; i++) {
+      const t = ts[i]; B.checked = i + 1;
+      if (t.missing || !S.files.has(t.id)) c.na++;
+      else if (!bpmOpen(t, redo) && !keyOpen(t, redo)) c.skip++;
+      else if (!canPlay(t)) c.np++;   // a format this browser can't decode (ADPCM WAV, Ogg in Safari…): nothing to analyse
+      else if (!redo && t.detect && t.detect.v >= DETECT_V && !t.detect.err) { const d = t.detect; snap(t); const o = applyDetect(t, d, false); tally(o, d); writes.push(t); if (o.b === 'set' || o.k === 'set') { changed = true; shown.add(t.id); } }
+      else { todo.push(t.id); B.ids.add(t.id); B.total = todo.length; if (waiters.length) wake(); }
+      if (performance.now() - t0 > 8) { await settle(false); t0 = performance.now(); }
+    }
+    await settle(true);
+    prepDone = true; B.prep = false; B.total = todo.length; detectProgress(true); wake();
+  }
+  // a file the browser must decode whole (big Ogg / compressed WAV…) is serialised by Detect anyway: while one is in progress,
+  // later ones wait aside so they don't park other lanes behind it
+  const later = [];
+  const heavy = id => { const t = S.tracks.get(id), f = S.files.get(id); return !!(t && f && Detect.whole(f, isMp3(t), t.format || fileFormat(id))); };
+  function pick() {
+    if (!heavyOn && later.length) return later.shift();
+    while (next < todo.length) { const id = todo[next++]; if (heavyOn && heavy(id)) { later.push(id); continue; } return id; }
+    return null;
+  }
+  async function lane(n) {
+    while (!B.cancel) {
+      if (n >= detectLanes()) { await Promise.race([detWait(500), sleep()]); continue; }   // this lane rests while music plays
+      const id = pick();
+      if (id == null) { if (prepDone && next >= todo.length && !later.length) return; await sleep(); continue; }
+      while (DET_BUSY.has(id) && !B.cancel) await detWait(200);   // the playback job is on this track: wait for it
+      const t = S.tracks.get(id), f = S.files.get(id);
+      if (B.cancel) return;
+      if (!t || !f || t.missing) { c.na++; B.done++; continue; }
+      if (!bpmOpen(t, redo) && !keyOpen(t, redo)) { c.skip++; B.done++; continue; }   // filled meanwhile (edit / playback)
+      const hv = heavy(id); if (hv) heavyOn++;
+      DET_BUSY.add(id); refreshDetectViews(id);
+      let d; try { d = detectRecord(await Detect.run(f, isMp3(t))); } catch (e) { d = detectErr(e); console.warn('BPM/key detection failed for', id, e); }
+      DET_BUSY.delete(id); if (hv) { heavyOn--; wake(); }
+      if (B.cancel || !S.tracks.has(id)) { refreshDetectViews(id); return; }   // results arriving after Cancel are dropped
+      snap(t); const o = applyDetect(t, d, redo); tally(o, d); writes.push(t); refreshDetectViews(id);
+      if (o.b === 'set' || o.k === 'set') changed = true;
+      B.done++; detectProgress();
+      if (writes.length >= 40) flush();
+    }
+  }
+  const lanes = Array.from({ length: Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 4) - 1)) }, (_, n) => lane(n));
+  await prepare(); wake();
+  await Promise.all(lanes);
+  flush();
+  const secs = (performance.now() - B.t0) / 1000;
+  Batch = null; $('#detectProg').classList.add('hidden'); $('#detectProg').classList.remove('prep');
+  // what the batch set, so Undo reverts exactly that (a field changed since then is left alone)
+  const after = new Map(); for (const id of undo.keys()) { const t = S.tracks.get(id); if (t) after.set(id, { bpm: t.bpm || 0, bs: t.bpmSource, mkey: t.mkey || '', ks: t.mkeySource }); }
+  const sum = { bpm: c.bpm, key: c.key, low: c.low, skipped: c.skip, unavailable: c.na, unsupported: c.np, failed: c.fail, scanned: B.done, total: ts.length, seconds: r3(secs), cancelled: B.cancel, redo };
+  window.__detectSummary = sum;
+  const parts = [`BPM set on ${c.bpm.toLocaleString()}`, `key set on ${c.key.toLocaleString()}`, `${c.low.toLocaleString()} left unset (low confidence)`, `${c.skip.toLocaleString()} skipped (already set)`, `${c.fail.toLocaleString()} failed`];
+  if (c.na) parts.push(`${c.na.toLocaleString()} not available (missing or not linked)`);
+  if (c.np) parts.push(`${c.np.toLocaleString()} in a format this browser can’t decode`);
+  const msg = `${B.cancel ? 'Detection cancelled' : 'Detection finished'} for ${plural(ts.length, 'track')}: ${parts.join(' · ')}.`;
+  const did = [...undo.keys()].filter(id => { const a = undo.get(id), b = after.get(id); return b && (a.bpm !== b.bpm || a.bs !== b.bs || a.mkey !== b.mkey || a.ks !== b.ks); });
+  toast(msg, c.fail && !c.bpm && !c.key ? 'warn' : 'ok', 15000, did.length ? { label: 'Undo', run: () => {
+    const back = [];
+    for (const id of did) {
+      const t = S.tracks.get(id), a = undo.get(id), b = after.get(id); if (!t) continue;
+      if ((t.bpm || 0) === b.bpm && t.bpmSource === b.bs) { t.bpm = a.bpm; if (a.bs) t.bpmSource = a.bs; else delete t.bpmSource; }
+      if ((t.mkey || '') === b.mkey && t.mkeySource === b.ks) { t.mkey = a.mkey; if (a.ks) t.mkeySource = a.ks; else delete t.mkeySource; }
+      if (t.detect) t.detect = Object.assign({}, t.detect, { undone: true });   // keep the record so playing it does not fill it again
+      back.push(t); refreshDetectViews(id);
+    }
+    DB.putMany('tracks', back); touch(); detectSortSoon();
+    toast(`Undone: detected BPM / key removed from ${plural(back.length, 'track')}.`, 'info', 3000);
+  } } : undefined);
+}
+function saveAlbum(a) { a.updatedAt = Date.now(); DB.put('albums', a); touch(); markAlbums(); }
 async function newAlbum(withTrackId) {
   const name = await modal({ title: 'New album', message: 'Give your tracklist a name.', input: true, value: '', okLabel: 'Create' });
   if (!name || !name.trim()) return null;
@@ -1550,12 +2473,46 @@ function toast(msg, type = 'info', ms = 4200, act = null) {
   $('#toasts').appendChild(el); requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, ms);
 }
+/* ---- busy indicator: the gaps before a determinate progress bar ----
+   (a) the folder picker is open / the browser is reading the folder: nothing reaches the page until the input's change
+       event, so the row goes up as soon as the picker is opened and comes down on change, on the input's cancel event,
+       or (browsers without that event) a little after the window gets focus back;
+   (b) after change: "Preparing N files…", painted before any heavy work, then phase texts until the progress bar takes over. */
+const FILE_CANCEL_EVT = (() => {                 // input "cancel" event: Chromium 113+, Firefox 91+, Safari 16.4+
+  const u = navigator.userAgent, v = re => { const m = u.match(re); return m ? parseFloat(m[1]) : 0; };
+  return v(/Chrom(?:e|ium)\/(\d+)/) >= 113 || v(/Firefox\/(\d+)/) >= 91 || (!/Chrom|Firefox|Android/.test(u) && v(/Version\/(\d+\.\d+)/) >= 16.4);
+})();
+let busyOn = false, pick = null;
+function busyShow(text) {
+  const el = $('#busy');
+  if (!busyOn) { busyOn = true; el.innerHTML = '<span class="busy-spin" aria-hidden="true"></span><span class="busy-text"></span><span class="busy-track" aria-hidden="true"><i></i></span>'; el.classList.add('on'); }
+  const t = el.querySelector('.busy-text'); if (t.textContent !== text) t.textContent = text;
+}
+function busyHide() { if (pick) pick.done(); if (!busyOn) return; busyOn = false; const el = $('#busy'); el.classList.remove('on'); el.innerHTML = ''; }
+const busyText = () => busyOn ? $('#busy .busy-text').textContent : '';
+// let the browser paint (the busy row) before carrying on; never waits more than ~120 ms (rAF is paused in background tabs)
+const nextPaint = () => new Promise(r => { let ok = false; const go = () => { if (!ok) { ok = true; setTimeout(r, 0); } }; requestAnimationFrame(go); setTimeout(go, 120); });
+function pickerWait(inp, text) {                // phase (a): from opening the picker until change / cancel / give-up
+  if (S.importing) return;
+  if (pick) pick.done();
+  busyShow(text);
+  let t = 0;
+  const done = () => { clearTimeout(t); window.removeEventListener('focus', onFocus); inp.removeEventListener('cancel', onCancel); if (pick === me) pick = null; };
+  const onCancel = () => { done(); if (!S.importing) busyHide(); };
+  const onFocus = () => {                       // the dialog closed: the browser may still be reading a big folder
+    if (busyText() === text) busyShow(text.replace(/^Waiting for/, 'Reading'));
+    clearTimeout(t); t = setTimeout(() => { if (pick === me) { done(); if (!S.importing) busyHide(); } }, FILE_CANCEL_EVT ? 60000 : 2500);
+  };
+  const me = pick = { done };
+  inp.addEventListener('cancel', onCancel); window.addEventListener('focus', onFocus);
+}
 function showProgress(done, total, root) {
+  if (busyOn) busyHide();
   $('#progress').classList.remove('hidden');
   $('#progressText').textContent = `Scanning “${root}”… ${done.toLocaleString()} / ${total.toLocaleString()} audio files`;
   $('#progressBar').style.width = (total ? done / total * 100 : 0) + '%';
 }
-function hideProgress() { $('#progress').classList.add('hidden'); }
+function hideProgress() { $('#progress').classList.add('hidden'); busyHide(); }
 function modal({ title, message = '', input = false, value = '', okLabel = 'OK', danger = false, listHTML = '', check = null, select = null }) {
   const d = $('#dlg');
   $('#dlgTitle').textContent = title; $('#dlgMsg').textContent = message; $('#dlgMsg').hidden = !message;
@@ -1567,7 +2524,14 @@ function modal({ title, message = '', input = false, value = '', okLabel = 'OK',
   const ok = $('#dlgOk'); ok.textContent = okLabel; ok.className = 'btn ' + (danger ? 'danger' : 'primary');
   d.returnValue = '';
   return new Promise(res => {
-    d.addEventListener('close', () => res(d.returnValue === 'ok' ? (input ? inp.value : select ? ds.value : check ? { checked: cb.checked } : true) : null), { once: true });
+    const form = ok.form; let done = false;
+    const fin = () => {
+      if (done) return; done = true; d.removeEventListener('close', onClose); form.removeEventListener('submit', onSubmit);
+      res(d.returnValue === 'ok' ? (input ? inp.value : select ? ds.value : check ? { checked: cb.checked } : true) : null);
+    };
+    const onClose = () => { if (!d.open) fin(); };   // Esc; a stale close event of an earlier dialog arrives while this one is open: ignored
+    const onSubmit = e => { e.preventDefault(); d.close(e.submitter ? e.submitter.value : 'ok'); fin(); };   // OK / Cancel / Enter: close and resolve now
+    d.addEventListener('close', onClose); form.addEventListener('submit', onSubmit);
     d.showModal(); if (input) { inp.focus(); inp.select(); } else if (select) ds.focus();
   });
 }
@@ -1623,6 +2587,15 @@ function openSettings(btn) {
     <label class="setting"><input type="checkbox" id="scopeToggle"${Scope.enabled() ? ' checked' : ''}>
       <span><b>Show oscilloscope</b>
       <small id="scopeHint">${esc(Scope.hint())}</small></span></label>
+    <div class="pop-h">Detection</div>
+    ${(c => `<label class="setting"><input type="checkbox" id="detectPlayToggle"${c.play ? ' checked' : ''}>
+      <span><b>Detect missing BPM/key while playing</b>
+      <small>A few seconds into a track without a BPM or key, a minute from its middle is analysed in the background. Values you set or cleared and values from file tags are never changed.</small></span></label>
+    <label class="setting"><input type="checkbox" id="detectNextToggle"${c.next ? ' checked' : ''}${c.play ? '' : ' disabled'}>
+      <span><b>Also analyse the next track in the queue</b></span></label>
+    <div class="setting det-th"><span><span class="det-in"><label for="detectBpmMin">BPM confidence at least</label><input type="number" id="detectBpmMin" min="0" max="100" step="5" value="${c.bpmMin}"><span>%</span></span>
+      <span class="det-in"><label for="detectKeyMin">Key confidence at least</label><input type="number" id="detectKeyMin" min="0" max="100" step="5" value="${c.keyMin}"><span>%</span></span>
+      <small>Results below these are left unset. Defaults ${DETECT_DEF.bpmMin}% and ${DETECT_DEF.keyMin}%: noise and drum-only tracks stay below them. Also used by “Detect BPM &amp; key” on selected tracks.</small></span></div>`)(detectCfg())}
     <div class="pop-h">Library cleanup</div>
     <div class="setting-cleanup">${(n => n ? cleanupBtnHTML(n, 'btn danger sm') : `<button class="btn sm" data-action="remove-all-missing" disabled>${svg('trash')}Remove all missing…</button>`)(missingCount())}
       <small>${missingCount() ? 'Removes every track not found in the last folder scan, from the library and from My albums. Folder albums left empty disappear; you can choose to delete My albums left empty.' : 'Nothing is missing. Tracks a folder scan can’t find are listed here for cleanup.'}</small></div>`;
@@ -1671,7 +2644,7 @@ function renderMain() {
   if (!S.tracks.size && !S.albums.size) {
     S.lastList = [];
     m.innerHTML = `<div class="empty"><div class="big">🎧</div><h2>Your local music library</h2>
-      <p>Pick the folder where your music lives. Every audio file inside it (MP3 and Ogg: .mp3, .ogg, .oga, .opus — also in subfolders) is imported, tags are read, and albums are grouped automatically. Nothing is uploaded; files stay on your computer.</p>
+      <p>Pick the folder where your music lives. Every audio file inside it (MP3, Ogg, FLAC and WAV: .mp3, .ogg, .oga, .opus, .flac, .wav — also in subfolders) is imported, tags are read, and albums are grouped automatically. Nothing is uploaded; files stay on your computer.</p>
       <button class="btn primary" data-action="pick-folder">${svg('folder')}Choose music folder</button>
       <button class="btn" data-action="import-json">${svg('upload')}Import library JSON</button>
       <small>Tip: after rating tracks, click “Save library” and keep ${LIB_FILE} in your music folder. It is restored automatically when you pick the folder.</small></div>`;
@@ -1720,6 +2693,7 @@ function renderAlbumGrid() {
   if (auto.length) h += `${custom.length ? '<div class="section-h">From your folder</div>' : ''}<div class="grid">${auto.map(card).join('')}</div>`;
   if (!h) h = `<div class="empty"><p>${terms.length ? 'No albums match your search.' : 'No albums yet.'}</p></div>`;
   $('#list').innerHTML = h;
+  markAlbums();
 }
 
 /* ---------- track list sorting (view-only; never changes saved album order) ---------- */
@@ -1830,15 +2804,25 @@ function dateCell(t) {
   const d = trackDate(t);
   return `<span class="tdate${d.file ? ' file' : ''}" title="${d.file ? 'File date (no tag date)' : 'Date'}${d.v ? ': ' + d.v : ''}"><span class="dfull">${d.v || '–'}</span><span class="dyear">${d.v ? d.v.slice(0, 4) : '–'}</span></span>`;
 }
-function bpmTitle(t) { return t.bpm > 0 ? `${fmtBpm(t.bpm)} BPM${t.bpmSource === 'tag' ? ' (from the file’s tag)' : ''} · click to edit` : 'BPM not set · click to enter'; }
+/* tooltip note on detected values / detection attempts, e.g. "Detected (confidence 84%)" */
+const confPct = v => Math.round((v || 0) * 100) + '%';
+function detNote(t, kind) {
+  const d = t.detect, bpm = kind === 'bpm', src = bpm ? t.bpmSource : t.mkeySource, has = bpm ? t.bpm > 0 : !!t.mkey;
+  if (DET_BUSY.has(t.id) && !has) return ' · detecting…';
+  if (has) return src === 'detected' ? ` · Detected${d && !d.err ? ` (confidence ${confPct(bpm ? d.bpmConf : d.keyConf)})` : ''}` : '';
+  if (!d || src === 'user' || src === 'tag') return '';
+  if (d.err) return ' · detection could not analyse this file';
+  return (bpm ? d.bpmLow : d.keyLow) ? ` · detection not confident enough (${confPct(bpm ? d.bpmConf : d.keyConf)})` : '';
+}
+function bpmTitle(t) { return t.bpm > 0 ? `${fmtBpm(t.bpm)} BPM${t.bpmSource === 'tag' ? ' (from the file’s tag)' : ''}${detNote(t, 'bpm')} · click to edit` : `BPM not set${detNote(t, 'bpm')} · click to enter`; }
 function bpmCell(t) {
   const v = t.bpm > 0;
-  return `<button class="bpm${v ? '' : ' unset'}" data-action="bpm-edit" data-id="${esc(t.id)}" data-bpm="${esc(t.id)}" title="${bpmTitle(t)}" aria-label="BPM: ${v ? fmtBpm(t.bpm) : 'not set'}. Edit">${v ? fmtBpm(t.bpm) : '<span class="bd">–</span><span class="bu">BPM</span>'}</button>`;
+  return `<button class="bpm${v ? '' : ' unset'}${v && t.bpmSource === 'detected' ? ' det' : ''}${DET_BUSY.has(t.id) ? ' detecting' : ''}" data-action="bpm-edit" data-id="${esc(t.id)}" data-bpm="${esc(t.id)}" title="${bpmTitle(t)}" aria-label="BPM: ${v ? fmtBpm(t.bpm) : 'not set'}. Edit">${v ? fmtBpm(t.bpm) : '<span class="bd">–</span><span class="bu">BPM</span>'}</button>`;
 }
-function keyTitle(t) { return t.mkey ? `Key: ${keyName(t.mkey)}${t.mkeySource === 'tag' ? ' (from the file’s tag)' : ''} · click to change` : 'Key not set · click to choose'; }
+function keyTitle(t) { return t.mkey ? `Key: ${keyName(t.mkey)}${t.mkeySource === 'tag' ? ' (from the file’s tag)' : ''}${detNote(t, 'key')} · click to change` : `Key not set${detNote(t, 'key')} · click to choose`; }
 function keyCell(t) {
   const k = KEY_RANK.has(t.mkey) ? t.mkey : '';
-  return `<select class="mkey${k ? '' : ' unset'}" data-id="${esc(t.id)}" data-mkey="${esc(t.id)}" title="${keyTitle(t)}" aria-label="Key of ${esc(t.title)}"><option value="${k}" selected>${k ? keyLabel(k) : '–'}</option></select>`;
+  return `<select class="mkey${k ? '' : ' unset'}${k && t.mkeySource === 'detected' ? ' det' : ''}${DET_BUSY.has(t.id) ? ' detecting' : ''}" data-id="${esc(t.id)}" data-mkey="${esc(t.id)}" title="${keyTitle(t)}" aria-label="Key of ${esc(t.title)}"><option value="${k}" selected>${k ? keyLabel(k) : '–'}</option></select>`;
 }
 function trackRow(t, i, o = {}) {
   const linked = S.files.has(t.id);
@@ -2099,6 +3083,7 @@ const SEL_ACTIONS = [
   { id: 'rate', label: 'Rate…', icon: 'star', title: 'Set one rating on every selected track', popover: true, isAvailable: () => true, run: (c, b) => openSelRateMenu(b, c) },
   { id: 'bpm', label: 'Set BPM…', icon: 'pulse', title: 'Set one BPM on every selected track', isAvailable: () => true, run: c => bpmMany(c.ids) },
   { id: 'key', label: 'Set key…', icon: 'key', title: 'Set one musical key on every selected track', isAvailable: () => true, run: c => keyMany(c.ids) },
+  { id: 'detect', label: 'Detect BPM & key', icon: 'detect', title: 'Analyse the selected tracks and fill in missing BPM and key values (values you set and tag values are kept)', isAvailable: linkedIn, run: c => detectMany(c.ids) },
   { id: 'unalbum', label: 'Remove from album', icon: 'x', title: 'Take the selected tracks off this album (they stay in your library)', isAvailable: c => !!c.myAlbum, run: c => removeIdsFromMyAlbum(c.myAlbum, c.ids) },
   { id: 'rm-missing', label: 'Remove missing…', icon: 'trash', danger: true, title: 'Forget the selected tracks that were not found in the last folder scan', isAvailable: c => c.tracks.some(t => t.missing),
     run: c => removeTracksFromLibrary(c.tracks.filter(t => t.missing).map(t => t.id), 'selected') }
@@ -2243,7 +3228,7 @@ function loadCurrent(autoplay, dir, reveal = false) {
   if (reveal) revealPlaying();
 }
 function playableFrom(i, dir) { for (; i >= 0 && i < S.queue.length; i += dir) if (playable(S.queue[i])) return i; return -1; }
-function next() { const j = playableFrom(S.qi + 1, 1); if (j >= 0) { S.qi = j; loadCurrent(true, 1, true); } else { audio.pause(); audio.currentTime = 0; } }
+function next() { const j = playableFrom(S.qi + 1, 1); if (j >= 0) { S.qi = j; loadCurrent(true, 1, true); } else { audio.pause(); audio.currentTime = 0; markAlbums(); } }
 function prev() { const j = audio.currentTime > 3 ? -1 : playableFrom(S.qi - 1, -1); if (j < 0) { audio.currentTime = 0; return; } S.qi = j; loadCurrent(true, -1, true); }
 /* a row click (or Enter on a focused row): play that row in the context of the list as displayed */
 function playRowAt(i, fromButton) {
@@ -2271,8 +3256,23 @@ function updatePlayer() {
   }
   markPlaying();
 }
+/* album cards that hold the loaded track get a faint ring (.np-album): its folder album (key computed directly) and any of
+   My albums listing it. Same rule as the row highlight: shown while a track is loaded, paused included; gone when nothing is.
+   Only the cards whose state changes are touched (no re-render). */
+function npAlbumKeys(t) {
+  if (!t) return [];
+  const ks = [autoKeyOf(t)];
+  for (const c of S.albums.values()) if (c.trackIds && c.trackIds.includes(t.id)) ks.push(c.id);
+  return ks;
+}
+function markAlbums() {
+  const t = currentTrack(), on = t && audio.src && (!audio.paused || audio.currentTime > 0), ks = on ? npAlbumKeys(t) : [], want = new Set(ks);
+  document.querySelectorAll('.card.np-album').forEach(c => { if (!want.has(c.dataset.key)) c.classList.remove('np-album'); });
+  for (const k of want) document.querySelectorAll(`.card[data-key="${CSS.escape(k)}"]`).forEach(c => c.classList.add('np-album'));
+}
 function markPlaying() {
   document.querySelectorAll('.row.playing').forEach(r => r.classList.remove('playing'));
+  markAlbums();
   const t = currentTrack(); if (!t || !audio.src) return;
   document.querySelectorAll(`.row[data-id="${CSS.escape(t.id)}"]`).forEach(r => r.classList.add('playing'));
 }
@@ -2280,18 +3280,31 @@ function markPlaying() {
 /* ---------- events ---------- */
 function bindEvents() {
   const folderInput = $('#folderInput'), jsonInput = $('#jsonInput');
-  folderInput.addEventListener('change', async () => { const files = Array.from(folderInput.files || []); folderInput.value = ''; await handleFolder(files); });
+  folderInput.addEventListener('change', async () => {
+    if (pick) pick.done();
+    const n = folderInput.files ? folderInput.files.length : 0;
+    if (S.importing) { folderInput.value = ''; return; }
+    if (!n) { folderInput.value = ''; busyHide(); return; }
+    busyShow(`Preparing ${n.toLocaleString()} file${n === 1 ? '' : 's'}…`); await nextPaint();   // painted before the heavy work
+    const files = Array.from(folderInput.files || []); folderInput.value = '';
+    try { await handleFolder(files); } finally { if (!S.importing) busyHide(); }
+  });
   jsonInput.addEventListener('change', async () => {
-    const f = jsonInput.files[0]; jsonInput.value = ''; if (!f) return;
+    if (pick) pick.done();
+    const f = jsonInput.files[0]; jsonInput.value = ''; if (!f) { if (!S.importing) busyHide(); return; }
     try {
+      busyShow(`Reading ${f.name}…`); await nextPaint();
       const data = JSON.parse(await f.text());
       const jt = Date.parse(data.savedAt) || 0;
       if (S.tracks.size && jt && jt < S.meta.lastSaved) {
+        busyHide();
         const ok = await modal({ title: 'Import an older library?', message: `This file was saved ${fmtDate(jt)}, but your browser data changed more recently (${fmtDate(S.meta.lastSaved)}). Importing replaces ratings for the tracks in the file and your custom albums.`, okLabel: 'Import anyway', danger: true });
         if (!ok) return;
       }
+      busyShow(`Importing ${(Array.isArray(data.tracks) ? data.tracks.length : 0).toLocaleString()} tracks from ${f.name}…`); await nextPaint();
       await mergeLibrary(data, { source: f.name });
     } catch (e) { toast('Could not import ' + f.name + ': ' + e.message, 'error', 7000); }
+    finally { if (!S.importing) busyHide(); }
   });
 
   // key pickers: nothing on them reaches the row (play, drag, selection) or the app's shortcuts; the options are filled just before opening
@@ -2328,8 +3341,8 @@ function bindEvents() {
     if (el.disabled) return;
     const d = el.dataset;
     switch (d.action) {
-      case 'pick-folder': folderInput.click(); break;
-      case 'import-json': jsonInput.click(); break;
+      case 'pick-folder': pickerWait(folderInput, 'Waiting for folder…'); folderInput.click(); break;
+      case 'import-json': pickerWait(jsonInput, 'Waiting for file…'); jsonInput.click(); break;
       case 'save-library': if (!S.tracks.size && !S.albums.size) toast('Nothing to save yet. Import a folder first.', 'info'); else saveLibrary(); break;
       case 'go': e.preventDefault(); go({ name: d.view }); break;
       case 'open-album': go({ name: 'album', key: d.key }); break;
@@ -2346,6 +3359,7 @@ function bindEvents() {
       case 'bpm-edit': e.stopPropagation(); closePopover(); editBpm(el); break;
       case 'star': setRating(d.id, +d.v); if (popEl && el.closest('.rate-pop')) closePopover(); break;
       case 'theme': e.stopPropagation(); applyTheme(el.dataset.themeId, true); break;
+      case 'detect-cancel': if (Batch) { Batch.cancel = true; if (Batch.wake) Batch.wake(); el.disabled = true; $('#detectText').textContent = 'Stopping…'; } break;
       case 'settings': e.stopPropagation(); if (popEl && popEl.classList.contains('settings-pop')) closePopover(); else openSettings(el); break;
       case 'rate-open': e.stopPropagation(); if (popEl && popEl.classList.contains('rate-pop')) closePopover(); else openRatePop(el, d.id); break;
       case 'add-menu': e.stopPropagation(); if (popEl) closePopover(); else openAddMenu(el, d.id); break;
@@ -2420,6 +3434,9 @@ function bindEvents() {
     else if (id === 'albumRatingFilter') { S.meta.albumRatingFilter = e.target.value; saveMeta(); renderAlbumList(getAlbum(S.view.key)); }
     else if (id === 'ratingFilter') { S.ratingFilter = e.target.value; S.limit = 400; renderTrackList(); }
     else if (id === 'autorateToggle') setAutorate(e.target.checked);
+    else if (id === 'detectPlayToggle') { setDetectCfg({ play: e.target.checked }); const n = $('#detectNextToggle'); if (n) n.disabled = !e.target.checked; }
+    else if (id === 'detectNextToggle') setDetectCfg({ next: e.target.checked });
+    else if (id === 'detectBpmMin' || id === 'detectKeyMin') { const v = clampPct(e.target.value); e.target.value = v; setDetectCfg(id === 'detectBpmMin' ? { bpmMin: v } : { keyMin: v }); }
     else if (id === 'scopeToggle') { Scope.set(e.target.checked); const h = $('#scopeHint'); if (h) h.textContent = Scope.hint(); }
     else if (id === 'albumSort') { S.albumSort = e.target.value; renderAlbumGrid(); }
   });
@@ -2535,7 +3552,7 @@ function bindEvents() {
     // the browser's value replaces a rough estimate (CBR guess / missing) when it differs notably.
     // Header counts (Xing/Info/VBRI/TLEN), a frame-averaged VBR estimate, or a length measured at the end
     // of playback are at least as good as the browser's own guess, so they are only replaced on a big mismatch.
-    const good = ['xing', 'info', 'vbri', 'tlen', 'vbr-est', 'ended'].includes(t.durationSource);
+    const good = ['xing', 'info', 'vbri', 'tlen', 'vbr-est', 'ended', 'flac-streaminfo', 'wav'].includes(t.durationSource);
     if (Math.abs((t.duration || 0) - d) > (good ? Math.max(3, d * 0.1) : Math.max(1.5, d * 0.02))) setTrackDuration(t, d, 'played');
   });
   // at a natural end, currentTime is the exact length; keep it if the stored one was off
@@ -2546,6 +3563,9 @@ function bindEvents() {
   audio.addEventListener('ended', () => { const t = currentTrack(), d = audio.currentTime; if (t && !seekedThisTrack && isFinite(d) && d > 1 && Math.abs((t.duration || 0) - d) > 0.5) setTrackDuration(t, d, 'ended'); });
   if ('mediaSession' in navigator) { try { navigator.mediaSession.setActionHandler('nexttrack', next); navigator.mediaSession.setActionHandler('previoustrack', prev); } catch (e) { } }
   audio.addEventListener('play', updatePlayer);
+  // BPM / key detection while playing: armed on every (re)start, cancelled by pause / skip before it starts
+  audio.addEventListener('playing', playDetectArm);
+  ['pause', 'loadstart', 'emptied', 'ended'].forEach(ev => audio.addEventListener(ev, playDetectDisarm));
   // canPlayType can say "maybe" and still fail to decode: tell the user and move on instead of stalling the queue
   audio.addEventListener('error', () => {
     const t = currentTrack(), e = audio.error; if (!t || !e || !audio.src) return;
@@ -2556,7 +3576,7 @@ function bindEvents() {
   });
   audio.addEventListener('pause', updatePlayer);
   audio.addEventListener('ended', next);
-  audio.addEventListener('error', () => { const t = currentTrack(); if (t && audio.src) { toast('Could not play “' + t.title + '”, skipping.', 'error'); setTimeout(next, 600); } });
+  audio.addEventListener('error', () => { const t = currentTrack(), e = audio.error; if (t && audio.src && !(e && (e.code === 3 || e.code === 4))) { toast('Could not play “' + t.title + '”, skipping.', 'error'); setTimeout(next, 600); } });
   seek.addEventListener('input', () => { S.seeking = true; setRangeFill(seek); $('#tCur').textContent = fmtTime(seek.value / 1000 * (audio.duration || 0)); });
   seek.addEventListener('change', () => { if (audio.duration) audio.currentTime = seek.value / 1000 * audio.duration; S.seeking = false; });
   let volSave;
@@ -2629,6 +3649,14 @@ const Scope = (() => {
   }
   let D = 1;                                // pixel ratio of the canvas being drawn (set by size())
   function size(t) {
+    if (t.tile) {                            // the offscreen tile: one cell of the layout (sides swapped when it is turned ~90°)
+      size(full); const V = sv(), Wf = W, Hf = H, cw = Wf / V.cols * (1 - V.gap), ch = Hf / V.rows * (1 - V.gap), th = V.orient * 90 + V.rot;
+      const sw = Math.abs(Math.round(th / 90)) % 2 === 1;
+      lay = { Wf, Hf, cw, ch, a: th * DEG };
+      W = Math.max(1, Math.round(sw ? ch : cw)); H = Math.max(1, Math.round(sw ? cw : ch));
+      if (t.cv.width !== W || t.cv.height !== H) { t.cv.width = W; t.cv.height = H; }
+      return;
+    }
     const r = t.cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
     // with a shader effect the 2D frame is uploaded to the GPU every frame: cap it at 1.5x and about 2 megapixels
     D = t.big && fxShown ? Math.min(d, 1.5, Math.sqrt(2e6 / Math.max(1, r.width * r.height))) : d;
@@ -2669,8 +3697,8 @@ const Scope = (() => {
       return { head: fl[0], an: a, buf: new Float32Array(b.fft), gain: 1 };
     });
   }
-  function bandSync() {                     // tap the filters only while Bands is on screen
-    const want = !!src && enabled() && open && curMode().id === 'bands' && !document.hidden;
+  function bandSync() {                     // tap the filters only while Bands or Overlay is on screen
+    const want = !!src && enabled() && open && !!curMode().taps && !document.hidden;   // Bands and Overlay
     if (want === bandsOn) return;
     if (want) {
       buildBands(); bandNodes.forEach(b => src.connect(b.head)); bandsOn = true;
@@ -2710,24 +3738,26 @@ const Scope = (() => {
   /* ---- full-screen visual modes: add an entry here to add a mode (the small scope always shows mode 1) ---- */
   const MODES = [
     { id: 'wave', name: 'Waveform', draw: waveFrame, idle: waveFlat },
-    { id: 'bands', name: 'Bands', draw: bandsFrame, idle: bandsFlat }
+    { id: 'bands', name: 'Bands', draw: bandsFrame, idle: bandsFlat, taps: true },
+    { id: 'overlay', name: 'Overlay', draw: overlayFrame, idle: overlayFlat, taps: true }
   ];
   function modeIx() { const i = MODES.findIndex(m => m.id === S.meta.scopeMode); return i < 0 ? 0 : i; }
   const curMode = () => MODES[modeIx()];
   const drawerFor = t => t.big ? curMode() : MODES[0];
   let inFrame = false;
-  function flat(t = tgt()) { drawerFor(t).idle(t); if (t.big && !inFrame) fxIdle(); }
+  function flat(t = tgt()) { const d = viewT(t); drawerFor(d).idle(d); if (d !== t) compose(); if (t.big && !inFrame) fxIdle(); }
   function waveFlat(t) {
     const g = t.g; size(t); g.clearRect(0, 0, W, H); grid(t);
-    g.strokeStyle = col.base; g.globalAlpha = .7; g.lineWidth = Math.max(1, D) * (t.big ? 1.5 : 1);
-    g.beginPath(); g.moveTo(0, Math.round(H / 2) + .5); g.lineTo(W, Math.round(H / 2) + .5); g.stroke(); g.globalAlpha = 1;
+    const V = t.big ? sv() : SV0, sp = W * V.width, x0 = (W - sp) / 2;
+    g.strokeStyle = col.base; g.globalAlpha = .7; g.lineWidth = Math.max(1, D) * (t.big ? 1.5 * V.thick : 1);
+    g.beginPath(); g.moveTo(x0, Math.round(H / 2) + .5); g.lineTo(x0 + sp, Math.round(H / 2) + .5); g.stroke(); g.globalAlpha = 1;
     t.cv.classList.add('idle');
   }
   let frames = 0;
   function frame() {                        // the one draw loop: paints whichever scope is visible, in its mode, then its effect
     raf = 0;
-    const t = tgt(); inFrame = true;
-    try { if (audio.paused || document.hidden || !enabled()) flat(t); else drawerFor(t).draw(t); } finally { inFrame = false; }
+    const t = tgt(), d = viewT(t); inFrame = true;
+    try { if (audio.paused || document.hidden || !enabled()) flat(d); else drawerFor(d).draw(d); if (d !== t) compose(); } finally { inFrame = false; }
     if (t.big) t.cv.classList.contains('idle') ? fxIdle() : fxStep();
   }
   function waveFrame(t) {
@@ -2738,16 +3768,17 @@ const Scope = (() => {
     if (!data) { flat(t); if (src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
     size(t); g.clearRect(0, 0, W, H); grid(t); t.cv.classList.remove('idle'); frames++;
     // trigger on a rising zero crossing in the first half so the trace stands still instead of scrolling
-    const n = Math.min(data.length >> 1, t.big ? 2048 : 768); let t0 = 0;
+    const V = t.big ? sv() : SV0;
+    const n = t.big ? Math.max(32, Math.min(data.length - 256, Math.round(Math.min(data.length >> 1, 2048) / V.zoom))) : Math.min(data.length >> 1, 768); let t0 = 0;
     for (let i = 1; i < data.length - n; i++) if (data[i - 1] < 0 && data[i] >= 0) { t0 = i; break; }
     let peak = 0.02; for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(data[t0 + i]));
-    const amp = (t.big ? H * .3 : H / 2 - 1) * Math.min(3, 0.9 / peak);   // mild auto-gain (max 3x) so quiet passages still read, silence stays flat
-    const d = D;
-    g.lineWidth = (t.big ? 2 : 1.25) * d; g.lineJoin = 'round'; g.strokeStyle = col.line;
-    if (t.big) { g.shadowColor = col.line; g.shadowBlur = 6 * d; }
+    const amp = (t.big ? H * .3 * V.amp : H / 2 - 1) * Math.min(3, 0.9 / peak);   // mild auto-gain (max 3x) so quiet passages still read, silence stays flat
+    const d = D, sp = W * V.width, x0 = (W - sp) / 2;
+    g.lineWidth = (t.big ? 2 * V.thick : 1.25) * d; g.lineJoin = 'round'; g.strokeStyle = col.line;
+    if (t.big) { g.shadowColor = col.line; g.shadowBlur = 6 * d * V.thick; }
     g.beginPath();
     const step = t.big ? Math.max(1, Math.round(d)) : 1;
-    for (let x = 0; x <= W; x += step) { const v = data[t0 + Math.floor(x / W * n)] || 0, y = H / 2 - v * amp; x ? g.lineTo(x, y) : g.moveTo(x, y); }
+    for (let x = 0; x <= sp; x += step) { const v = data[t0 + Math.floor(x / sp * n)] || 0, y = H / 2 - v * amp; x ? g.lineTo(x0 + x, y) : g.moveTo(x0 + x, y); }
     g.stroke(); g.shadowBlur = 0;
     if (!reduce.matches) raf = requestAnimationFrame(frame);
   }
@@ -2764,7 +3795,7 @@ const Scope = (() => {
       g.beginPath(); g.moveTo(0, cy); g.lineTo(W, cy); g.stroke(); g.restore();
       g.save(); g.fillStyle = col.label; g.globalAlpha = .75; g.font = `${11 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.textBaseline = 'top';
       g.fillText(BANDS[i].name, 20 * d, l.y + 4 * d); g.restore();
-      if (idle) { g.save(); g.strokeStyle = col.bands[i]; g.globalAlpha = .35; g.lineWidth = 1.5 * d; g.beginPath(); g.moveTo(0, cy); g.lineTo(W, cy); g.stroke(); g.restore(); }
+      if (idle) { const V = sv(), sp = W * V.width, x0 = (W - sp) / 2; g.save(); g.strokeStyle = col.bands[i]; g.globalAlpha = .35; g.lineWidth = 1.5 * d * V.thick; g.beginPath(); g.moveTo(x0, cy); g.lineTo(x0 + sp, cy); g.stroke(); g.restore(); }
     });
     return L;
   }
@@ -2772,23 +3803,81 @@ const Scope = (() => {
   function bandsFrame(t) {
     bandSync();
     if (!bandsOn || !running()) { bandsFlat(t); if (src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
-    size(t); const g = t.g, d = D, L = lanesBase(t, false); t.cv.classList.remove('idle'); frames++;
+    size(t); const g = t.g, d = D, L = lanesBase(t, false), V = sv(), sp = W * V.width, x0 = (W - sp) / 2; t.cv.classList.remove('idle'); frames++;
     bandNodes.forEach((b, i) => {
       b.an.getFloatTimeDomainData(b.buf);
-      const data = b.buf, n = Math.min(BANDS[i].win, data.length >> 1), l = L[i];
+      const data = b.buf, n = Math.max(32, Math.min(data.length - 32, Math.round(Math.min(BANDS[i].win, data.length >> 1) / V.zoom))), l = L[i];
       let t0 = 0; for (let k = 1; k < data.length - n; k++) if (data[k - 1] < 0 && data[k] >= 0) { t0 = k; break; }
       let pk = 0; for (let k = 0; k < n; k++) pk = Math.max(pk, Math.abs(data[t0 + k]));
       bandPk[i] = pk;
       // per-lane auto-gain: drops at once when the band gets louder (no clipping), recovers slowly; capped so hiss stays small
       const target = Math.min(40, .85 / Math.max(pk, .004));
       b.gain = reduce.matches || target < b.gain ? target : b.gain + (target - b.gain) * .04;
-      const amp = l.h * .45 * b.gain;
-      g.save(); g.lineWidth = 1.75 * d; g.lineJoin = 'round'; g.strokeStyle = col.bands[i]; g.shadowColor = col.bands[i]; g.shadowBlur = 5 * d;
+      const amp = l.h * .45 * b.gain * V.amp;
+      g.save(); g.lineWidth = 1.75 * d * V.thick; g.lineJoin = 'round'; g.strokeStyle = col.bands[i]; g.shadowColor = col.bands[i]; g.shadowBlur = 5 * d * V.thick;
       g.beginPath(); g.rect(0, l.y, W, l.h); g.clip();
       g.beginPath();
       const step = Math.max(1, Math.round(d));
-      for (let x = 0; x <= W; x += step) { const v = data[t0 + Math.floor(x / W * n)] || 0, y = l.c - v * amp; x ? g.lineTo(x, y) : g.moveTo(x, y); }
+      for (let x = 0; x <= sp; x += step) { const v = data[t0 + Math.floor(x / sp * n)] || 0, y = l.c - v * amp; x ? g.lineTo(x0 + x, y) : g.moveTo(x0 + x, y); }
       g.stroke(); g.restore();
+    });
+    if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+  /* ---- Overlay mode: the same three band traces as Bands (same filters, colours and per-band auto-gain), drawn on top of
+     each other in one full-height lane around one centre line. Bass first (thickest), treble last (thinnest), so every band
+     stays visible; overlaps blend with 'screen' on dark themes and 'multiply' on light ones, so a crossing never hides a line.
+     A small dim legend names the colours. ---- */
+  const OV_W = [2.4, 1.8, 1.3];             // line widths: bass, mid, treble
+  const lightBg = () => lum((col.bg || [0, 0, 0]).map(x => x * 255)) > .4;
+  function overlayBase(t, idle) {
+    const g = t.g, d = D; g.clearRect(0, 0, W, H); grid(t);
+    g.save(); g.font = `${11 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.textBaseline = 'top'; g.globalAlpha = .75;
+    let x = 20 * d; const y = Math.max(8 * d, H * .1 - 18 * d);
+    BANDS.forEach((b, i) => {               // legend: a short swatch and the name, each in its band's colour
+      g.fillStyle = col.bands[i]; g.fillRect(x, y + 5 * d, 10 * d, 2 * d); x += 14 * d;
+      g.fillText(b.name, x, y); x += g.measureText(b.name).width + 14 * d;
+    });
+    g.restore();
+    if (idle) { const V = sv(), sp = W * V.width, x0 = (W - sp) / 2, cy = Math.round(H / 2) + .5; g.save(); g.strokeStyle = col.base; g.globalAlpha = .7; g.lineWidth = 1.5 * d * V.thick; g.beginPath(); g.moveTo(x0, cy); g.lineTo(x0 + sp, cy); g.stroke(); g.restore(); }
+  }
+  function overlayFlat(t) { size(t); overlayBase(t, true); t.cv.classList.add('idle'); }
+  const ovL = { cv: document.createElement('canvas') }; ovL.g = ovL.cv.getContext('2d');
+  function ovLayer(t) {                      // one scratch layer, same pixel size and transform as the target
+    if (ovL.cv.width !== t.cv.width || ovL.cv.height !== t.cv.height) { ovL.cv.width = t.cv.width; ovL.cv.height = t.cv.height; ovL.r = null; }
+    ovL.g.setTransform(t.g.getTransform()); return ovL;
+  }
+  function ovRect(m, x, y, w, h, pad, cv) {   // device-pixel box of a user-space rect (any transform), padded and clamped
+    x -= pad; y -= pad; w += 2 * pad; h += 2 * pad;
+    const xs = [], ys = []; for (const [u, v] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) { xs.push(m.a * u + m.c * v + m.e); ys.push(m.b * u + m.d * v + m.f); }
+    const l = Math.max(0, Math.floor(Math.min(...xs))), tp = Math.max(0, Math.floor(Math.min(...ys))), rr = Math.min(cv.width, Math.ceil(Math.max(...xs))), b = Math.min(cv.height, Math.ceil(Math.max(...ys)));
+    return rr > l && b > tp ? [l, tp, rr - l, b - tp] : null;
+  }
+  function overlayFrame(t) {
+    bandSync();
+    if (!bandsOn || !running()) { overlayFlat(t); if (src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); overlayBase(t, false);
+    const g = t.g, d = D, V = sv(), sp = W * V.width, x0 = (W - sp) / 2, cy = H / 2, op = lightBg() ? 'multiply' : 'screen';
+    t.cv.classList.remove('idle'); frames++;
+    bandNodes.forEach((b, i) => {
+      b.an.getFloatTimeDomainData(b.buf);
+      const data = b.buf, n = Math.max(32, Math.min(data.length - 32, Math.round(Math.min(BANDS[i].win, data.length >> 1) / V.zoom)));
+      let t0 = 0; for (let k = 1; k < data.length - n; k++) if (data[k - 1] < 0 && data[k] >= 0) { t0 = k; break; }
+      let pk = 0; for (let k = 0; k < n; k++) pk = Math.max(pk, Math.abs(data[t0 + k]));
+      bandPk[i] = pk;
+      const target = Math.min(40, .85 / Math.max(pk, .004));      // same auto-gain as Bands
+      b.gain = reduce.matches || target < b.gain ? target : b.gain + (target - b.gain) * .04;
+      const amp = H * .36 * b.gain * V.amp;
+      const L = ovLayer(t), lg = L.g;
+      if (L.r) { lg.save(); lg.setTransform(1, 0, 0, 1, 0, 0); lg.clearRect(L.r[0], L.r[1], L.r[2], L.r[3]); lg.restore(); L.r = null; }
+      lg.save(); lg.globalAlpha = .92;
+      lg.lineWidth = OV_W[i] * d * V.thick; lg.lineJoin = 'round'; lg.strokeStyle = col.bands[i]; lg.shadowColor = col.bands[i]; lg.shadowBlur = 4 * d * V.thick;
+      lg.beginPath();
+      const step = Math.max(1, Math.round(d));
+      let ylo = cy, yhi = cy;
+      for (let x = 0; x <= sp; x += step) { const v = data[t0 + Math.floor(x / sp * n)] || 0, y = cy - v * amp; if (y < ylo) ylo = y; else if (y > yhi) yhi = y; x ? lg.lineTo(x0 + x, y) : lg.moveTo(x0 + x, y); }
+      const m = lg.getTransform(); lg.stroke(); lg.restore();
+      const r = ovRect(m, x0, ylo, sp, yhi - ylo, lg.lineWidth + 3 * lg.shadowBlur + 2, L.cv); if (!r) return;
+      L.r = r; g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = op; g.drawImage(L.cv, r[0], r[1], r[2], r[3], r[0], r[1], r[2], r[3]); g.restore();
     });
     if (!reduce.matches) raf = requestAnimationFrame(frame);
   }
@@ -2804,7 +3893,7 @@ const Scope = (() => {
      about the centre and attenuated, and the new picture goes on top, so older frames recede into a fading spiral tunnel.
      Written from the article's description (not its code): the article copies the frame back into a texture with a border;
      here the shrink is a scale in the shader and the history lives in ping-pong framebuffers. The fade goes towards the theme
-     background (so it works on light themes) and always moves at least 1/255 per frame so trails die out completely
+     background (so it works on light themes) and always moves at least 1/255 per frame (except at Trails 100%) so trails die out completely
      instead of leaving a stuck ghost in an 8-bit buffer; the result is a mix of background, old frame and new frame,
      so it can never blow out to a solid colour. */
   /* Round 17 adds a settings panel: each effect may list params (the panel is built from them; values are clamped to their
@@ -2818,7 +3907,7 @@ const Scope = (() => {
        background itself never tints and the fade still ends exactly on it. */
   const FB_F = 1.6;                          // focal length of the feedback camera (screen heights): ~35° view, so tilt reads as perspective
   const FEEDBACK_FS = `
-    uniform sampler2D u_prev, u_src; uniform vec3 u_bg, u_pn, u_pu, u_pv; uniform vec2 u_res, u_off; uniform float u_keep, u_zoom, u_rot, u_hue;
+    uniform sampler2D u_prev, u_src; uniform vec3 u_bg, u_pn, u_pu, u_pv; uniform vec2 u_res, u_off; uniform float u_keep, u_min, u_zoom, u_rot, u_hue;
     const float F = ${FB_F.toFixed(2)};
     vec3 turn(vec3 c, float a) { const vec3 k = vec3(0.57735027); float ca = cos(a), sa = sin(a); return c * ca + cross(k, c) * sa + k * dot(k, c) * (1.0 - ca); }
     void main() {
@@ -2831,7 +3920,7 @@ const Scope = (() => {
       float inside = step(0.0, q.x) * step(q.x, 1.0) * step(0.0, q.y) * step(q.y, 1.0) * step(0.15 * F, dn);
       vec3 d = turn(texture2D(u_prev, q).rgb - u_bg, u_hue) * inside;
       d = clamp(d, -1.0, 1.0);
-      d = sign(d) * max(abs(d) * u_keep - 1.0 / 255.0, 0.0);         // fade towards the background, never stuck one step away
+      d = sign(d) * max(abs(d) * u_keep - u_min, 0.0);               // fade towards the background, never stuck one step away (u_min = 1/255; 0 at 100%)
       vec4 src = texture2D(u_src, v);
       gl_FragColor = vec4(clamp((u_bg + d) * (1.0 - src.a) + src.rgb, 0.0, 1.0), 1.0);
     }`;
@@ -2854,6 +3943,62 @@ const Scope = (() => {
   }
   const sgn = (x, d = 0) => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(d);
   const DEG = Math.PI / 180;
+  /* ---- Scope settings (round 18): how the full-screen picture is laid out, for every mode and effect; the small scope never
+     changes. Size controls act in the drawers; orientation, flips, mirroring and tiling are a compositing step: the mode draws
+     one tile into an offscreen canvas (sides swapped when it is turned ~90°), which is then stamped into each cell with a
+     transform (rotate, flip, mirror halves via clip + scale(−1), every other tile mirrored), so a 4×4 grid still draws the
+     waveform once. With the defaults nothing is composited and the picture is exactly the plain scope. Bands mirrors and tiles
+     its whole three-lane picture. Values are numbers (choices = index, toggles = 0/1), saved per browser in S.meta.scopeView
+     (only non-default ones; not part of the library file). type: range (default) | choice | toggle. ---- */
+  const onOff = x => x ? 'On' : 'Off';
+  const SCOPE_PARAMS = [
+    { id: 'amp', group: 'Size', label: 'Height', min: .25, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Height (amplitude) of the trace' },
+    { id: 'width', group: 'Size', label: 'Width', min: .2, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', title: 'How much of the width the trace spans' },
+    { id: 'zoom', group: 'Size', label: 'Zoom', min: .25, max: 4, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Time zoom: above 1 shows a shorter, stretched stretch of sound; below 1 a longer one' },
+    { id: 'thick', group: 'Size', label: 'Line', min: .5, max: 4, step: .1, def: 1, fmt: x => x.toFixed(1) + '×', title: 'Line thickness (and glow)' },
+    { id: 'orient', group: 'Orientation', label: 'Direction', type: 'choice', opts: ['Horizontal', 'Vertical'], min: 0, max: 1, step: 1, def: 0, title: 'Horizontal: time runs left to right. Vertical: top to bottom (turned 90°)' },
+    { id: 'rot', group: 'Orientation', label: 'Rotation', min: -180, max: 180, step: 1, def: 0, fmt: x => sgn(x) + '°', title: 'Turn the picture, on top of the direction (clockwise is +)' },
+    { id: 'flipH', group: 'Mirroring', label: 'Flip ↔', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, title: 'Mirror the picture left to right' },
+    { id: 'flipV', group: 'Mirroring', label: 'Flip ↕', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, title: 'Mirror the picture top to bottom' },
+    { id: 'mirror', group: 'Mirroring', label: 'Mirror', type: 'choice', opts: ['Off', 'Left ↔ right', 'Top ↕ bottom', 'Quad'], min: 0, max: 3, step: 1, def: 0, title: 'Show one half (or quarter) and its reflection: left half reflected onto the right, top onto the bottom, or the top-left quarter into all four' },
+    { id: 'cols', group: 'Tiling', label: 'Columns', min: 1, max: 4, step: 1, def: 1, fmt: x => String(x), title: 'Tiles across' },
+    { id: 'rows', group: 'Tiling', label: 'Rows', min: 1, max: 4, step: 1, def: 1, fmt: x => String(x), title: 'Tiles down' },
+    { id: 'alt', group: 'Tiling', label: 'Alternate', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, title: 'Mirror every other tile, so neighbouring tiles meet like reflections' },
+    { id: 'gap', group: 'Tiling', label: 'Spacing', min: 0, max: .4, step: .01, def: 0, fmt: x => Math.round(x * 100) + '%', title: 'Space around each tile (also shrinks a single scope)' }
+  ];
+  SCOPE_PARAMS.forEach(p => { if (p.type === 'choice') p.fmt = x => p.opts[x] || ''; });
+  const SV0 = (() => { const o = {}; SCOPE_PARAMS.forEach(p => o[p.id] = p.def); o.xf = false; return o; })();
+  let svC = null, lay = null;
+  function sv() {                            // current scope settings: saved ones clamped (whole numbers for steps of 1), defaults otherwise
+    if (svC) return svC;
+    const saved = (S.meta && S.meta.scopeView) || {}, o = {};
+    for (const p of SCOPE_PARAMS) {
+      const x = saved[p.id]; let v = typeof x === 'number' && Number.isFinite(x) ? Math.min(p.max, Math.max(p.min, x)) : p.def;
+      if (p.step >= 1) v = Math.round(v); o[p.id] = v;
+    }
+    o.xf = o.cols > 1 || o.rows > 1 || o.mirror > 0 || !!o.flipH || !!o.flipV || o.orient > 0 || o.rot !== 0 || o.gap > 0;
+    return svC = o;
+  }
+  const tileT = { cv: document.createElement('canvas'), big: true, tile: true }; tileT.g = tileT.cv.getContext('2d');
+  const viewT = t => t.big && !t.tile && sv().xf ? tileT : t;   // where a full-screen frame is drawn first
+  // mirror halves of a cell: [x, y, w, h] in cell units (centred), then the reflection [sx, sy] of what shows there
+  const HALVES = [[[-.5, -.5, 1, 1, 1, 1]], [[-.5, -.5, .5, 1, 1, 1], [0, -.5, .5, 1, -1, 1]], [[-.5, -.5, 1, .5, 1, 1], [-.5, 0, 1, .5, 1, -1]],
+    [[-.5, -.5, .5, .5, 1, 1], [0, -.5, .5, .5, -1, 1], [-.5, 0, .5, .5, 1, -1], [0, 0, .5, .5, -1, -1]]];
+  function compose() {                       // stamp the tile into every cell of the full canvas
+    const g = full.g, V = sv(), L = lay; if (!L) return;
+    full.cv.classList.toggle('idle', tileT.cv.classList.contains('idle'));
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, full.cv.width, full.cv.height);
+    const tw = tileT.cv.width, th = tileT.cv.height, fx = V.flipH ? -1 : 1, fy = V.flipV ? -1 : 1;
+    for (let j = 0; j < V.rows; j++) for (let i = 0; i < V.cols; i++) {
+      const cx = (i + .5) * L.Wf / V.cols, cy = (j + .5) * L.Hf / V.rows, ax = V.alt && i % 2 ? -1 : 1, ay = V.alt && j % 2 ? -1 : 1;
+      for (const [hx, hy, hw, hh, mx, my] of HALVES[V.mirror]) {
+        g.save(); g.translate(cx, cy); g.scale(ax, ay);
+        g.beginPath(); g.rect(hx * L.cw, hy * L.ch, hw * L.cw, hh * L.ch); g.clip();
+        g.scale(mx * fx, my * fy); g.rotate(L.a); g.drawImage(tileT.cv, -tw / 2, -th / 2);
+        g.restore();
+      }
+    }
+  }
   const FX = [
     { id: 'none', name: 'None' },
     { id: 'feedback', name: 'Feedback', frag: FEEDBACK_FS,
@@ -2865,7 +4010,7 @@ const Scope = (() => {
         { id: 'offY', label: 'Offset ↕', min: -.6, max: .6, step: .01, def: 0, fmt: x => sgn(x, 2), title: 'Vertical drift of the trails, screen heights per second (+ is up)' },
         { id: 'tiltX', label: 'Tilt', min: -40, max: 40, step: 1, def: 0, fmt: x => sgn(x) + '°', title: 'Perspective tilt of the feedback plane about the horizontal axis (per 1/60 s step)' },
         { id: 'tiltY', label: 'Turn', min: -40, max: 40, step: 1, def: 0, fmt: x => sgn(x) + '°', title: 'Perspective turn of the feedback plane about the vertical axis (per 1/60 s step)' },
-        { id: 'trails', label: 'Trails', min: .5, max: .97, step: .01, def: .9, fmt: x => Math.round(x * 100) + '%', title: 'How much of the picture survives each 1/60 s: higher = longer trails' },
+        { id: 'trails', label: 'Trails', min: .5, max: 1, step: .01, def: .9, eff: true, fmt: x => Math.round(x * 100) + '%', title: 'How much of the picture survives each 1/60 s: higher = longer trails; 100% never fades (capped automatically while the picture expands)' },
         { id: 'hue', label: 'Hue shift', min: -180, max: 180, step: 1, def: 0, fmt: x => sgn(x) + '°/s', title: 'Colour turn of the trails as they age, degrees per second' }
       ],
       uniforms(dt, P, st) {                    // dt in seconds; per-step amounts are per-second rates × dt (or powers of dt·60)
@@ -2977,7 +4122,9 @@ const Scope = (() => {
     gl.uniform3f(P.u('u_bg'), col.bg[0], col.bg[1], col.bg[2]); gl.uniform2f(P.u('u_res'), w, h); gl.uniform1f(P.u('u_time'), fxTime);
     const fst = fxSt[f.id] || (fxSt[f.id] = {}); if (fbs) fst.asp = fbs.w / fbs.h;
     const un = f.uniforms ? f.uniforms(dt, fxParams(f), fst) : {};
-    gl.uniform1f(P.u('u_keep'), Math.pow(un.keep != null ? un.keep : f.keep || 0, dt * 60) * keep);
+    const kk = Math.pow(un.keep != null ? un.keep : f.keep || 0, dt * 60) * keep;
+    gl.uniform1f(P.u('u_keep'), kk); gl.uniform1f(P.u('u_min'), kk >= .99995 ? 0 : 1 / 255);   // Trails 100%: nothing fades (the composite stays clamped to 0..1)
+    if (un.keep != null) { fst.keep = un.keep; if (panelOpen) effSync(f, un.keep); }
     for (const k in un) { if (k === 'keep') continue; const x = un[k], l = P.u(k); if (Array.isArray(x)) gl['uniform' + x.length + 'fv'](l, x); else gl.uniform1f(l, x); }
     fxU = un;
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -3000,25 +4147,48 @@ const Scope = (() => {
     sfFx.textContent = text; sfFx.classList.add('show');
     clearTimeout(fxLabelT); fxLabelT = setTimeout(() => sfFx.classList.remove('show'), ms);
   }
-  /* ---- settings panel (Enter, or ⚙): built from the effect's params; values apply live and are saved per browser ---- */
-  const panel = $('#sfPanel'), gear = $('#sfGear'), prows = $('#sfpRows');
+  /* ---- settings panel (Enter, or ⚙), one panel with two separate parts: "Scope" (always; SCOPE_PARAMS, S.meta.scopeView) and
+     the effect's own settings below it (only for an effect that has params; FX[i].params, S.meta.scopeFxParams). Each part is
+     built from its schema and has its own Reset all; values apply live and are saved per browser. ---- */
+  const panel = $('#sfPanel'), gear = $('#sfGear'), prows = $('#sfpRows'), srows = $('#sfpScopeRows'), fxSec = $('#sfpFx');
+  const SEC = { scope: { rows: srows, pre: 'sfs-', schema: () => SCOPE_PARAMS, vals: () => sv(), set: (id, x) => setView(id, x) },
+    fx: { rows: prows, pre: 'sfp-', schema: () => FX[fxIx()].params || [], vals: () => fxParams(), set: (id, x) => setParam(id, x) } };
+  function rowHTML(p, x, pre) {
+    const id = pre + p.id, t = esc(p.title), v = esc(p.fmt(x));
+    const ctl = p.type === 'choice' ? `<select id="${id}" title="${t}">${p.opts.map((o, i) => `<option value="${i}"${i === x ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`
+      : p.type === 'toggle' ? `<input type="checkbox" id="${id}"${x ? ' checked' : ''} title="${t}"><output for="${id}">${v}</output>`
+      : `<input type="range" id="${id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${x}" aria-valuetext="${v}" title="${t}"><output for="${id}">${v}</output>`;
+    return `<div class="sfp-row" data-p="${p.id}"><label for="${id}" title="${t}">${esc(p.label)}</label>${ctl}<button type="button" class="sfp-r" aria-label="Reset ${esc(p.label)}" title="Reset ${esc(p.label)} to ${esc(p.fmt(p.def))}">↺</button>` +
+      (p.eff ? `<small class="sfp-eff" hidden></small>` : '') + `</div>`;
+  }
+  function rowsHTML(list, vals, pre) {
+    let g = null; return list.map(p => (p.group && p.group !== g ? `<div class="sfp-grp" aria-hidden="true">${esc(g = p.group)}</div>` : '') + rowHTML(p, vals[p.id], pre)).join('');
+  }
   function panelBuild() {
-    const f = FX[fxIx()], P = fxParams(f);
-    $('#sfpTitle').textContent = f.name + ' settings';
-    prows.innerHTML = f.params.map(p => `<div class="sfp-row" data-p="${p.id}"><label for="sfp-${p.id}" title="${esc(p.title)}">${esc(p.label)}</label>` +
-      `<input type="range" id="sfp-${p.id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${P[p.id]}" aria-valuetext="${esc(p.fmt(P[p.id]))}" title="${esc(p.title)}">` +
-      `<output for="sfp-${p.id}">${esc(p.fmt(P[p.id]))}</output><button type="button" class="sfp-r" aria-label="Reset ${esc(p.label)}" title="Reset ${esc(p.label)} to ${esc(p.fmt(p.def))}">↺</button></div>`).join('');
+    srows.innerHTML = rowsHTML(SCOPE_PARAMS, sv(), 'sfs-');
+    const f = FX[fxIx()], has = hasParams(f);
+    fxSec.hidden = !has;
+    if (has) { $('#sfpTitle').textContent = f.name; prows.innerHTML = rowsHTML(f.params, fxParams(f), 'sfp-'); const st = fxSt[f.id]; if (st && st.keep != null) effSync(f, st.keep); }
+    else prows.innerHTML = '';
     panelNote();
   }
   function panelNote() {
     const n = $('#sfpNote'), f = FX[fxIx()];
-    n.textContent = reduce.matches ? `${f.name} is off while reduced motion is on; changes are still saved.` : !fxShown && glFailed ? `${f.name} isn’t available here (no WebGL).` : '';
+    n.textContent = !hasParams(f) ? '' : reduce.matches ? `${f.name} is off while reduced motion is on; changes are still saved.` : !fxShown && glFailed ? `${f.name} isn’t available here (no WebGL).` : '';
     n.hidden = !n.textContent;
   }
-  function panelRow(p, x) {                  // reflect one value in its row
-    const r = prows.querySelector(`[data-p="${p.id}"]`); if (!r) return;
-    const inp = r.querySelector('input'); if (+inp.value !== x) inp.value = x;
-    inp.setAttribute('aria-valuetext', p.fmt(x)); r.querySelector('output').textContent = p.fmt(x);
+  function effSync(f, keep) {                 // "Effective 85%" under a param the effect may cap (Trails, while the picture expands)
+    const p = (f.params || []).find(q => q.eff); if (!p) return;
+    const el = prows.querySelector(`[data-p="${p.id}"] .sfp-eff`); if (!el) return;
+    const want = fxParams(f)[p.id], txt = keep < want - .005 ? `Effective ${Math.round(keep * 100)}% (capped while the picture expands)` : '';
+    if (el.textContent !== txt) { el.textContent = txt; el.hidden = !txt; }
+  }
+  function panelRow(p, x, sec = 'fx') {      // reflect one value in its row
+    const r = SEC[sec].rows.querySelector(`[data-p="${p.id}"]`); if (!r) return;
+    const c = r.querySelector('input,select');
+    if (c.type === 'checkbox') c.checked = !!x; else if (+c.value !== x) c.value = x;
+    if (c.type === 'range') c.setAttribute('aria-valuetext', p.fmt(x));
+    const o = r.querySelector('output'); if (o) o.textContent = p.fmt(x);
   }
   function setParam(id, x) {
     const f = FX[fxIx()], p = (f.params || []).find(q => q.id === id); if (!p) return;
@@ -3030,27 +4200,44 @@ const Scope = (() => {
     clearTimeout(paramT); paramT = setTimeout(saveMeta, 250);      // a drag fires many inputs: save once it settles
     if (fxShown && !raf) { settle = 0; fxIdle(); }                 // paused: show the new look while the trails settle again
   }
-  function resetAll() { const f = FX[fxIx()]; (f.params || []).forEach(p => setParam(p.id, p.def)); }
+  function setView(id, x) {
+    const p = SCOPE_PARAMS.find(q => q.id === id); if (!p) return;
+    x = Number.isFinite(+x) ? Math.min(p.max, Math.max(p.min, +x)) : p.def; if (p.step >= 1) x = Math.round(x);
+    const o = S.meta.scopeView = S.meta.scopeView || {};
+    if (Math.abs(x - p.def) < 1e-9) delete o[id]; else o[id] = x;
+    if (!Object.keys(o).length) delete S.meta.scopeView;
+    svC = null; panelRow(p, x, 'scope');
+    clearTimeout(paramT); paramT = setTimeout(saveMeta, 250);
+    if (open && !raf) flat(full);                                   // paused: redraw the still picture in the new layout
+  }
+  function resetAll(sec = 'fx') { const S_ = SEC[sec]; S_.schema().forEach(p => S_.set(p.id, p.def)); }
   function panelShow(on, focusIt) {
-    on = !!on && open && hasParams();
+    on = !!on && open;
     if (on !== panelOpen) {
       panelOpen = on; panel.hidden = !on; gear.setAttribute('aria-expanded', String(on));
       if (on) panelBuild();
       else { clearTimeout(paramT); if (paramT) saveMeta(); paramT = 0; if (panel.contains(document.activeElement)) fs.focus({ preventScroll: true }); }
     }
-    if (on && focusIt) { const i = panel.querySelector('input'); if (i) i.focus({ preventScroll: true }); }
+    if (on && focusIt) { const i = panel.querySelector('input,select'); if (i) i.focus({ preventScroll: true }); }
   }
-  function gearSync() {                       // ⚙ and "Enter settings" only for effects that have settings
-    const has = open && hasParams(); gear.hidden = !has; $('#scopeFull .sf-enter').hidden = !has;
-    if (panelOpen) { if (has) panelBuild(); else panelShow(false); }
+  const panelCtl = () => [...panel.querySelectorAll('input,select,button')].filter(x => !x.closest('[hidden]'));
+  function gearSync() {                       // ⚙ and "Enter settings" whenever the view is open; the effect part follows the effect
+    gear.hidden = !open; $('#scopeFull .sf-enter').hidden = !open;
+    if (panelOpen) panelBuild();
   }
-  panel.addEventListener('input', e => { const r = e.target.closest('.sfp-row'); if (r && e.target.type === 'range') setParam(r.dataset.p, +e.target.value); });
-  panel.addEventListener('dblclick', e => { const r = e.target.closest('.sfp-row'); if (r && e.target.type === 'range') { const f = FX[fxIx()]; setParam(r.dataset.p, f.params.find(p => p.id === r.dataset.p).def); } });
+  const rowSec = r => r.closest('[data-sec]').dataset.sec;
+  const onCtl = e => {
+    const c = e.target, r = c.closest('.sfp-row'); if (!r || !c.matches('input,select')) return;
+    SEC[rowSec(r)].set(r.dataset.p, c.type === 'checkbox' ? (c.checked ? 1 : 0) : +c.value);
+  };
+  panel.addEventListener('input', onCtl); panel.addEventListener('change', onCtl);
+  const defOf = (sec, id) => SEC[sec].schema().find(p => p.id === id).def;
+  panel.addEventListener('dblclick', e => { const r = e.target.closest('.sfp-row'); if (r && e.target.type === 'range') { const sec = rowSec(r); SEC[sec].set(r.dataset.p, defOf(sec, r.dataset.p)); } });
   panel.addEventListener('click', e => {      // clicks in the panel never reach the view (which would close it)
     e.stopPropagation();
     const b = e.target.closest('button'); if (!b) return;
-    if (b.classList.contains('sfp-r')) setParam(b.closest('.sfp-row').dataset.p, FX[fxIx()].params.find(p => p.id === b.closest('.sfp-row').dataset.p).def);
-    else if (b.classList.contains('sfp-all')) resetAll();
+    if (b.classList.contains('sfp-r')) { const r = b.closest('.sfp-row'), sec = rowSec(r); SEC[sec].set(r.dataset.p, defOf(sec, r.dataset.p)); }
+    else if (b.classList.contains('sfp-all')) resetAll(b.closest('[data-sec]').dataset.sec);
     else if (b.classList.contains('sfp-x')) panelShow(false);
   });
   gear.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); panelShow(!panelOpen, e.detail === 0); });
@@ -3086,7 +4273,7 @@ const Scope = (() => {
   }
   function expand() {
     if (open || !enabled()) return;
-    open = true; fs.hidden = false; meta();
+    open = true; fs.hidden = false; meta(); svC = null;
     if (an) { an.fftSize = 8192; buf = new Float32Array(an.fftSize); }
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
     $('#scopeFull .sf-n').textContent = MODES.length;
@@ -3119,26 +4306,26 @@ const Scope = (() => {
   }
   btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); expand(); });
   fs.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (Date.now() - swipeAt < 600) return; if (panelOpen) return panelShow(false); collapse(); });
-  window.addEventListener('keydown', e => {       // while open, these keys belong to the view: Esc / Enter / Space close, ← → and 1–9 switch modes, ↑ ↓ effects
-    if (!open) return;                              // Enter opens / closes the settings when the effect has some; Esc closes them first
+  window.addEventListener('keydown', e => {       // while open, these keys belong to the view: Esc / Space close, ← → and 1–9 switch modes, ↑ ↓ effects
+    if (!open) return;                              // Enter opens / closes the settings panel; Esc closes it first
     if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); if (panelOpen) panelShow(false); else collapse(); return; }
     const sp = e.key === ' ' || e.code === 'Space';
     if (panelOpen && panel.contains(e.target)) {    // inside the panel: the controls' own keys (sliders, buttons), nothing else
       e.stopImmediatePropagation();
       const btn = e.target.matches('button');
       if (e.key === 'Enter' && !btn) { e.preventDefault(); panelShow(false); }
-      else if (sp && !btn) e.preventDefault();
+      else if (sp && e.target.type === 'range') e.preventDefault();   // (Space still toggles a checkbox / opens a list)
       else if (e.key === 'Tab') {                   // Tab cycles inside the panel
-        const c = [...panel.querySelectorAll('input,button')], i = c.indexOf(e.target);
+        const c = panelCtl(), i = c.indexOf(e.target);
         if (e.shiftKey && i <= 0) { e.preventDefault(); c[c.length - 1].focus(); } else if (!e.shiftKey && i === c.length - 1) { e.preventDefault(); c[0].focus(); }
       }
       return;
     }
     if (e.target === gear && (sp || e.key === 'Enter')) { e.stopImmediatePropagation(); if (e.key === 'Enter') { e.preventDefault(); panelShow(!panelOpen, true); } return; }
-    if (e.key === 'Enter' && hasParams()) { e.preventDefault(); e.stopImmediatePropagation(); panelShow(!panelOpen, true); return; }
-    if (e.key === 'Tab' && panelOpen) { e.preventDefault(); e.stopImmediatePropagation(); panel.querySelector('input').focus(); return; }
+    if (e.key === 'Enter') { e.preventDefault(); e.stopImmediatePropagation(); panelShow(!panelOpen, true); return; }
+    if (e.key === 'Tab' && panelOpen) { e.preventDefault(); e.stopImmediatePropagation(); panelCtl()[0].focus(); return; }
     if (sp && panelOpen) { e.preventDefault(); e.stopImmediatePropagation(); return; }
-    if (e.key === 'Enter' || sp) { e.preventDefault(); e.stopImmediatePropagation(); collapse(); return; }
+    if (sp) { e.preventDefault(); e.stopImmediatePropagation(); collapse(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const n = MODES.length;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopImmediatePropagation(); setMode((modeIx() + (e.key === 'ArrowRight' ? 1 : n - 1)) % n); return; }
@@ -3166,7 +4353,7 @@ const Scope = (() => {
   const relayout = () => { if (!raf) flat(); };
   window.addEventListener('resize', relayout); window.addEventListener('orientationchange', () => setTimeout(relayout, 250));
   if (reduce.addEventListener) reduce.addEventListener('change', () => { fxApply(); start(); if (panelOpen) panelNote(); });
-  function sync() { btn.hidden = !enabled(); if (!enabled()) collapse(); bandSync(); readColors(); if (enabled()) { flat(); start(); } else stop(); }
+  function sync() { svC = null; btn.hidden = !enabled(); if (!enabled()) collapse(); bandSync(); readColors(); if (enabled()) { flat(); start(); } else stop(); }
   function set(on) {
     S.meta.scope = !!on; saveMeta(); route(); sync();
     if (on) gesture();                     // called from the checkbox's change: still inside the user's click
@@ -3197,6 +4384,8 @@ const Scope = (() => {
   return { enabled, set, sync, hint, expand, collapse, modes: () => MODES.map(m => m.id), mode: () => curMode().id,
     effects: () => FX.map(f => f.id), effect: () => FX[fxIx()].id, fxStats,
     fxParams: () => ({ ...fxParams() }), fxSchema: () => (FX[fxIx()].params || []).map(({ fmt, ...p }) => p), setParam,
+    view: () => { const { xf, ...v } = sv(); return { ...v, composited: xf }; }, viewSchema: () => SCOPE_PARAMS.map(({ fmt, ...p }) => p), setView,
+    layout: () => sv().xf && lay ? { ...lay, tile: [tileT.cv.width, tileT.cv.height] } : null, tileCanvas: () => tileT.cv,
     fxUniforms: (id, dt, P, st = {}) => { const f = FX.find(x => x.id === id); return f.uniforms(dt, { ...fxParams(f), ...P }, st); },
     fx: () => ({ id: FX[fxIx()].id, shown: fxShown, gl: gl ? (glv === 2 ? 'webgl2' : 'webgl') : null, failed: glFailed, lost, frames: fxFrames, fbos: fbs ? [fbs.w, fbs.h] : null,
       canvas: [fxCv.width, fxCv.height], hidden: fxCv.hidden, srcHidden: fcv.classList.contains('fx-src'), settle, settling: !!settleRaf, label: sfFx.textContent, labelOn: sfFx.classList.contains('show'), panel: panelOpen, gear: !gear.hidden, u: fxU }),
