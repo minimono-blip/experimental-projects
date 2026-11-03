@@ -514,6 +514,7 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
 .scope-full .sfp-row input[type=checkbox]{width:16px;height:16px;justify-self:start;accent-color:var(--accent2);-webkit-appearance:auto;appearance:auto}
 .scope-full .sfp-eff{grid-column:2/-1;margin:-3px 0 2px;font-size:11px;color:var(--text);opacity:.85}
 .scope-full .sfp-eff[hidden]{display:none}
+.scope-full .sfp-info{opacity:.78;font-size:10.5px}
 .scope-full .sfp-foot span{color:var(--text);font-size:11px}
 .scope-full .sf-panel :focus{outline:none}
 .scope-full .sf-panel :focus-visible,.scope-full .sf-panel input:focus{outline:2px solid var(--accent2);outline-offset:2px;border-radius:4px}
@@ -3214,6 +3215,7 @@ function applyTheme(id, save) {
   try { localStorage.setItem('mp3lib.theme', id); } catch (e) { }
   if (popEl) popEl.querySelectorAll('.theme-opt').forEach(b => b.setAttribute('aria-checked', b.dataset.themeId === id ? 'true' : 'false'));
   if (save) saveMeta();
+  window.dispatchEvent(new CustomEvent('mp3lib-theme', { detail: id }));   // round 34: the full-screen scope's Theme list follows
 }
 if (sysLight) { const f = () => { if (S.meta.theme === 'system') applyTheme('system'); }; sysLight.addEventListener ? sysLight.addEventListener('change', f) : sysLight.addListener(f); }
 function themeSwatch(id) {
@@ -4387,6 +4389,7 @@ const Scope = (() => {
     if (!src) return;
     try { src.disconnect(); an.disconnect(); } catch (e) { }
     bandsOn = false;                         // src.disconnect() also dropped the band taps
+    xyOn = false;                            // (and the XY splitter, round 35)
     if (enabled()) { src.connect(an); an.connect(ac.destination); } else src.connect(ac.destination);
     bandSync();
   }
@@ -4410,6 +4413,7 @@ const Scope = (() => {
   }
   function fxTaps() { const f = FX[fxIx()]; return !!(f && f.taps) && !reduce.matches; }
   function bandSync() {                     // tap the filters only while Bands or Overlay is on screen
+    xySync();                                // round 35: the XY splitter, only while XY is on screen
     const want = !!src && enabled() && open && (!!curMode().taps || fxTaps()) && !document.hidden;   // (+ an effect that reacts to the bands)   // Bands and Overlay
     if (want === bandsOn) return;
     if (want) {
@@ -4447,6 +4451,144 @@ const Scope = (() => {
     resume().then(ok => { if (ok) { connect(); start(); } });
   }
   ['pointerdown', 'keydown', 'touchend'].forEach(ev => window.addEventListener(ev, gesture, { capture: true, passive: true }));
+  /* ---- Mode 9 'XY' (round 35): a true X-Y oscilloscope / vectorscope. The left channel moves the beam across (X), the right
+     channel up and down (Y), so two tones draw Lissajous figures (the same frequency 90° apart: a circle). A mono source, or two
+     identical channels, has no second signal, so Y falls back to the same signal delayed by Mono delay (a phase plot).
+     Looks like a phosphor CRT: the beam is brighter where it moves slowly and dimmer on fast strokes (brightness ~ 1 / speed),
+     has a soft glow, and the screen's afterglow fades over Persistence seconds.
+     Idea after Shadertoy sdfyzN "XY Oscilloscope Sound Drawings" by Anthony Hall (amhall), https://www.shadertoy.com/view/sdfyzN,
+     CC BY-NC-SA 3.0. Our own code (2D canvas); no shader code is copied.
+     Taps: a ChannelSplitter off the source into two analysers. Like the band taps they are never connected to the output, so
+     what you hear is unchanged, and they are connected only while XY is on screen. ---- */
+  const XY_FFT = 4096;
+  let xyN = null, xyOn = false, xyInfo = { stereo: false, mono: false, n: 0, delay: 0, ms: 0, peak: 0, rmsL: 0, rmsR: 0 };
+  function xySync() {
+    const want = !!src && enabled() && open && curMode().id === 'xy' && !document.hidden;
+    if (want === xyOn) return;
+    if (want) {
+      if (!xyN) {
+        const sp = ac.createChannelSplitter(2), mk = () => { const a = ac.createAnalyser(); a.fftSize = XY_FFT; a.smoothingTimeConstant = 0; return a; };
+        xyN = { sp, L: mk(), R: mk(), bl: new Float32Array(XY_FFT), br: new Float32Array(XY_FFT) };
+        sp.connect(xyN.L, 0); sp.connect(xyN.R, 1);   // a mono source up-mixes discretely: channel 1 is silent -> mono fallback
+      }
+      src.connect(xyN.sp); xyOn = true;
+    }
+    else { if (xyN) try { src.disconnect(xyN.sp); } catch (e) { } xyOn = false; }
+  }
+  // the phosphor: the trace is drawn into this buffer, which fades a little every frame, then copied onto the screen
+  const xyP = { cv: document.createElement('canvas'), key: '', last: 0, keep: 1, hot: '' }; xyP.g = xyP.cv.getContext('2d');
+  const xyX = new Float32Array(XY_FFT), xyY = new Float32Array(XY_FFT), xyLen = new Float32Array(XY_FFT);
+  const xyLight = () => { const b = col.bg || [0, 0, 0]; return .2126 * b[0] + .7152 * b[1] + .0722 * b[2] > .5; };
+  const xyBox = () => { const S = Math.min(W, H) * .86; return { cx: W / 2, cy: H / 2, S }; };   // the square screen; ±1 at its edge (Gain 1×)
+  function xyGrat(t, V) {                   // graticule: 8 × 8 divisions, centre axes with minor ticks (Graticule, and Display › Grid / G)
+    if (!t.big || !V.grid || !V.xgrat) return;
+    const g = t.g, d = D, { cx, cy, S } = xyBox(), x0 = Math.round(cx - S / 2) + .5, y0 = Math.round(cy - S / 2) + .5, q = S / 8;
+    g.save(); g.strokeStyle = col.grid; g.lineWidth = d;
+    g.globalAlpha = .3; g.beginPath();
+    for (let i = 1; i < 8; i++) if (i !== 4) { const o = Math.round(q * i); g.moveTo(x0 + o, y0); g.lineTo(x0 + o, y0 + S); g.moveTo(x0, y0 + o); g.lineTo(x0 + S, y0 + o); }
+    g.stroke();
+    g.globalAlpha = .6; g.strokeRect(x0, y0, Math.round(S), Math.round(S));
+    g.beginPath(); const mx = Math.round(cx) + .5, my = Math.round(cy) + .5;
+    g.moveTo(x0, my); g.lineTo(x0 + S, my); g.moveTo(mx, y0); g.lineTo(mx, y0 + S);
+    for (let i = 1; i < 40; i++) { const o = Math.round(q / 5 * i), k = (i % 5 ? 3 : 6) * d; g.moveTo(x0 + o, my - k); g.lineTo(x0 + o, my + k); g.moveTo(mx - k, y0 + o); g.lineTo(mx + k, y0 + o); }
+    g.stroke();
+    if (V.xms) {                             // mid / side: the left and right axes are the diagonals
+      g.globalAlpha = .3; g.setLineDash([4 * d, 6 * d]); g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + S, y0 + S); g.moveTo(x0 + S, y0); g.lineTo(x0, y0 + S); g.stroke();
+    }
+    g.restore();
+  }
+  function xyLabel(t, V, txt) {
+    if (!t.big || !V.text || !txt) return;
+    const g = t.g, d = D; g.save(); g.fillStyle = col.label; g.globalAlpha = .75; g.font = `${11 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.textBaseline = 'top';
+    g.fillText(txt, 20 * d, 16 * d); g.restore();
+  }
+  function xyFlat(t) {                      // idle: the graticule and the beam resting in the centre
+    const g = t.g; size(t); g.clearRect(0, 0, W, H); const V = sv(); xyGrat(t, V);
+    g.save(); g.fillStyle = col.base; g.globalAlpha = .7; g.beginPath(); g.arc(W / 2, H / 2, Math.max(1, 1.5 * D * V.xbeam), 0, Math.PI * 2); g.fill(); g.restore();
+    xyLabel(t, V, V.xms ? 'XY · mid / side' : 'XY · X = left, Y = right');
+    xyP.key = ''; t.cv.classList.add('idle');
+  }
+  function xyFrame(t) {
+    let fd = feed ? feed() : null;            // Scope.setFeed: an array (mono) or { l, r } (stereo)
+    if (!fd) {
+      xySync();
+      if (!xyOn || !running()) { xyFlat(t); if (src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    }
+    const T0 = performance.now();
+    size(t); const g = t.g, V = sv(), d = D; t.cv.classList.remove('idle'); frames++;
+    let Ld, Rd, rate = ac ? ac.sampleRate : 48000;
+    if (fd) { Ld = fd.l || fd; Rd = fd.r || fd; }
+    else { xyN.L.getFloatTimeDomainData(xyN.bl); xyN.R.getFloatTimeDomainData(xyN.br); Ld = xyN.bl; Rd = xyN.br; }
+    const N = Math.min(Ld.length, Rd.length, XY_FFT);
+    let sl = 0, sr = 0, dm = 0;
+    for (let i = Ld.length - N, j = Rd.length - N, e = 0; e < N; e++, i++, j++) { const a = Ld[i], b = Rd[j]; sl += a * a; sr += b * b; const x = Math.abs(a - b); if (x > dm) dm = x; }
+    const rl = Math.sqrt(sl / N), rr = Math.sqrt(sr / N);
+    const mono = (rr < 1e-4 && rl >= 1e-4) || dm < 2e-4;   // right silent (a mono file) or both channels the same
+    const now = performance.now(), dt = xyP.last ? Math.min(.25, Math.max(1 / 240, (now - xyP.last) / 1000)) : 1 / 60; xyP.last = now;
+    const dS = mono ? Math.round(V.xdelay * rate / 1000) : 0;
+    // a 60th of a second of sound (+ a little overlap) each frame: at 60 fps that is all of it; a slower frame skips some rather than
+    // drawing more (more beam per frame would make every frame slower still)
+    // Zoom (r35c): 1/60 s / Zoom of sound (below 1 more, above 1 less; at most the analyser's 4096 samples)
+    const n0 = Math.round(rate / 60) + 64, n = Math.max(2, Math.min(N - dS - 1, Math.round(rate / 60 / V.zoom) + 64));
+    const mg = .75 * d, st = Math.max(1, n / n0);   // merge distance; and a longer sweep keeps at most every st-th sample, so it costs about what 1/60 s does
+    const { cx, cy, S } = xyBox(), A = S / 2 * V.xgain, k = Math.SQRT1_2, oL = Ld.length - n, oR = Rd.length - n;
+    // Width / Height (r35d) stretch the screen's own axes, after Direction / Rotation / Flip: the tile is turned by lay.a when it
+    // is composited, so the stretch here is R(-a)·diag(Width, Height)·R(a) (a flip commutes with it); a = 0 gives exactly X·Width, Y·Height
+    const ra = t.tile && lay ? lay.a : 0, snap = x => Math.abs(x) < 1e-9 ? 0 : x, rc = snap(Math.cos(ra)), rs = snap(Math.sin(ra)), sW = V.width, sH = V.amp;   // whole quarter turns exact
+    const iso = sW === sH, AX = iso ? A * sW : A * (sW * rc * rc + sH * rs * rs), AY = iso ? A * sH : A * (sW * rs * rs + sH * rc * rc), AXY = iso ? 0 : A * (rc * rs * (sH - sW));
+    // the beam's points; a sample closer than ~1 px to the last point kept is merged into it (xyLen = the speed per sample there)
+    let peak = 0, sum = 0, m = 0, sx = 0, sy = 0, c = 0, jl = 0;
+    for (let j = 0; j < n; j++) {
+      let a = Ld[oL + j], b = mono ? Ld[oL + j - dS] : Rd[oR + j];
+      if (V.xms) { const u = (b - a) * k, v = (a + b) * k; a = u; b = v; }   // rotate 45°: mono stands upright
+      peak = Math.max(peak, Math.abs(a), Math.abs(b));
+      const x = cx + a * AX - b * AXY, y = cy - b * AY + a * AXY;   // Width / Height stretch the screen's X / Y
+      if (j) { sum += Math.hypot(x - sx, y - sy); c++; }
+      sx = x; sy = y;
+      const l = m ? Math.hypot(x - xyX[m - 1], y - xyY[m - 1]) : 0;
+      if (!m || (l >= mg && j - jl >= st) || j === n - 1) { xyX[m] = x; xyY[m] = y; xyLen[m] = m ? l / c : 0; m++; c = 0; jl = j; }
+    }
+    // the phosphor buffer: (re)made when the size, target or colours change, then faded towards nothing
+    const P = xyP, pg = P.g, light = xyLight(), key = W + 'x' + H + '|' + !!t.tile + '|' + col.line + '|' + (col.bg || '');
+    if (P.key !== key) {
+      P.cv.width = W; P.cv.height = H; P.key = key; P.keep = 1; pg.clearRect(0, 0, W, H);
+      const c = cssRgb(col.line); P.hot = 'rgb(' + c.map(x => Math.round((x + (1 - x) * .6) * 255)).join(', ') + ')';
+    }
+    else if (!(V.xpersist > 0)) pg.clearRect(0, 0, W, H);
+    else {
+      // fade to a tenth in Persistence seconds. 8-bit alpha rounds tiny fades away, so the fade is applied in steps of >= 20%
+      P.keep *= Math.pow(.1, dt / V.xpersist);
+      if (P.keep < .8) { pg.save(); pg.globalCompositeOperation = 'destination-out'; pg.fillStyle = `rgba(0, 0, 0, ${1 - P.keep})`; pg.fillRect(0, 0, W, H); pg.restore(); P.keep = 1; }
+    }
+    // brightness ~ 1 / beam speed, relative to the mean speed this frame; bucketed into 8 levels. Each level is drawn as polylines
+    // (a run of neighbouring segments is one subpath), and the glow is one wide stroke of the whole sweep: few, long paths
+    const mean = Math.max(sum / Math.max(1, n - 1), .25 * d), bw = 1.6 * d * V.xbeam * V.thick, LV = 8, bk = [];
+    for (let q = 0; q < LV; q++) bk.push([]);
+    for (let j = 1; j < m; j++) { const b = Math.min(1, .7 * Math.pow(mean / Math.max(xyLen[j], .05 * d), .7)); bk[Math.min(LV - 1, Math.floor(b * LV))].push(j); }
+    const seg = (q) => { pg.beginPath(); let e = -1; for (const j of bk[q]) { if (j - 1 !== e) pg.moveTo(xyX[j - 1], xyY[j - 1]); pg.lineTo(xyX[j], xyY[j]); e = j; } };
+    pg.save(); pg.lineCap = 'round'; pg.lineJoin = 'bevel'; pg.globalCompositeOperation = light ? 'source-over' : 'lighter';   // bevel: round joins at every point cost far more, and look the same on a curve
+    if (V.xglow > 0) {
+      pg.beginPath(); pg.moveTo(xyX[0], xyY[0]); for (let j = 1; j < m; j++) pg.lineTo(xyX[j], xyY[j]);
+      pg.strokeStyle = col.line; pg.globalAlpha = Math.min(1, .06 * V.xglow); pg.lineWidth = bw * (3 + 5 * V.xglow); pg.stroke();
+    }
+    for (let q = 0; q < LV; q++) {
+      if (!bk[q].length) continue;
+      const a = (q + .5) / LV; seg(q);
+      pg.strokeStyle = col.line; pg.globalAlpha = a; pg.lineWidth = bw; pg.stroke();
+      if (!light && q >= 5) { pg.strokeStyle = P.hot; pg.globalAlpha = (q - 4) / 4 * .8; pg.lineWidth = bw * .45; pg.stroke(); }   // the hot centre of a slow beam
+    }
+    pg.restore();
+    // the screen: graticule, the outline halo under the newest sweep (Outline > 0), then the phosphor
+    g.clearRect(0, 0, W, H); xyGrat(t, V);
+    if (V.outline > 0) {
+      g.save(); g.beginPath(); g.moveTo(xyX[0], xyY[0]); for (let j = 1; j < m; j++) g.lineTo(xyX[j], xyY[j]);
+      g.lineJoin = 'bevel'; g.lineCap = 'round'; g.strokeStyle = oCol(V); g.lineWidth = bw + 2 * V.outline * d; g.stroke(); g.restore();
+    }
+    g.drawImage(P.cv, 0, 0);
+    xyLabel(t, V, mono ? `XY · mono: Y = X delayed ${V.xdelay.toFixed(2)} ms` : V.xms ? 'XY · mid / side' : 'XY · X = left, Y = right');
+    xyInfo = { stereo: !mono, mono, n, pts: m, delay: dS, ms: performance.now() - T0, peak, rmsL: rl, rmsR: rr };
+    if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
   /* ---- full-screen visual modes: add an entry here to add a mode (the small scope always shows mode 1) ---- */
   const MODES = [
     { id: 'wave', name: 'Waveform', draw: waveFrame, idle: waveFlat },
@@ -4454,7 +4596,10 @@ const Scope = (() => {
     { id: 'overlay', name: 'Overlay', draw: overlayFrame, idle: overlayFlat, taps: true },
     { id: 'rings', name: 'Rings', draw: ringsFrame, idle: ringsFlat, taps: true },
     { id: 'bounce', name: 'Bounce', draw: bounceFrame, idle: bounceFlat, taps: true },
-    { id: 'curves', name: 'Curves', draw: curvesFrame, idle: curvesFlat, taps: true }
+    { id: 'curves', name: 'Curves', draw: curvesFrame, idle: curvesFlat, taps: true },
+    { id: 'triangle', name: 'Triangle', draw: triangleFrame, idle: triangleFlat, taps: true },
+    { id: 'title', name: 'Title', draw: titleFrame, idle: titleFlat, taps: true },
+    { id: 'xy', name: 'XY', draw: xyFrame, idle: xyFlat }
   ];
   function modeIx() { const i = MODES.findIndex(m => m.id === S.meta.scopeMode); return i < 0 ? 0 : i; }
   const curMode = () => MODES[modeIx()];
@@ -4465,11 +4610,26 @@ const Scope = (() => {
      its glow as before, then a wider near-black halo taken from the theme background (col.outline; V.outline CSS px per side,
      × the canvas pixel ratio D, no glow), then the coloured line again without glow on top. So the glow shows outside the halo
      and the halo itself stays dark instead of being tinted by the glow. Off (0): one plain stroke, exactly as before. */
+  /* Round 34: Outline lightness (0 black → 15% the original theme-tinted dark halo → 50% the full base colour → 100% white) and
+     Outline hue (0 = Theme: the base colour is the theme background, as before; 1–360° = a pure hue at full saturation).
+     At the defaults (15%, Theme) the colour is col.outline itself, so the picture is pixel-identical to round 33. */
+  let oKey = '', oVal = '';
+  function oCol(V) {
+    const L = V.olight, h = V.ohue, k = col.outline + '|' + L + '|' + h;
+    if (k === oKey) return oVal;
+    let c = null;
+    if (!(Math.abs(L - .15) < 1e-9 && !h)) {
+      const B = h ? [0, 8, 4].map(n => { const q = (n + h / 30) % 12; return .5 - .5 * Math.max(-1, Math.min(q - 3, 9 - q, 1)); }) : (col.bg || [0, 0, 0]);
+      const v = L <= .15 ? B.map(x => x * L) : L <= .5 ? B.map(x => x * (.15 + .85 * (L - .15) / .35)) : B.map(x => x + (1 - x) * (L - .5) / .5);
+      c = 'rgba(' + v.map(x => Math.round(Math.min(1, Math.max(0, x)) * 255)).join(', ') + ', 0.85)';
+    }
+    oKey = k; return oVal = c || col.outline || 'rgba(0, 0, 0, 0.85)';
+  }
   function strokeO(g, t, V) {
     g.stroke();
     if (!t.big || !(V.outline > 0)) return;
     g.save(); g.shadowBlur = 0; g.shadowColor = 'transparent'; const w = g.lineWidth, s = g.strokeStyle, a = g.globalAlpha;
-    g.globalAlpha = 1; g.strokeStyle = col.outline || 'rgba(0, 0, 0, 0.85)'; g.lineWidth = w + 2 * V.outline * D; g.lineJoin = 'round'; g.stroke();
+    g.globalAlpha = 1; g.strokeStyle = oCol(V); g.lineWidth = w + 2 * V.outline * D; g.lineJoin = 'round'; g.stroke();
     g.globalAlpha = a; g.strokeStyle = s; g.lineWidth = w; g.stroke(); g.restore();
   }
   function waveFlat(t) {
@@ -4484,7 +4644,7 @@ const Scope = (() => {
     raf = 0;
     const t = tgt(), d = viewT(t); inFrame = true;
     try { if (audio.paused || document.hidden || !enabled()) flat(d); else drawerFor(d).draw(d); if (d !== t) compose(); } finally { inFrame = false; }
-    if (t.big) t.cv.classList.contains('idle') && !bzDrift(t) && !czDrift(t) ? fxIdle() : fxStep();   // a drifting Bounce / Curves keeps its trails
+    if (t.big) t.cv.classList.contains('idle') && !bzDrift(t) && !czDrift(t) && !tzDrift(t) && !tsDrift(t) ? fxIdle() : fxStep();   // a drifting Bounce / Curves / Triangle / Title keeps its trails
   }
   function waveFrame(t) {
     const g = t.g;
@@ -5144,6 +5304,551 @@ const Scope = (() => {
     if (!reduce.matches) raf = requestAnimationFrame(frame);
   }
 
+  /* ---- Triangle mode (round 33): the simulation, built on Curves' / Bounce's (curveSim, bounceSim). Three corners, shared by
+     the three sides (bass 0→1, mid 1→2, treble 2→0). Units, the mulberry RNG, cruise-speed relaxation, dt clamping, substeps
+     and the edge reflect are Bounce's; each corner has its own cruise speed and direction. What is new:
+     - spiral: on the speed clock τ the whole triangle turns about its centroid at ω = Spin·0.5·(0.55 + 0.45 sin φ₁ + 0.2 sin φ₂)
+       rad/s and breathes (uniform scale about the centroid) with s = 1 + min(1, Spin)·(0.12 cos φ₁ + 0.05 cos φ₂); φ₁, φ₂ run
+       on 19 s and 31 s cycles. Spin is fastest while the scale falls, so it alternately spirals in and tightens, then slows and
+       flows back out. Spin 0: no turning, no breathing. Both act on the real corner positions, so the edges apply to the
+       final picture: after each turn a corner past the margin shifts the whole triangle back (rigid, counted in contain), then
+       Bounce's per-corner reflect.
+     - span: each side keeps a length band [lmin, lmax]·s (it breathes with the triangle): past it, the two corners' relative
+       velocity along the side is reflected and they are pulled back gently (Bounce's chord rule). Shape: q = 4√3·area / Σside²
+       (1 = equilateral, 0 = flat) stays ≥ 0.4: below it the corner opposite the longest side is pushed away from that side
+       (centroid kept) and its approach reflected. Hard safety net (counted) only past 0.9 / 1.1× the band or q < 0.3.
+     - bends: each side's control point sits on the side's outward normal at b·length from its midpoint; b = 0.16 sin ψ +
+       0.06 sin(1.7ψ + 2) + 0.6·(band energy, smoothed), ψ on its own slow cycle. Bounded: outward ≤ 0.32; inward ≤ 0.18 and
+       small enough that two sides meeting at a corner (each leaves the corner at atan 2b off its chord) can't cross:
+       atan 2b < 0.4 × that corner's angle. With q ≥ 0.3 this keeps the outline a simple closed curve.
+     - lights: one per band, a position along the perimeter (0…1, the closed path bass → mid → treble) with its own speed and
+       direction, faster with that band's energy, and a pulse phase; all on the speed clock (hold with the shape). ---- */
+  function triangleSim(seed = 33) {
+    let s = (seed >>> 0) || 1;
+    const rnd = () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const st = { t: 0, tau: 0, steps: 0, sub: 0, edge: 0, contain: 0, side: 0, squash: 0, hard: 0, oob: 0, lenLo: Infinity, lenHi: 0, qLo: Infinity,
+      bendHi: 0, bendIn: 0, sLo: Infinity, sHi: 0, turn: 0, dist: [0, 0, 0] };
+    const a0 = rnd() * 2 * Math.PI, R0 = .2 + rnd() * .04, cu = .5 + (rnd() - .5) * .1, cv = .5 + (rnd() - .5) * .1;
+    const C = [0, 1, 2].map(i => { const a = a0 + i * 2 * Math.PI / 3 + (rnd() - .5) * .4, d = rnd() * 2 * Math.PI, f = .05 + rnd() * .1;
+      return { u: cu + R0 * Math.cos(a) * .62, v: cv + R0 * Math.sin(a), x: 0, y: 0, vx: Math.cos(d), vy: Math.sin(d), f, init: true }; });
+    const B = [0, 1, 2].map(() => ({ psi: rnd() * 2 * Math.PI, r: .25 + rnd() * .2, e: 0, b: 0 }));
+    const LT = [[.055, 1], [.075, -1], [.095, 1]].map(([v, dir], i) => ({ s: (i / 3 + rnd() * .1) % 1, v: v * (.85 + rnd() * .3), dir, ph: rnd() * 2 * Math.PI }));
+    let A0 = 0, theta = 0, scl = 1, sMade = false;
+    const SIDES = [[0, 1], [1, 2], [2, 0]];
+    function geo(A, o) {
+      const Sx = Math.min(A, 1), lw = .45 + .55 * (o.width == null ? 1 : o.width);
+      return { Sx, m: .09 * Sx, lmin: .2 * Sx * lw, lmax: .7 * Sx * lw, qmin: .4, out: .32, inn: .18 };
+    }
+    const cen = () => [(C[0].x + C[1].x + C[2].x) / 3, (C[0].y + C[1].y + C[2].y) / 3];
+    const orient = () => Math.sign((C[1].x - C[0].x) * (C[2].y - C[0].y) - (C[1].y - C[0].y) * (C[2].x - C[0].x)) || 1;
+    const lens = () => SIDES.map(([a, b]) => Math.hypot(C[b].x - C[a].x, C[b].y - C[a].y));
+    const quality = () => { const L = lens(), ar = Math.abs((C[1].x - C[0].x) * (C[2].y - C[0].y) - (C[1].y - C[0].y) * (C[2].x - C[0].x)) / 2;
+      return 4 * Math.sqrt(3) * ar / (L[0] * L[0] + L[1] * L[1] + L[2] * L[2] || 1e-12); };
+    const angle = j => { const a = C[(j + 1) % 3], b = C[(j + 2) % 3], c = C[j], ux = a.x - c.x, uy = a.y - c.y, wx = b.x - c.x, wy = b.y - c.y;
+      return Math.acos(Math.max(-1, Math.min(1, (ux * wx + uy * wy) / ((Math.hypot(ux, uy) * Math.hypot(wx, wy)) || 1e-12)))); };
+    const spinAt = (tau, sp) => { const p1 = 2 * Math.PI * tau / 19, p2 = 2 * Math.PI * tau / 31 + 1.3;
+      return { w: sp * .5 * (.55 + .45 * Math.sin(p1) + .2 * Math.sin(p2)), s: 1 + Math.min(1, sp) * (.12 * Math.cos(p1) + .05 * Math.cos(p2)) }; };
+    function bendLimits(i, G) {                 // [inward, outward] limits of side i's bend
+      const [a, b] = SIDES[i], lim = j => .5 * Math.tan(.4 * angle(j));
+      return [Math.min(G.inn, lim(a), lim(b)), G.out];
+    }
+    function bends(G) { for (let i = 0; i < 3; i++) { const q = B[i], [li, lo] = bendLimits(i, G);
+      const raw = .16 * Math.sin(q.psi) + .06 * Math.sin(1.7 * q.psi + 2) + .6 * q.e; q.b = Math.max(-li, Math.min(lo, raw)); } }
+    function step(dt, A, o = {}) {
+      dt = !(dt > 0) ? 0 : dt > .25 ? 1 / 60 : Math.min(dt, .1);
+      A = Math.max(.2, Math.min(5, +A || 1));
+      const G = geo(A, o), k = o.speed == null ? 1 : Math.max(0, o.speed), bo = o.boost || [0, 0, 0], sp = o.spin == null ? 1 : Math.max(0, o.spin);
+      for (const e of C) { e.x = e.u * A; e.y = e.v; if (e.init) { e.vx *= e.f * A; e.vy *= e.f * A; e.init = false; } }
+      if (A0 && A0 !== A) for (const e of C) e.vx *= A / A0;
+      A0 = A;
+      if (!sMade) { scl = spinAt(st.tau, sp).s; sMade = true; }
+      if (dt && k > 0) {
+        let vmax = 0; C.forEach(e => { vmax = Math.max(vmax, Math.hypot(e.vx, e.vy) * k * 1.25); });
+        const n = Math.min(400, Math.max(1, Math.ceil(dt * 120), Math.ceil(vmax * dt * 3 / (.05 * G.Sx)))), h = dt / n;
+        for (let s_ = 0; s_ < n; s_++) sub(h, A, G, k, bo, sp);
+        st.sub += n; st.t += dt;
+      }
+      bends(G);
+      const L = lens(), q = quality();
+      L.forEach(l => { st.lenLo = Math.min(st.lenLo, l / (G.lmin * scl)); st.lenHi = Math.max(st.lenHi, l / (G.lmax * scl)); });
+      st.qLo = Math.min(st.qLo, q / G.qmin); st.sLo = Math.min(st.sLo, scl); st.sHi = Math.max(st.sHi, scl);
+      B.forEach((b, i) => { const [li, lo] = bendLimits(i, G); st.bendHi = Math.max(st.bendHi, b.b > 0 ? b.b / lo : -b.b / Math.max(li, 1e-9)); st.bendIn = Math.max(st.bendIn, -b.b); });
+      for (const e of C) { if (e.x < 0 || e.x > A || e.y < 0 || e.y > 1) st.oob++; e.u = e.x / A; e.v = e.y; }
+      st.steps++;
+      return st;
+    }
+    function sub(h, A, G, k, bo, sp) {
+      const { m, qmin } = G, rate = Math.min(1, 1.2 * h), pull = Math.min(1, 4 * h), kh = k * h;
+      const mean = (bo[0] + bo[1] + bo[2]) / 3;
+      // spiral: turn and breathe about the centroid
+      st.tau += kh; const sa = spinAt(st.tau, sp), dth = sa.w * kh, f = sa.s / scl; scl = sa.s; theta += dth; st.turn += Math.abs(dth);
+      if (dth || f !== 1) { const [cx, cy] = cen(), co = Math.cos(dth), si = Math.sin(dth);
+        for (const e of C) { const rx = e.x - cx, ry = e.y - cy; e.x = cx + f * (co * rx - si * ry); e.y = cy + f * (si * rx + co * ry); } }
+      contain(A, m);
+      C.forEach((e, i) => {                       // cruise speed, then move (a little faster with the mean band energy)
+        const T = e.f * A, v = Math.hypot(e.vx, e.vy);
+        if (v < 1e-9) { const d = rnd() * 2 * Math.PI; e.vx = Math.cos(d) * T; e.vy = Math.sin(d) * T; }
+        else { const g = 1 + (T / v - 1) * rate; e.vx *= g; e.vy *= g; }
+        const dx = e.vx * kh * (1 + mean), dy = e.vy * kh * (1 + mean);
+        e.x += dx; e.y += dy; st.dist[i] += Math.hypot(dx, dy) / A;
+      });
+      const lmin = G.lmin * scl, lmax = G.lmax * scl;
+      SIDES.forEach(([ia, ib]) => {               // side length band (Bounce's chord rule)
+        const a = C[ia], b = C[ib], dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1e-9, ux = dx / len, uy = dy / len;
+        if (len <= lmax && len >= lmin) return;
+        const sg = len > lmax ? 1 : -1, vr = ((b.vx - a.vx) * ux + (b.vy - a.vy) * uy) * sg;
+        if (vr > 0) { a.vx += ux * vr * sg / 2; a.vy += uy * vr * sg / 2; b.vx -= ux * vr * sg / 2; b.vy -= uy * vr * sg / 2; st.side++; }
+        const cc = (len - (sg > 0 ? lmax : lmin)) * pull / 2; a.x += ux * cc; a.y += uy * cc; b.x -= ux * cc; b.y -= uy * cc;
+      });
+      const q = quality();
+      if (q < qmin) {                             // too flat: push the corner opposite the longest side away from it
+        const L = lens(), i = L.indexOf(Math.max(...L)), [ia, ib] = SIDES[i], j = 3 - ia - ib, a = C[ia], b = C[ib], c = C[j];
+        const ux = (b.x - a.x) / L[i], uy = (b.y - a.y) / L[i]; let nx = -uy, ny = ux; if ((c.x - a.x) * nx + (c.y - a.y) * ny < 0) { nx = -nx; ny = -ny; }
+        const vn = (c.vx - (a.vx + b.vx) / 2) * nx + (c.vy - (a.vy + b.vy) / 2) * ny;
+        if (vn < 0) { c.vx -= vn * nx * 4 / 3; c.vy -= vn * ny * 4 / 3; a.vx += vn * nx / 3; a.vy += vn * ny / 3; b.vx += vn * nx / 3; b.vy += vn * ny / 3; st.squash++; }
+        const dd = (qmin - q) * L[i] * pull; c.x += nx * dd * 2 / 3; c.y += ny * dd * 2 / 3; for (const e of [a, b]) { e.x -= nx * dd / 3; e.y -= ny * dd / 3; }
+      }
+      C.forEach(e => edges(e, A, m));
+      { const L = lens(), q2 = quality(); let hit = false;    // hard safety net
+        SIDES.forEach(([ia, ib], i) => { const lim = L[i] > lmax * 1.1 ? lmax * 1.1 : L[i] < lmin * .9 ? lmin * .9 : 0; if (!lim) return;
+          const a = C[ia], b = C[ib], ux = (b.x - a.x) / L[i], uy = (b.y - a.y) / L[i], cc = (L[i] - lim) / 2; a.x += ux * cc; a.y += uy * cc; b.x -= ux * cc; b.y -= uy * cc; hit = true; });
+        if (q2 < qmin * .75) { const [cx, cy] = cen(), L2 = lens(), i = L2.indexOf(Math.max(...L2)), j = 3 - SIDES[i][0] - SIDES[i][1], c = C[j], a = C[SIDES[i][0]], b = C[SIDES[i][1]];
+          const ux = (b.x - a.x) / L2[i], uy = (b.y - a.y) / L2[i]; let nx = -uy, ny = ux; if ((c.x - cx) * nx + (c.y - cy) * ny < 0) { nx = -nx; ny = -ny; }
+          const dd = (qmin * .75 - q2) * L2[i]; c.x += nx * dd * 2 / 3; c.y += ny * dd * 2 / 3; for (const e of [a, b]) { e.x -= nx * dd / 3; e.y -= ny * dd / 3; } hit = true; }
+        if (hit) { st.hard++; contain(A, m); C.forEach(e => edges(e, A, m)); } }
+      B.forEach((b, i) => { b.psi += b.r * kh; b.e += (Math.max(0, Math.min(1, bo[i] / .25)) * .25 - b.e) * Math.min(1, 3 * h); });
+      LT.forEach((l, i) => { l.s = ((l.s + l.dir * l.v * kh * (1 + 2 * bo[i])) % 1 + 1) % 1; l.ph += 2 * Math.PI * (1.4 + .35 * i) * kh; });
+    }
+    function contain(A, m) {                      // rigid shift back inside (spin / breathing can push a corner past the margin)
+      for (const [key, lo, hi] of [['x', m, A - m], ['y', m, 1 - m]]) {
+        const mn = Math.min(C[0][key], C[1][key], C[2][key]), mx = Math.max(C[0][key], C[1][key], C[2][key]);
+        let d = 0; if (mn < lo) d = lo - mn; if (mx + d > hi) d = mx > hi && mn >= lo ? hi - mx : d;
+        if (mn < lo && mx + d > hi) { const c = (lo + hi) / 2, mid = (mn + mx) / 2, f = (hi - lo) / (mx - mn || 1); for (const e of C) e[key] = c + (e[key] - mid) * f; st.contain++; continue; }
+        if (d) { for (const e of C) e[key] += d; st.contain++; }
+      }
+    }
+    function edges(e, A, m) {
+      if (e.x < m) { e.x = Math.min(A - m, 2 * m - e.x); if (e.vx < 0) { e.vx = -e.vx; st.edge++; } }
+      else if (e.x > A - m) { e.x = Math.max(m, 2 * (A - m) - e.x); if (e.vx > 0) { e.vx = -e.vx; st.edge++; } }
+      if (e.y < m) { e.y = Math.min(1 - m, 2 * m - e.y); if (e.vy < 0) { e.vy = -e.vy; st.edge++; } }
+      else if (e.y > 1 - m) { e.y = Math.max(m, 2 * (1 - m) - e.y); if (e.vy > 0) { e.vy = -e.vy; st.edge++; } }
+    }
+    function sides() {                           // [[P0, C, P2] × 3] in screen units (u, v), control point on the outward normal
+      const [cx, cy] = cen();
+      return SIDES.map(([ia, ib], i) => { const a = C[ia], b = C[ib], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y;
+        let nx = -dy, ny = dx; if ((mx - cx) * nx + (my - cy) * ny < 0) { nx = -nx; ny = -ny; }   // outward (length already in n)
+        const A_ = A0 || 1, px = mx + nx * B[i].b, py = my + ny * B[i].b;
+        return [{ u: a.x / A_, v: a.y }, { u: px / A_, v: py }, { u: b.x / A_, v: b.y }]; });
+    }
+    return {
+      step, stats: () => ({ ...st, dist: st.dist.slice() }), geo: (A = 16 / 9, o = {}) => geo(A, o), sides,
+      corners: () => C.map(e => ({ u: e.u, v: e.v, vx: e.vx, vy: e.vy, f: e.f })),
+      bends: () => B.map(b => b.b), quality, spin: () => ({ theta, scale: scl, tau: st.tau }),
+      lights: () => LT.map(l => ({ s: l.s, dir: l.dir, v: l.v, ph: l.ph })), seed
+    };
+  }
+
+  /* Triangle drawing (round 33): the three sides are drawn exactly like Curves' curves (curvesLine: even arc-length samples, the
+     band's trace along the normal, ends faded into the corners, Grid shows each side's control point and handles), so the
+     three traces join at the shared corners. On top, one light per band runs round the closed outline (bass → mid → treble):
+     a soft glow in the band's colour with a short fading comet tail behind it, added on (lighter; plain painting on light
+     themes). It pulses, and grows / brightens with its band's level (peak of the band signal) plus a quick punch on the band's
+     peaks above its recent average. Lights (only shown in this mode) scales it, 0 turns the lights off; Triangle speed scales
+     all motion (0 holds the shape and lights still); Spin scales the spiral (turning + breathing; 0 none). Paused / idle: the
+     shape keeps drifting flat with dim lights; reduced motion holds everything still with dim, unpulsed lights and no tails. */
+  let tz = null, tzT = 0, tzHold = false, tzL = [];
+  const tzE = [0, 0, 0], tzAvg = [0, 0, 0], tzLv = [0, 0, 0], tzPu = [0, 0, 0];
+  const tzLive = () => tz || (tz = triangleSim(33));
+  const tzDrift = t => !!(t && t.big) && open && enabled() && !reduce.matches && !document.hidden && curMode().id === 'triangle';
+  function tzTick() {
+    const now = performance.now(), dt = tzT ? (now - tzT) / 1000 : 0; tzT = now;
+    const V = sv(); tzLive().step(reduce.matches || tzHold ? 0 : dt, W / H, { speed: V.tspeed, width: V.width, boost: tzE, spin: V.tspin });
+  }
+  const TZM = 48, tzPx = new Float32Array(3 * TZM + 1), tzPy = new Float32Array(3 * TZM + 1), tzPs = new Float32Array(3 * TZM + 1);
+  function tzPerim(S) {                          // S: the three sides ([end, control, end] in px) → closed arc-length table
+    let s = 0, k = 0;
+    S.forEach(([a, c, b], i) => { for (let j = i ? 1 : 0; j <= TZM; j++, k++) {
+      const t = j / TZM, u = 1 - t, x = u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], y = u * u * a[1] + 2 * u * t * c[1] + t * t * b[1];
+      if (k) s += Math.hypot(x - tzPx[k - 1], y - tzPy[k - 1]); tzPx[k] = x; tzPy[k] = y; tzPs[k] = s; } });
+    return s;
+  }
+  function tzAt(len, f) {                        // point at share f (0..1, wraps) of the perimeter
+    f -= Math.floor(f); const s = f * len; let lo = 0, hi = 3 * TZM;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (tzPs[m] < s) lo = m; else hi = m; }
+    const d = tzPs[hi] - tzPs[lo], w = d > 0 ? (s - tzPs[lo]) / d : 0;
+    return [tzPx[lo] + (tzPx[hi] - tzPx[lo]) * w, tzPy[lo] + (tzPy[hi] - tzPy[lo]) * w];
+  }
+  function triangleLights(t, S, live) {
+    const V = sv(), I = V.tlights; tzL = [];
+    if (!(I > 0)) return;
+    const g = t.g, d = D, rm = reduce.matches, len = tzPerim(S) || 1, TN = rm ? 0 : 12;
+    g.save(); g.globalCompositeOperation = lightBg() ? 'source-over' : 'lighter'; g.shadowBlur = 0;
+    tzLive().lights().forEach((l, i) => {
+      const lv = live ? tzLv[i] : 0, pu = live ? tzPu[i] : 0, pulse = rm ? 1 : .8 + .2 * Math.sin(l.ph);
+      const a = Math.min(1, (.3 + .6 * lv + .45 * pu) * pulse * Math.min(1, I)) * (rm || !live ? .55 : 1);
+      const r = d * (5 + 12 * lv + 8 * pu) * Math.sqrt(I) * (.9 + .1 * pulse), [cr, cg, cb] = hexRgb(col.bands[i]), core = Math.min(1, .35 + .3 * lv + .25 * Math.max(0, I - 1));
+      const gap = (.004 + .004 * lv) * Math.max(.4, V.tspeed);
+      for (let j = TN; j >= 0; j--) {          // comet tail first (behind the direction of travel), the head last
+        const q = 1 - j / (TN + 1), [x, y] = tzAt(len, l.s - l.dir * j * gap), rj = r * (j ? .35 + .5 * q : 1), aj = a * (j ? .55 * q * q : 1);
+        const gr = g.createRadialGradient(x, y, 0, x, y, rj * 2.2);
+        gr.addColorStop(0, `rgba(${Math.round(cr + (255 - cr) * core)}, ${Math.round(cg + (255 - cg) * core)}, ${Math.round(cb + (255 - cb) * core)}, ${aj})`);
+        gr.addColorStop(.3, `rgba(${cr}, ${cg}, ${cb}, ${aj * .7})`); gr.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
+        g.fillStyle = gr; g.beginPath(); g.arc(x, y, rj * 2.2, 0, 2 * Math.PI); g.fill();
+        if (!j) tzL.push({ x, y, r: rj, a: aj, lv, pu });
+      }
+    });
+    g.restore();
+  }
+  function triangleFlat(t) {
+    size(t); tzTick(); bounceBase(t); tzE.fill(0); tzLv.fill(0); tzPu.fill(0);
+    const Ss = tzLive().sides(); Ss.forEach((l, i) => curvesLine(t, i, l, null));
+    triangleLights(t, Ss.map(l => l.map(e => [e.u * W, e.v * H])), false);
+    t.cv.classList.add('idle');
+    if (!raf && tzDrift(t)) raf = requestAnimationFrame(frame);   // paused / idle: keep drifting
+  }
+  function triangleFrame(t) {
+    bandSync();
+    if (!bandsOn || !running()) { triangleFlat(t); if (!raf && src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); tzTick(); bounceBase(t); t.cv.classList.remove('idle'); frames++;
+    const V = sv(), Ss = tzLive().sides(), md = Math.min(W, H);
+    bandNodes.forEach((b, i) => {
+      b.an.getFloatTimeDomainData(b.buf);
+      const data = b.buf, len = czMeasure(Ss[i].map(e => [e.u * W, e.v * H]));
+      const n = Math.max(32, Math.min(data.length - 32, Math.round(Math.min(BANDS[i].win, data.length >> 1) / V.zoom)));
+      let t0 = 0; for (let k = 1; k < data.length - n; k++) if (data[k - 1] < 0 && data[k] >= 0) { t0 = k; break; }
+      let pk = 0; for (let k = 0; k < n; k++) pk = Math.max(pk, Math.abs(data[t0 + k]));
+      bandPk[i] = pk;
+      const target = Math.min(40, .85 / Math.max(pk, .004));      // same auto-gain as Bands / Bounce / Curves
+      b.gain = reduce.matches || target < b.gain ? target : b.gain + (target - b.gain) * .04;
+      tzAvg[i] = tzAvg[i] ? tzAvg[i] + (pk - tzAvg[i]) * .02 : pk;
+      tzE[i] = .25 * Math.max(0, Math.min(1, pk / Math.max(tzAvg[i], 1e-4) - 1));
+      const lt = Math.min(1, pk * 2);                               // light level: fast attack, slower release; punch on peaks
+      tzLv[i] = reduce.matches ? lt : tzLv[i] + (lt - tzLv[i]) * (lt > tzLv[i] ? .5 : .08);
+      tzPu[i] = reduce.matches ? 0 : Math.max(tzPu[i] * .9, tzE[i] * 4);
+      curvesLine(t, i, Ss[i], data, n, t0, Math.min(.14 * len, .11 * md) * b.gain * V.amp);
+    });
+    triangleLights(t, Ss.map(l => l.map(e => [e.u * W, e.v * H])), true);
+    if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+
+  /* ---- Title mode (round 33): the scope is the playing track's title, outlined three times. The title (else the file name,
+     else 'MyTunes') is set in a heavy sans serif on a small offscreen grid with the screen's shape (about TSG cells),
+     wrapped to at most three lines (too-long words broken; a title that still does not fit is cut with '…'), at the largest
+     size that fits. From its coverage a signed distance field is built (two-pass exact Euclidean distance transform,
+     Felzenszwalb–Huttenlocher, on the inside and the outside; antialiased edge cells give it sub-cell precision, as in
+     Mapbox's TinySDF), and marching squares (saddles split by the cell centre) pull out three nested sets of closed
+     contours: bass outside the letters (+0.09 em), mid at the glyph edge (just inset), treble inside the strokes (up to
+     -0.05 em, but never deeper than half the thickest stroke; if thin strokes leave it much shorter than mid it is taken
+     shallower). Counters (O, A, B…) are just more loops of the same level set, so they nest correctly by construction.
+     Loops are chained, resampled evenly by arc length, given normals from the field's gradient and sorted left to right.
+     Only the layout and the drawing of the text run on the main thread (a few ms); the field and contours are built in a
+     small worker made from these same functions (synchronously if a worker cannot start).
+     Each band's waveform is laid along all of its loops as one strip (spread over their total length), displaced along
+     the normal, faded to zero at each loop's seam. A shape is built once per title and screen shape (cached), never inside
+     a frame, and timed; a new title crossfades in over TSF ms.
+     Motion (Title drift 0–2, only shown in this mode): slow drift, slight turn and breathing size on the drift clock,
+     always kept on screen; 0 or reduced motion holds it centred and still. Pulses (Pulse 0–2): each band's line
+     brightness, glow and width follow its level, with a punch on its peaks above its recent average; loud moments add a
+     soft bloom; 0 keeps the lines steady; reduced motion keeps them gentle and unpunched. The title shape is the scope
+     itself, so Text off does not hide it. Grid adds a faint box round the title. ---- */
+  const TSG = 168000, TSF = 650, TS_AMP = [.14, .07, .055], TS_FONT = '"Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Noto Sans CJK SC", "Noto Sans CJK JP", sans-serif';
+  function tsText() {
+    const t = typeof currentTrack === 'function' ? currentTrack() : null, clean = s => String(s || '').replace(/\s+/g, ' ').trim();
+    let s = t ? clean(t.title) : '';
+    if (!s && t) s = clean(String(t.id || '').split(/[\\/]/).pop().replace(AUDIO_EXT, ''));
+    return s || 'MyTunes';
+  }
+  function tsLayout(g, text, GW, GH) {           // → { lines, f (px on the grid), cut }; words are measured once (width ∝ size)
+    const maxW = GW * .84, maxH = GH * .6, words = Array.from(text).slice(0, 240).join('').split(' '), R = 100;
+    g.font = `800 ${R}px ${TS_FONT}`;
+    const mw = new Map(), M = s => { let w = mw.get(s); if (w === undefined) mw.set(s, w = g.measureText(s).width); return w; }, sp = M(' ');
+    const wrap = (f, brk) => {                      // greedy; a word wider than the line is broken by characters only if brk
+      const k = f / R, out = []; let cur = '', cw = 0;
+      for (const w of words) {
+        const ww = M(w) * k;
+        if (!cur) { if (ww <= maxW) { cur = w; cw = ww; continue; } }
+        else if (cw + sp * k + ww <= maxW) { cur += ' ' + w; cw += sp * k + ww; continue; }
+        else if (ww <= maxW) { out.push(cur); cur = w; cw = ww; continue; }
+        if (!brk) return null;
+        if (cur) out.push(cur);
+        cur = ''; cw = 0;
+        for (const ch of Array.from(w)) { const c = M(ch) * k; if (cur && cw + c > maxW) { out.push(cur); cur = ch; cw = c; } else { cur += ch; cw += c; } }
+      }
+      if (cur) out.push(cur);
+      return out;
+    };
+    const fmin = Math.max(10, Math.round(Math.min(GW, GH) * .07));
+    for (let f = Math.round(GH * .42); f > fmin; f = Math.floor(f * .93)) {
+      const L = wrap(f, false);
+      if (L && L.length <= 3 && L.length * f * 1.12 <= maxH) return { lines: L, f, cut: false };
+    }
+    const f = fmin, L = wrap(f, true), K = L.slice(0, 3);
+    if (L.length > 3) { g.font = `800 ${f}px ${TS_FONT}`; const a = Array.from(K[2]); while (a.length && g.measureText(a.join('').trimEnd() + '…').width > maxW) a.pop(); K[2] = a.join('').trimEnd() + '…'; }
+    return { lines: K, f, cut: L.length > 3 };
+  }
+  function tsEdt(F, w, h) {                       // squared distance transform in place: rows, then columns
+    const n = Math.max(w, h), v = new Int32Array(n), z = new Float64Array(n + 1), q = new Float64Array(n), o = new Float64Array(n);
+    const pass = (off, st, len) => {
+      for (let i = 0; i < len; i++) q[i] = F[off + i * st];
+      let k = 0; v[0] = 0; z[0] = -1e20; z[1] = 1e20;
+      for (let i = 1; i < len; i++) {
+        let r = v[k], s = (q[i] + i * i - q[r] - r * r) / (2 * (i - r));
+        while (s <= z[k]) { k--; r = v[k]; s = (q[i] + i * i - q[r] - r * r) / (2 * (i - r)); }
+        k++; v[k] = i; z[k] = s; z[k + 1] = 1e20;
+      }
+      k = 0;
+      for (let i = 0; i < len; i++) { while (z[k + 1] < i) k++; const r = v[k]; o[i] = (i - r) * (i - r) + q[r]; }
+      for (let i = 0; i < len; i++) F[off + i * st] = o[i];
+    };
+    for (let y = 0; y < h; y++) pass(y * w, 1, w);
+    for (let x = 0; x < w; x++) pass(x, w, h);
+  }
+  function tsLoops(sd, w, h, lev) {               // marching squares on sd − lev (< 0 inside) → closed loops [[x, y], …] (cell units)
+    const E = 2 * w * h, n1 = new Int32Array(E).fill(-1), n2 = new Int32Array(E).fill(-1), px = new Float32Array(E), py = new Float32Array(E), used = [];
+    const val = (x, y) => sd[y * w + x] - lev;
+    const pt = id => {                            // where the level crosses edge id (made once)
+      if (n1[id] !== -1) return;
+      if (id < w * h) { const x = id % w, y = (id / w) | 0, a = val(x, y), b = val(x + 1, y); px[id] = x + a / (a - b); py[id] = y; }
+      else { const j = id - w * h, x = j % w, y = (j / w) | 0, a = val(x, y), b = val(x, y + 1); px[id] = x; py[id] = y + a / (a - b); }
+    };
+    const link = (a, b) => { pt(a); pt(b); if (n1[a] === -1) { n1[a] = b; used.push(a); } else n2[a] = b; if (n1[b] === -1) { n1[b] = a; used.push(b); } else n2[b] = a; };
+    for (let y = 0; y < h - 1; y++) for (let x = 0; x < w - 1; x++) {
+      const A = val(x, y) < 0, B = val(x + 1, y) < 0, C = val(x + 1, y + 1) < 0, D_ = val(x, y + 1) < 0, c = A | B << 1 | C << 2 | D_ << 3;
+      if (!c || c === 15) continue;
+      const T = y * w + x, Bo = (y + 1) * w + x, L = w * h + y * w + x, R = w * h + y * w + x + 1;
+      switch (c) {
+        case 1: case 14: link(L, T); break;
+        case 2: case 13: link(T, R); break;
+        case 3: case 12: link(L, R); break;
+        case 4: case 11: link(R, Bo); break;
+        case 6: case 9: link(T, Bo); break;
+        case 7: case 8: link(L, Bo); break;
+        case 5: case 10: {
+          const mid = (val(x, y) + val(x + 1, y) + val(x + 1, y + 1) + val(x, y + 1)) / 4 < 0;
+          if ((c === 5) === mid) { link(T, R); link(Bo, L); } else { link(L, T); link(R, Bo); }
+        }
+      }
+    }
+    const seen = new Uint8Array(E), out = [];
+    for (const s of used) {
+      if (seen[s]) continue;
+      const P = []; let prev = -1, cur = s;
+      while (cur !== -1 && !seen[cur]) { seen[cur] = 1; P.push([px[cur], py[cur]]); const nx = n1[cur] !== prev ? n1[cur] : n2[cur]; prev = cur; cur = nx; }
+      if (P.length > 3) out.push(P);
+    }
+    return out;
+  }
+  function tsResample(P, sd, w, h, step) {        // closed loop → evenly spaced points with outward normals (field gradient)
+    const m = P.length, cum = new Float64Array(m + 1);
+    for (let i = 0; i < m; i++) { const a = P[i], b = P[(i + 1) % m]; cum[i + 1] = cum[i] + Math.hypot(b[0] - a[0], b[1] - a[1]); }
+    const len = cum[m]; if (len < 4) return null;
+    const N = Math.max(12, Math.round(len / step)), x = new Float32Array(N), y = new Float32Array(N), nx = new Float32Array(N), ny = new Float32Array(N);
+    const S = (X, Y) => { X = Math.max(0, Math.min(w - 1.001, X)); Y = Math.max(0, Math.min(h - 1.001, Y)); const i = X | 0, j = Y | 0, u = X - i, v = Y - j, k = j * w + i;
+      return (sd[k] * (1 - u) + sd[k + 1] * u) * (1 - v) + (sd[k + w] * (1 - u) + sd[k + w + 1] * u) * v; };
+    let j = 0;
+    for (let i = 0; i < N; i++) {
+      const s = i / N * len; while (cum[j + 1] < s) j++;
+      const a = P[j], b = P[(j + 1) % m], f = cum[j + 1] > cum[j] ? (s - cum[j]) / (cum[j + 1] - cum[j]) : 0;
+      x[i] = a[0] + (b[0] - a[0]) * f; y[i] = a[1] + (b[1] - a[1]) * f;
+      let gx = S(x[i] + 1, y[i]) - S(x[i] - 1, y[i]), gy = S(x[i], y[i] + 1) - S(x[i], y[i] - 1), gl = Math.hypot(gx, gy);
+      if (gl < 1e-6) { gx = -(b[1] - a[1]); gy = b[0] - a[0]; gl = Math.hypot(gx, gy) || 1; }
+      nx[i] = gx / gl; ny[i] = gy / gl;
+    }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, ar = 0;
+    for (let i = 0; i < N; i++) { x0 = Math.min(x0, x[i]); x1 = Math.max(x1, x[i]); y0 = Math.min(y0, y[i]); y1 = Math.max(y1, y[i]); const k = (i + 1) % N; ar += x[i] * y[k] - x[k] * y[i]; }
+    return { x, y, nx, ny, n: N, len, box: [x0, y0, x1, y1], area: Math.abs(ar / 2) };
+  }
+  function tsRaster(text, aspect) {              // main thread: lay out and draw the title on the grid → its coverage
+    const t0 = performance.now(), A = Math.max(.25, Math.min(4, aspect || 1)), GW = Math.round(Math.sqrt(TSG * A)), GH = Math.round(GW / A);
+    const cv = document.createElement('canvas'); cv.width = GW; cv.height = GH;
+    const g = cv.getContext('2d', { willReadFrequently: true }), Lo = tsLayout(g, text, GW, GH), f = Lo.f, lh = f * 1.12;
+    g.font = `800 ${f}px ${TS_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
+    Lo.lines.forEach((l, i) => g.fillText(l, GW / 2, GH / 2 + (i - (Lo.lines.length - 1) / 2) * lh));
+    const px = g.getImageData(0, 0, GW, GH).data, al = new Uint8Array(GW * GH);
+    for (let i = 0; i < al.length; i++) al[i] = px[i * 4 + 3];
+    return { text, lines: Lo.lines, cut: Lo.cut, f, GW, GH, al, ms: performance.now() - t0 };
+  }
+  function tsGeom(al, GW, GH, f) {                 // coverage → field and the three contour sets (self-contained: also runs in the worker)
+    const t0 = performance.now(), n = GW * GH, Fo = new Float64Array(n), Fi = new Float64Array(n), sd = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const a = al[i] / 255; Fo[i] = a >= 1 ? 0 : a <= 0 ? 1e20 : Math.max(0, .5 - a) ** 2; Fi[i] = a >= 1 ? 1e20 : a <= 0 ? 0 : Math.max(0, a - .5) ** 2; }
+    tsEdt(Fo, GW, GH); tsEdt(Fi, GW, GH);
+    let dmax = 0;
+    for (let i = 0; i < n; i++) { const v = Math.sqrt(Fo[i]) - Math.sqrt(Fi[i]); sd[i] = v; if (-v > dmax) dmax = -v; }
+    const lev = [.09 * f, -Math.min(.008 * f, .15 * dmax), -Math.min(.05 * f, .5 * dmax)], tot = L => L.reduce((s, p) => s + p.length, 0);
+    const raw = lev.map(l => tsLoops(sd, GW, GH, l));
+    if (raw[2].length && tot(raw[2]) < .45 * tot(raw[1])) { lev[2] = -.3 * dmax; raw[2] = tsLoops(sd, GW, GH, lev[2]); }   // thin strokes: shallower treble
+    if (!raw[2].length) { lev[2] = lev[1]; raw[2] = raw[1]; }                                                                 // nothing inside at all: on the edge
+    const bands = raw.map(L => {
+      const step = Math.max(1.6, tot(L) / 900), R = L.map(p => tsResample(p, sd, GW, GH, step)).filter(Boolean).sort((a, b) => a.box[0] - b.box[0] || a.box[1] - b.box[1]);
+      return { loops: R, len: R.reduce((s, r) => s + r.len, 0) };
+    });
+    const box = bands[0].loops.reduce((b, l) => [Math.min(b[0], l.box[0]), Math.min(b[1], l.box[1]), Math.max(b[2], l.box[2]), Math.max(b[3], l.box[3])], [GW, GH, 0, 0]);
+    return { lev, dmax, bands, box, sd, ms: performance.now() - t0 };
+  }
+  function tsBuild(text, aspect) {                // synchronous build (fallback, and the test hook)
+    const r = tsRaster(text, aspect), q = tsGeom(r.al, r.GW, r.GH, r.f);
+    return { ...r, ...q, rasterMs: r.ms, geomMs: q.ms, ms: r.ms + q.ms, via: 'sync' };
+  }
+  let tsW = null, tsWq = 0;                         // the worker (made from the functions above); null if it cannot start
+  const tsWp = new Map();
+  function tsWorker() {
+    if (tsW !== null) return tsW;
+    try {
+      const code = [tsEdt, tsLoops, tsResample, tsGeom].map(fn => fn.toString()).join('\n') +
+        '\nonmessage = e => { const { id, al, GW, GH, f } = e.data, g = tsGeom(al, GW, GH, f), tr = [g.sd.buffer];' +
+        ' g.bands.forEach(B => B.loops.forEach(l => tr.push(l.x.buffer, l.y.buffer, l.nx.buffer, l.ny.buffer))); postMessage({ id, g }, tr); };';
+      const url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+      tsW = new Worker(url); URL.revokeObjectURL(url);
+      tsW.onmessage = e => { const cb = tsWp.get(e.data.id); tsWp.delete(e.data.id); if (cb) cb(e.data.g); };
+      tsW.onerror = e => { e.preventDefault && e.preventDefault(); const w = tsW; tsW = false; w.terminate(); const p = [...tsWp.values()]; tsWp.clear(); p.forEach(cb => cb(null)); };
+    } catch (e) { tsW = false; }
+    return tsW;
+  }
+  let tsCur = null, tsOld = null, tsFade = 1, tsF0 = 0, tsWant = '', tsTau = 0, tsT = 0, tsHold = false, tsBox = null, tsLast = null;
+  const tsCache = new Map(), tsLv = [0, 0, 0], tsPu = [0, 0, 0], tsAvg = [0, 0, 0];
+  let tsDt = 1 / 60;
+  const tsDrift = t => !!(t && t.big) && open && enabled() && !reduce.matches && !document.hidden && curMode().id === 'title' && (sv().tdrift > 0 || tsFade < 1);
+  const tsKey = () => tsText() + '\u0000' + (Math.round(W / H * 20) / 20);
+  function tsShape(key) {                          // cached, else built off the draw loop (raster in a timeout, contours in the worker)
+    const c = tsCache.get(key); if (c) return c;
+    if (tsWant !== key) {
+      tsWant = key;
+      setTimeout(() => {
+        if (tsWant !== key || tsCache.has(key)) return;
+        const [text, a] = key.split('\u0000'), t0 = performance.now(), r = tsRaster(text, +a);
+        const done = (q, via) => {
+          const s = { ...r, ...q, rasterMs: r.ms, geomMs: q.ms, ms: r.ms + (via === 'sync' ? q.ms : 0), wall: performance.now() - t0, via };
+          delete s.al; tsLast = s;
+          tsCache.set(key, s); if (tsCache.size > 6) tsCache.delete(tsCache.keys().next().value);
+          if (!raf && open && curMode().id === 'title') raf = requestAnimationFrame(frame);
+        };
+        const w = tsWorker();
+        if (w) { const id = ++tsWq; tsWp.set(id, q => q ? done(q, 'worker') : done(tsGeom(r.al, r.GW, r.GH, r.f), 'sync')); w.postMessage({ id, al: r.al.slice(), GW: r.GW, GH: r.GH, f: r.f }); }
+        else done(tsGeom(r.al, r.GW, r.GH, r.f), 'sync');
+      }, 0);
+    }
+    return null;
+  }
+  function tsTick() {
+    const now = performance.now(), dt = tsT ? Math.min(.1, (now - tsT) / 1000) : 0; tsT = now; tsDt = dt || 1 / 60;
+    const V = sv();
+    if (!reduce.matches && !tsHold) tsTau += dt * V.tdrift;
+    const s = tsShape(tsKey());
+    if (s && s !== tsCur) { tsOld = tsCur; tsCur = s; tsF0 = now; tsFade = tsOld ? 0 : 1; }
+    else if (tsOld) tsFade = Math.min(1, tsFade + dt * 1000 / TSF);   // per drawn frame (dt capped): a stalled frame never skips the fade
+    if (tsFade >= 1) tsOld = null;
+  }
+  function tsXf(s, ext) {                          // grid → screen for shape s: fitted, drifting, kept on screen (ext: px reach of the trace)
+    const V = sv(), k = reduce.matches ? 0 : Math.min(1, V.tdrift), T = tsTau;
+    const sc = Math.min(W / s.GW, H / s.GH) * Math.max(.2, V.width) * (1 + .03 * k * Math.sin(.41 * T));
+    const rot = .045 * k * (Math.sin(.13 * T) + .4 * Math.sin(.29 * T + .5)), c = Math.cos(rot), sn = Math.sin(rot);
+    let cx = W / 2 + .035 * k * W * (Math.sin(.23 * T) + .5 * Math.sin(.37 * T + 1) - .5 * Math.sin(1)), cy = H / 2 + .03 * k * H * (Math.sin(.19 * T + 2) - Math.sin(2) + .5 * Math.sin(.31 * T));
+    const [bx0, by0, bx1, by1] = s.box, gx = s.GW / 2, gy = s.GH / 2;
+    let X0 = 1e9, Y0 = 1e9, X1 = -1e9, Y1 = -1e9;
+    for (const [x, y] of [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]]) {
+      const u = (x - gx) * sc, v = (y - gy) * sc, X = u * c - v * sn, Y = u * sn + v * c;
+      X0 = Math.min(X0, X); X1 = Math.max(X1, X); Y0 = Math.min(Y0, Y); Y1 = Math.max(Y1, Y);
+    }
+    const m = Math.min(W, H) * .02 + ext;
+    cx = Math.max(m - X0, Math.min(W - m - X1, cx)); if (X1 - X0 > W - 2 * m) cx = W / 2 - (X0 + X1) / 2;
+    cy = Math.max(m - Y0, Math.min(H - m - Y1, cy)); if (Y1 - Y0 > H - 2 * m) cy = H / 2 - (Y0 + Y1) / 2;
+    return { sc, c, sn, cx, cy, gx, gy, box: [cx + X0, cy + Y0, cx + X1, cy + Y1], rot };
+  }
+  function tsStroke(g, t, V, p) {                 // strokeO for a Path2D
+    g.stroke(p);
+    if (!t.big || !(V.outline > 0)) return;
+    g.save(); g.shadowBlur = 0; g.shadowColor = 'transparent'; const w = g.lineWidth, s = g.strokeStyle;
+    g.globalAlpha = 1; g.strokeStyle = oCol(V); g.lineWidth = w + 2 * V.outline * D; g.lineJoin = 'round'; g.stroke(p);
+    g.strokeStyle = s; g.lineWidth = w; g.restore(); g.stroke(p);
+  }
+  function tsGlow(s) {                              // per shape + theme: each band's rest contour, stroked wide and blurred once, at grid resolution
+    const key = col.bands.join() + '|' + D;
+    if (s.glow && s.glow.key === key) return s.glow;
+    const pad = Math.ceil(s.f * .3), r = 1, cv = s.bands.map((B, i) => {
+      const c = document.createElement('canvas'); c.width = Math.ceil((s.GW + 2 * pad) * r); c.height = Math.ceil((s.GH + 2 * pad) * r);
+      const q = c.getContext('2d'), p = new Path2D();
+      for (const lp of B.loops) { for (let k = 0; k < lp.n; k++) k ? p.lineTo(lp.x[k] + pad, lp.y[k] + pad) : p.moveTo(lp.x[k] + pad, lp.y[k] + pad); p.closePath(); }
+      q.filter = 'blur(' + Math.max(1.5, s.f * .025).toFixed(1) + 'px)'; q.strokeStyle = col.bands[i]; q.lineJoin = 'round'; q.globalAlpha = .55;
+      q.lineWidth = Math.max(2.5, TS_AMP[i] * s.f * .6); q.stroke(p);   // about the band's swing
+      return c; });
+    return (s.glow = { key, pad, r, cv });
+  }
+  function tsDraw(t, s, alpha, live, D3) {         // D3: per band [data, n, t0, amp px] (live) — draws one shape
+    const g = t.g, d = D, V = sv(), rm = reduce.matches, P = rm ? Math.min(.35, V.tpulse * .35) : V.tpulse;
+    const ext = live ? Math.max(...D3.map(b => b[3])) * .9 : 0, X = tsXf(s, ext);
+    if (alpha >= 1 || !tsBox) tsBox = X.box;
+    if (V.grid) { g.save(); g.globalAlpha = .25 * alpha; g.strokeStyle = col.base; g.lineWidth = Math.max(1, d * .75); g.setLineDash([4 * d, 4 * d]);
+      const [a0, b0, a1, b1] = X.box; g.strokeRect(a0, b0, a1 - a0, b1 - b0); g.restore(); }
+    const paths = [], lvs = [];
+    s.bands.forEach((B, i) => {
+      const p = new Path2D(), [data, n, t0, amp] = live ? D3[i] : [null, 0, 0, 0], L = B.len || 1;
+      let base = 0;
+      for (const lp of B.loops) {
+        const tw = Math.min(.15 * lp.len, 8);
+        for (let k = 0; k <= lp.n; k++) {
+          const j = k % lp.n, sl = k / lp.n * lp.len;
+          let off = 0;
+          if (data) { let w = Math.min(1, sl / tw, (lp.len - sl) / tw); w = w * w * (3 - 2 * w); if (w) { const fi = (base + sl) / L * (n - 1), i0 = Math.floor(fi), fr = fi - i0; off = ((data[t0 + i0] || 0) * (1 - fr) + (data[t0 + i0 + 1] || 0) * fr) * amp * w; } }
+          const u = (lp.x[j] - X.gx) * X.sc, v = (lp.y[j] - X.gy) * X.sc, nu = lp.nx[j] * X.c - lp.ny[j] * X.sn, nv = lp.nx[j] * X.sn + lp.ny[j] * X.c;
+          const x = X.cx + u * X.c - v * X.sn + nu * off, y = X.cy + u * X.sn + v * X.c + nv * off;
+          k ? p.lineTo(x, y) : p.moveTo(x, y);
+        }
+        p.closePath(); base += lp.len;
+      }
+      const lv = live ? tsLv[i] : 0, pu = live && !rm ? tsPu[i] : 0, q = Math.min(1, P) * .55;
+      paths.push([p, live ? (1 - q) + q * Math.min(1, .3 + lv + pu) : .6, lv, pu]); lvs.push(lv + .5 * pu);
+    });
+    const bl = live ? P * Math.max(0, Math.max(...lvs) - .55) * .6 : 0;   // loud moments: a soft bloom over all three
+    if (live) {                                    // glow + bloom: a soft band per contour, built once per shape (one blur pass, cached)
+      const G = tsGlow(s), lb = lightBg();         //   and placed with the drift transform; loudness only changes its alpha — cheap every frame
+      g.save(); g.globalCompositeOperation = lb ? 'source-over' : 'lighter'; g.imageSmoothingEnabled = true;
+      g.transform(X.c * X.sc / G.r, X.sn * X.sc / G.r, -X.sn * X.sc / G.r, X.c * X.sc / G.r, X.cx, X.cy);
+      paths.forEach(([p, a, lv, pu], i) => {
+        g.globalAlpha = Math.min(1, alpha * (a * (.34 + .3 * Math.min(1, P * (lv + 1.5 * pu))) + (bl > .02 ? Math.min(.3, bl) * 1.2 : 0)) * (lb ? .6 : 1));
+        g.drawImage(G.cv[i], -(X.gx + G.pad) * G.r, -(X.gy + G.pad) * G.r); });
+      g.restore();
+    }
+    paths.forEach(([p, a, lv, pu], i) => {
+      g.save(); g.lineJoin = 'bevel'; g.strokeStyle = col.bands[i]; g.globalAlpha = a * alpha;   // dense points: bevel looks round, costs far less
+      g.lineWidth = 1.75 * d * V.thick * (1 + P * (.45 * lv + .9 * pu));
+      tsStroke(g, t, V, p); g.restore();
+    });
+    return X;
+  }
+  function tsPaint(t, live, D3) {
+    if (tsOld && tsFade < 1) tsDraw(t, tsOld, 1 - tsFade, live, D3);
+    if (tsCur) tsDraw(t, tsCur, tsFade, live, D3);
+  }
+  function titleFlat(t) {
+    size(t); tsTick(); bounceBase(t); tsLv.fill(0); tsPu.fill(0);
+    tsPaint(t, false);
+    t.cv.classList.add('idle');
+    if (!raf && tsDrift(t)) raf = requestAnimationFrame(frame);   // paused / idle: keep drifting
+  }
+  function titleFrame(t) {
+    bandSync();
+    if (!bandsOn || !running()) { titleFlat(t); if (!raf && src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); tsTick(); bounceBase(t); t.cv.classList.remove('idle'); frames++;
+    const V = sv(), s = tsCur, em = s ? s.f * Math.min(W / s.GW, H / s.GH) * Math.max(.2, V.width) : Math.min(W, H) * .1;
+    const D3 = bandNodes.map((b, i) => {
+      b.an.getFloatTimeDomainData(b.buf);
+      const data = b.buf, n = Math.max(32, Math.min(data.length - 32, Math.round(Math.min(BANDS[i].win, data.length >> 1) / V.zoom)));
+      let t0 = 0; for (let k = 1; k < data.length - n; k++) if (data[k - 1] < 0 && data[k] >= 0) { t0 = k; break; }
+      let pk = 0; for (let k = 0; k < n; k++) pk = Math.max(pk, Math.abs(data[t0 + k]));
+      bandPk[i] = pk;
+      const target = Math.min(40, .85 / Math.max(pk, .004));      // same auto-gain as Bands / Bounce / Curves / Triangle
+      b.gain = reduce.matches || target < b.gain ? target : b.gain + (target - b.gain) * .04;
+      const k = x => 1 - Math.exp(-tsDt / x);        // time-based smoothing: same feel at any frame rate
+      tsAvg[i] = tsAvg[i] ? tsAvg[i] + (pk - tsAvg[i]) * k(.8) : pk;
+      const e = .25 * Math.max(0, Math.min(1, pk / Math.max(tsAvg[i], 1e-4) - 1)), lt = Math.min(1, pk * 2);
+      tsLv[i] = reduce.matches ? lt : tsLv[i] + (lt - tsLv[i]) * k(lt > tsLv[i] ? .025 : .2);
+      tsPu[i] = reduce.matches ? 0 : Math.max(tsPu[i] * Math.exp(-tsDt / .16), e * 4);
+      return [data, n, t0, TS_AMP[i] * em * b.gain * V.amp];   // swing sized to each band's gap, so the letters stay readable
+    });
+    tsPaint(t, true, D3);
+    if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+
   /* ---- full-screen shader effects (↑ ↓), on top of whichever mode is showing; add an entry here to add an effect.
      Effect 0 'None' is the plain Canvas 2D scope. Any other effect takes each 2D frame (drawn on a transparent canvas) as a
      texture and runs its fragment shader on #scopeFx (WebGL 2, else WebGL 1), ping-ponging between two framebuffers so the
@@ -5214,16 +5919,24 @@ const Scope = (() => {
      (only non-default ones; not part of the library file). type: range (default) | choice | toggle. ---- */
   const onOff = x => x ? 'On' : 'Off';
   const SCOPE_PARAMS = [
-    { id: 'amp', group: 'Size', label: 'Height', min: .25, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Height (amplitude) of the trace (Rings: how far each ring swings in and out)' },
-    { id: 'width', group: 'Size', label: 'Width', min: .2, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', title: 'How much of the width the trace spans (Rings: the size of the rings; Bounce: how long the lines can get)' },
-    { id: 'zoom', group: 'Size', label: 'Zoom', min: .25, max: 4, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Time zoom: above 1 shows a shorter, stretched stretch of sound; below 1 a longer one (Rings: less or more sound once round)' },
-    { id: 'thick', group: 'Size', label: 'Line', min: .5, max: 4, step: .1, def: 1, fmt: x => x.toFixed(1) + '×', title: 'Line thickness (and glow)' },
+    { id: 'amp', group: 'Size', label: 'Height', min: .25, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Height (amplitude) of the trace (Rings: how far each ring swings in and out; XY: stretches the screen’s vertical axis, also when the plot is turned; times Gain)' },
+    { id: 'width', group: 'Size', label: 'Width', min: .2, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', title: 'How much of the width the trace spans (Rings: the size of the rings; Bounce: how long the lines can get; XY: narrows the screen’s horizontal axis, also when the plot is turned; times Gain)' },
+    { id: 'zoom', group: 'Size', label: 'Zoom', min: .25, max: 4, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Time zoom: above 1 shows a shorter, stretched stretch of sound; below 1 a longer one (Rings: less or more sound once round; XY: less or more sound drawn each frame)' },
+    { id: 'thick', group: 'Size', label: 'Line', min: .5, max: 4, step: .1, def: 1, fmt: x => x.toFixed(1) + '×', title: 'Line thickness (and glow; XY: times Beam width)' },
     { id: 'outline', group: 'Size', label: 'Outline', min: 0, max: 8, step: .5, def: 0, fmt: x => x ? x.toFixed(1) + ' px' : 'Off', title: 'Dark outline around the line: extra width on each side, in screen pixels (0 = off)' },
+    { id: 'olight', group: 'Size', label: 'Outline lightness', short: '↳ Lightness', min: 0, max: 1, step: .01, def: .15, fmt: x => Math.round(x * 100) + '%', title: 'Outline colour, dark to light: 0% black, 15% the usual dark halo, 50% the full theme / hue colour, 100% white (needs Outline on)' },
+    { id: 'ohue', group: 'Size', label: 'Outline hue', short: '↳ Hue', min: 0, max: 360, step: 1, def: 0, fmt: x => x ? Math.round(x) + '°' : 'Theme', title: 'Outline colour hue: Theme (0) tints it with the theme background; 1–360° picks a hue (red 1°/360°, green 120°, blue 240°). Lightness sets how dark or light (needs Outline on)' },
     { id: 'orient', group: 'Orientation', label: 'Direction', type: 'choice', opts: ['Horizontal', 'Vertical'], min: 0, max: 1, step: 1, def: 0, title: 'Horizontal: time runs left to right. Vertical: top to bottom (turned 90°)' },
     { id: 'rot', group: 'Orientation', label: 'Rotation', min: -180, max: 180, step: 1, def: 0, fmt: x => sgn(x) + '°', title: 'Turn the picture, on top of the direction (clockwise is +)' },
     { id: 'flipH', group: 'Mirroring', label: 'Flip ↔', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, title: 'Mirror the picture left to right' },
     { id: 'flipV', group: 'Mirroring', label: 'Flip ↕', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, title: 'Mirror the picture top to bottom' },
     { id: 'mirror', group: 'Mirroring', label: 'Mirror', type: 'choice', opts: ['Off', 'Left ↔ right', 'Top ↕ bottom', 'Quad'], min: 0, max: 3, step: 1, def: 0, title: 'Show one half (or quarter) and its reflection: left half reflected onto the right, top onto the bottom, or the top-left quarter into all four' },
+    { id: 'kal', group: 'Kaleidoscope', label: 'Kaleidoscope', short: 'Active', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, info: 'After Shadertoy XslGz7 (shadertoy.com/view/XslGz7), CC BY-NC-SA 3.0; our own code', title: 'Kaleidoscope: fold the picture into mirrored wedges round the centre, like the mirrors in a kaleidoscope tube (applied after Mirror, before the effects). After the Shadertoy kaleidoscope XslGz7, CC BY-NC-SA 3.0; our own code' },
+    { id: 'kseg', group: 'Kaleidoscope', label: 'Kaleidoscope segments', short: 'Segments', min: 2, max: 12, step: 1, def: 6, fmt: x => x + '-fold', title: 'How many times the pattern repeats round the centre (each repeat is a wedge and its mirror image; needs Kaleidoscope on)' },
+    { id: 'kspin', group: 'Kaleidoscope', label: 'Kaleidoscope spin', short: 'Spin', min: -2, max: 2, step: .05, def: .5, fmt: x => x ? sgn(x, 2) + '×' : 'Still', title: 'Turns the picture under the mirrors, like turning the tube: 1× is one turn every 30 s, minus turns the other way, 0 holds it (no spin with reduced motion; needs Kaleidoscope on)' },
+    { id: 'kzoom', group: 'Kaleidoscope', label: 'Kaleidoscope zoom', short: 'Zoom', min: .25, max: 4, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Magnifies the picture seen through the wedge (needs Kaleidoscope on)' },
+    { id: 'kx', group: 'Kaleidoscope', label: 'Kaleidoscope centre ↔', short: 'Centre ↔', min: -.5, max: .5, step: .01, def: 0, fmt: x => sgn(Math.round(x * 100)) + '%', title: 'Which part of the picture sits at the centre of the pattern: left / right, as a share of the width (needs Kaleidoscope on)' },
+    { id: 'ky', group: 'Kaleidoscope', label: 'Kaleidoscope centre ↕', short: 'Centre ↕', min: -.5, max: .5, step: .01, def: 0, fmt: x => sgn(Math.round(x * 100)) + '%', title: 'Which part of the picture sits at the centre of the pattern: up / down, as a share of the height (needs Kaleidoscope on)' },
     { id: 'cols', group: 'Tiling', label: 'Columns', min: 1, max: 4, step: 1, def: 1, fmt: x => String(x), title: 'Tiles across' },
     { id: 'rows', group: 'Tiling', label: 'Rows', min: 1, max: 4, step: 1, def: 1, fmt: x => String(x), title: 'Tiles down' },
     { id: 'alt', group: 'Tiling', label: 'Alternate', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, title: 'Mirror every other tile, so neighbouring tiles meet like reflections' },
@@ -5231,7 +5944,19 @@ const Scope = (() => {
     { id: 'grid', group: 'Display', label: 'Grid', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, title: 'Background grid and guide lines (G)' },
     { id: 'text', group: 'Display', label: 'Text', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, title: 'Text on the picture: band names / legend, track name, key hints (T). Mode and effect names still flash briefly when changed' },
     { id: 'bspeed', group: 'Bounce', label: 'Bounce speed', min: 0, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['bounce'], title: 'How fast the Bounce lines drift (0 holds them still)' },
-    { id: 'cspeed', group: 'Curves', label: 'Curve speed', min: 0, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['curves'], title: 'How fast the Curves points drift (0 holds them still)' }
+    { id: 'cspeed', group: 'Curves', label: 'Curve speed', min: 0, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['curves'], title: 'How fast the Curves points drift (0 holds them still)' },
+    { id: 'tspeed', group: 'Triangle', label: 'Triangle speed', min: 0, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['triangle'], title: 'How fast the Triangle corners drift, bend, spin and the lights travel (0 holds it still)' },
+    { id: 'tspin', group: 'Triangle', label: 'Spin', min: 0, max: 2, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['triangle'], title: 'The spiral: turning about the centre and breathing in and out (0: none)' },
+    { id: 'tlights', group: 'Triangle', label: 'Lights', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['triangle'], title: 'Brightness of the three lights travelling round the triangle (0: off)' },
+    { id: 'tdrift', group: 'Title', label: 'Title drift', min: 0, max: 2, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['title'], title: 'How fast the title drifts, turns and breathes, always kept on screen (0: held still in the centre)' },
+    { id: 'tpulse', group: 'Title', label: 'Pulse', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['title'], title: 'How much each outline brightens, glows and thickens with its band (0: steady lines)' },
+    { id: 'xgain', group: 'XY', label: 'XY gain', short: 'Gain', min: .25, max: 8, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['xy'], info: 'After Shadertoy sdfyzN “XY Oscilloscope Sound Drawings” by Anthony Hall (amhall), CC BY-NC-SA 3.0; our own code', title: 'Zoom: how far the beam swings for a given level. At 1× a full-scale signal (±1) reaches the edge of the graticule' },
+    { id: 'xpersist', group: 'XY', label: 'Persistence', min: 0, max: 2, step: .05, def: .3, fmt: x => x ? x.toFixed(2) + ' s' : 'Off', modes: ['xy'], title: 'Phosphor afterglow: how long an old trace takes to fade to a tenth (Off: only the newest sweep)' },
+    { id: 'xbeam', group: 'XY', label: 'Beam width', short: 'Beam', min: .5, max: 4, step: .1, def: 1, fmt: x => x.toFixed(1) + '×', modes: ['xy'], title: 'Thickness of the beam' },
+    { id: 'xglow', group: 'XY', label: 'Glow', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['xy'], title: 'Soft glow round the beam (0: none)' },
+    { id: 'xms', group: 'XY', label: 'Rotate 45°', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, modes: ['xy'], title: 'Mid / side view (a goniometer): mono sound stands upright, left-only and right-only lean 45° either way, opposite phase lies flat' },
+    { id: 'xgrat', group: 'XY', label: 'Graticule', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, modes: ['xy'], title: 'The scope screen’s divisions (Display › Grid / G hides them too)' },
+    { id: 'xdelay', group: 'XY', label: 'Mono delay', min: 0, max: 10, step: .05, def: 1, fmt: x => x.toFixed(2) + ' ms', modes: ['xy'], title: 'For mono sound (or two identical channels) Y is the same signal delayed by this much: a phase plot. 0 draws a diagonal line' }
   ];
   SCOPE_PARAMS.forEach(p => { if (p.type === 'choice') p.fmt = x => p.opts[x] || ''; });
   const SV0 = (() => { const o = {}; SCOPE_PARAMS.forEach(p => o[p.id] = p.def); o.xf = false; return o; })();
@@ -5243,7 +5968,7 @@ const Scope = (() => {
       const x = saved[p.id]; let v = typeof x === 'number' && Number.isFinite(x) ? Math.min(p.max, Math.max(p.min, x)) : p.def;
       if (p.step >= 1) v = Math.round(v); o[p.id] = v;
     }
-    o.xf = o.cols > 1 || o.rows > 1 || o.mirror > 0 || !!o.flipH || !!o.flipV || o.orient > 0 || o.rot !== 0 || o.gap > 0;
+    o.xf = o.cols > 1 || o.rows > 1 || o.mirror > 0 || !!o.flipH || !!o.flipV || o.orient > 0 || o.rot !== 0 || o.gap > 0 || !!o.kal;
     return svC = o;
   }
   const tileT = { cv: document.createElement('canvas'), big: true, tile: true }; tileT.g = tileT.cv.getContext('2d');
@@ -5251,11 +5976,53 @@ const Scope = (() => {
   // mirror halves of a cell: [x, y, w, h] in cell units (centred), then the reflection [sx, sy] of what shows there
   const HALVES = [[[-.5, -.5, 1, 1, 1, 1]], [[-.5, -.5, .5, 1, 1, 1], [0, -.5, .5, 1, -1, 1]], [[-.5, -.5, 1, .5, 1, 1], [-.5, 0, 1, .5, 1, -1]],
     [[-.5, -.5, .5, .5, 1, 1], [0, -.5, .5, .5, -1, 1], [-.5, 0, .5, .5, 1, -1], [0, 0, .5, .5, -1, -1]]];
+  /* Round 34: Kaleidoscope (Scope settings › Kaleidoscope). Inspired by the Shadertoy kaleidoscope XslGz7
+     (https://www.shadertoy.com/view/XslGz7; Shadertoy's default licence CC BY-NC-SA 3.0 applies). Its source could not be
+     fetched (not in the public API mirror, the site is behind a bot check), so none of its code is used: this is our own
+     Canvas 2D version of the classic kaleidoscope fold. Order: the mode draws the tile; Direction / Rotation / Flips / Mirror
+     build one cell picture exactly as without the kaleidoscope (into kalS); the kaleidoscope then folds that cell into 2·N
+     wedges round its centre (N = Segments): wedge s shows the wedge on the +x axis turned by s·π/N, every odd one mirrored,
+     so there are N mirror lines through the centre and N-fold turn symmetry; Spin turns the picture under the mirrors
+     (1× = a turn per 30 s, only while the scope runs, never with reduced motion), Zoom magnifies it and Centre picks the
+     point of the picture at the pattern's centre. The folded cell (kalO) is stamped into every tile (Alternate still mirrors
+     every other tile), and the shader effects then work on the whole composed frame as usual, so their trails and warps
+     are not folded (they may wander off the symmetry). Off (the default) nothing here runs and the picture is unchanged. */
+  const kalS = document.createElement('canvas'), kalO = document.createElement('canvas'), kalSg = kalS.getContext('2d'), kalOg = kalO.getContext('2d');
+  let kalA = 0, kalT0 = 0;
+  function kalCompose(g, V, L, tw, th, fx, fy) {
+    const cw = Math.max(1, Math.round(L.cw)), ch = Math.max(1, Math.round(L.ch));
+    for (const c of [kalS, kalO]) if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
+    let q = kalSg; q.setTransform(1, 0, 0, 1, 0, 0); q.clearRect(0, 0, cw, ch);
+    for (const [hx, hy, hw, hh, mx, my] of HALVES[V.mirror]) {       // the cell picture, as without the kaleidoscope
+      q.save(); q.translate(cw / 2, ch / 2);
+      q.beginPath(); q.rect(hx * cw, hy * ch, hw * cw, hh * ch); q.clip();
+      q.scale(mx * fx, my * fy); q.rotate(L.a); q.drawImage(tileT.cv, -tw / 2, -th / 2);
+      q.restore();
+    }
+    const now = performance.now(), dt = kalT0 ? Math.min(.1, (now - kalT0) / 1000) : 0; kalT0 = now;
+    if (inFrame && !reduce.matches) kalA = (kalA + dt * V.kspin * 2 * Math.PI / 30) % (2 * Math.PI);
+    const n = V.kseg, w = Math.PI / n, R = Math.hypot(cw, ch) / Math.cos(w / 2) + 2, ox = V.kx * cw, oy = V.ky * ch;
+    q = kalOg; q.setTransform(1, 0, 0, 1, 0, 0); q.clearRect(0, 0, cw, ch);
+    for (let s = 0; s < 2 * n; s++) {
+      const a0 = (s - .5) * w, a1 = (s + .5) * w;
+      q.save(); q.translate(cw / 2, ch / 2);
+      q.beginPath(); q.moveTo(0, 0); q.lineTo(R * Math.cos(a0), R * Math.sin(a0)); q.lineTo(R * Math.cos(a1), R * Math.sin(a1)); q.closePath(); q.clip();
+      q.rotate(s * w); if (s & 1) q.scale(1, -1);                     // wedge s = wedge 0 turned, every odd one mirrored
+      q.rotate(kalA); q.scale(V.kzoom, V.kzoom); q.translate(-ox, -oy);
+      q.drawImage(kalS, -cw / 2, -ch / 2);
+      q.restore();
+    }
+    for (let j = 0; j < V.rows; j++) for (let i = 0; i < V.cols; i++) {
+      const cx = (i + .5) * L.Wf / V.cols, cy = (j + .5) * L.Hf / V.rows, ax = V.alt && i % 2 ? -1 : 1, ay = V.alt && j % 2 ? -1 : 1;
+      g.save(); g.translate(cx, cy); g.scale(ax, ay); g.drawImage(kalO, -cw / 2, -ch / 2); g.restore();
+    }
+  }
   function compose() {                       // stamp the tile into every cell of the full canvas
     const g = full.g, V = sv(), L = lay; if (!L) return;
     full.cv.classList.toggle('idle', tileT.cv.classList.contains('idle'));
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, full.cv.width, full.cv.height);
     const tw = tileT.cv.width, th = tileT.cv.height, fx = V.flipH ? -1 : 1, fy = V.flipV ? -1 : 1;
+    if (V.kal) return kalCompose(g, V, L, tw, th, fx, fy);
     for (let j = 0; j < V.rows; j++) for (let i = 0; i < V.cols; i++) {
       const cx = (i + .5) * L.Wf / V.cols, cy = (j + .5) * L.Hf / V.rows, ax = V.alt && i % 2 ? -1 : 1, ay = V.alt && j % 2 ? -1 : 1;
       for (const [hx, hy, hw, hh, mx, my] of HALVES[V.mirror]) {
@@ -5436,6 +6203,73 @@ const Scope = (() => {
       vec4 src = texture2D(u_src, v);
       gl_FragColor = vec4(clamp((u_bg + d) * (1.0 - src.a) + src.rgb, 0.0, 1.0), 1.0);
     }`;
+  /* Round 33: Nebula Eye, our own shader written after looking at "Nebulous Nonformanifest" by xenn
+     (https://www.shadertoy.com/view/fdV3RW, 2021: "an impression of an alien eye … ~ Kaiju [eye of] Sauron ~"). xenn
+     states no licence, so the Shadertoy default CC BY-NC-SA 3.0 applies; credited here and in the effect's credit line.
+     That shader is a five-pass mash-up of other people's work, credited in its source: xemantic's shader-web-background
+     feedback blobs, flockaroo's (Florian Berger) single-pass rotational fluid (CC BY-NC-SA 3.0), Simon Gladman's
+     transverse chromatic aberration, a gradient-normal lighting pass, film grain and an ACES-style tone map (its Common
+     tab also carries GPL-3 code by nr4, a CC BY-SA 4.0 hash by David Hoskins and Alan Zucconi's spectral colours).
+     None of its code is used; we use none of the GPL / BY-SA pieces.
+     The ideas taken from it, folded into one feedback pass: two thin spectral rims (an iris at ⅓ and ⅔ of the short
+     side, as in the original's two blobs) are painted into a buffer that slowly zooms outwards from the eye; the picture
+     is carried by a rotational self-advection in the spirit of flockaroo's (the colours are read as a flow, its
+     circulation is measured round five points on a small ring, and the picture is moved round the stronger vortices, so
+     the trails curl into iris fibres); every channel is a radial blur with red read further out and blue further in (a
+     spectral fringe); a gradient-normal specular sheen makes the paint look wet and glassy; a dark pupil at the centre
+     dilates on the beat; and a little multiplicative grain keeps the gradients alive. The eye's centre wanders slowly
+     (the original steers it with the mouse). We don't tone-map: trails fade to the theme background like the other
+     effects and the live trace is drawn on top. Bass dilates the pupil and swells the iris, mids stir the swirl, treble
+     brightens the sheen and grain. */
+  const NEBULA_FS = `
+    uniform sampler2D u_prev, u_src; uniform vec3 u_bg, u_c1, u_c2; uniform vec2 u_res, u_eye;
+    uniform float u_keep, u_min, u_zoom, u_swirl, u_r1, u_r2, u_swell, u_ink, u_pupil, u_dark, u_split, u_gloss, u_grain, u_seed;
+    vec3 P(vec2 q) { return texture2D(u_prev, q).rgb - u_bg; }
+    vec2 flow(vec2 q) { vec3 c = P(q); return vec2(c.r - c.b, c.g - c.r); }     // the colours read as a flow
+    float rim(float d, float r) {                      // a thin bright rim with a long soft inside
+      float x = d / max(r, 1e-3);
+      return pow(min(x, 1.0), 20.0) * (1.0 - smoothstep(0.97, 1.0, x));
+    }
+    float lum(vec2 q) { return dot(P(q), vec3(0.3333)); }
+    float hash(vec2 p) { p = fract(p * vec2(0.1031, 0.1030)); p += dot(p, p.yx + 33.33); return fract((p.x + p.y) * p.x); }
+    void main() {
+      vec2 rh = 0.5 * min(u_res.x, u_res.y) / u_res, px = 1.0 / u_res;
+      vec2 st = (v - 0.5) / rh - u_eye;                  // eye-centred, −1..1 across the short side
+      float len = length(st);
+      vec2 R = 5.0 * px, sw = vec2(0.0);                 // rotational self-advection: circulation round 5 points on a ring
+      for (int i = 0; i < 5; i++) {
+        float a = 1.2566 * float(i) + 0.31; vec2 b = vec2(cos(a), sin(a));
+        float rot = 0.0;
+        for (int j = 0; j < 5; j++) { float c = 1.2566 * float(j); vec2 e = vec2(cos(c), sin(c)); rot += dot(flow(v + b * R + e * R), vec2(-e.y, e.x)); }
+        sw += rot * vec2(-b.y, b.x);
+      }
+      vec2 q = v - u_zoom * st * rh - u_swirl * 0.04 * sw * px;   // bloom outwards from the eye + carried round the vortices
+      vec2 sp = st * u_split * rh;
+      vec3 c = vec3(0.0);                                 // radial spectral blur: red from further out, blue from further in
+      for (int k = 0; k < 5; k++) {
+        float t = 0.5 * float(k) - 1.0;
+        c += vec3(max(t, 0.0), 1.0 - abs(t), max(-t, 0.0)) * texture2D(u_prev, q + sp * t).rgb;
+      }
+      c /= vec3(1.5, 2.0, 1.5);
+      vec3 d = clamp(c - u_bg, -1.0, 1.0);
+      d = sign(d) * max(abs(d) * u_keep - u_min, 0.0);
+      vec2 g = vec2(lum(v + vec2(2.0 * px.x, 0.0)) - lum(v - vec2(2.0 * px.x, 0.0)), lum(v + vec2(0.0, 2.0 * px.y)) - lum(v - vec2(0.0, 2.0 * px.y)));
+      vec3 n = normalize(vec3(-6.0 * g, 1.0)), hv = normalize(vec3(-0.35, 0.45, 1.0) + vec3(0.0, 0.0, 1.0));
+      float spec = max(pow(max(dot(n, hv), 0.0), 36.0) - pow(hv.z, 36.0), 0.0);   // wet sheen where the paint has relief
+      vec3 hl = u_bg.r + u_bg.g + u_bg.b > 1.5 ? vec3(-0.5) : vec3(0.6);            // towards white on dark themes, ink on light
+      d += hl * spec * u_gloss;
+      d *= 1.0 + (hash(v * u_res + u_seed) - 0.5) * u_grain * 0.12;                // film grain
+      d *= 1.0 - u_dark * (1.0 - smoothstep(0.85, 1.0, len / max(u_pupil * u_r1, 1e-3)));   // the pupil swallows the light
+      vec3 cs = P(v - st * 0.06 * rh);
+      float rad = 1.0 + u_swell * (abs(cs.r) + abs(cs.g) + abs(cs.b));
+      float w1 = clamp(rim(len, u_r1 * rad) * u_ink, 0.0, 1.0), w2 = clamp(rim(len, u_r2 * rad) * u_ink, 0.0, 1.0);
+      d = mix(d, u_c1 - u_bg, w1); d = mix(d, u_c2 - u_bg, w2);              // the iris rims paint their colours
+      vec4 src = texture2D(u_src, v);
+      gl_FragColor = vec4(clamp((u_bg + d) * (1.0 - src.a) + src.rgb, 0.0, 1.0), 1.0);
+    }`;
+  function nebHue(h) {                       // hue 0..1 → a bright cosine-palette colour (rgb 0..1)
+    return [0, 1 / 3, 2 / 3].map(o => .5 + .45 * Math.cos(2 * Math.PI * (h - o)));
+  }
   const FX = [
     { id: 'none', name: 'None' },
     { id: 'feedback', name: 'Feedback', frag: FEEDBACK_FS,
@@ -5556,6 +6390,34 @@ const Scope = (() => {
           u_turn: .002 * P.drift * r * Math.sin(.13 * st.t), u_r1: .55 * P.size * br, u_r2: .65 * P.size * br, u_swell: P.swell,
           u_ink: Math.min(1, P.ink * Math.min(1, r) * (1 + .6 * P.beat * b.kick)), u_edge: P.outline * Math.min(1, r),
           u_split: .002 * P.split * Math.min(1, r), u_c1: aquaHue(h1), u_c2: aquaHue(h2) };
+      } },
+    { id: 'nebula', name: 'Nebula Eye', frag: NEBULA_FS, taps: true,
+      credit: { text: 'After “Nebulous Nonformanifest” by xenn (Shadertoy, CC BY-NC-SA 3.0), with ideas from flockaroo’s rotational fluid and xemantic’s feedback blobs', href: 'https://www.shadertoy.com/view/fdV3RW' },
+      params: [
+        { id: 'swirl', label: 'Swirl', min: 0, max: 4, step: .05, def: 1, fmt: times, title: 'How strongly the paint is carried round its own vortices, curling the trails into iris fibres' },
+        { id: 'bloom', label: 'Bloom', min: 0, max: 4, step: .05, def: 1, fmt: times, title: 'How fast the picture spreads outwards from the eye, per 1/60 s' },
+        { id: 'size', label: 'Iris size', min: .2, max: 1.6, step: .01, def: 1, fmt: times, title: 'Size of the two coloured iris rims' },
+        { id: 'swell', label: 'Swell', min: -1, max: 2, step: .05, def: .3, fmt: times, title: 'How much the colour inside the rims makes them grow (negative shrinks them)' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: .3, fmt: pct, title: 'Strength of the colour the rims lay down: 0 = only the live trace feeds it' },
+        { id: 'pupil', label: 'Pupil', min: 0, max: 1, step: .01, def: .45, fmt: pct, title: 'Size of the dark pupil, as a share of the inner rim: 0 = none' },
+        { id: 'split', label: 'Spectral split', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'Red read further out and blue further in along each ray: rainbow fringes' },
+        { id: 'gloss', label: 'Sheen', min: 0, max: 1, step: .01, def: .35, fmt: pct, title: 'A wet, glassy highlight where the paint has relief' },
+        { id: 'grain', label: 'Grain', min: 0, max: 1, step: .01, def: .3, fmt: pct, title: 'Film grain in the paint' },
+        { id: 'hue', label: 'Colour cycle', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'How fast the two rim colours travel round the colour wheel' },
+        { id: 'trails', label: 'Trails', min: .5, max: 1, step: .01, def: .985, fmt: pct, title: 'How much of the picture survives each 1/60 s: higher = longer trails; 100% never fades' },
+        { id: 'speed', label: 'Speed', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'Time scale of all the motion (0 freezes it; trails still fade)' },
+        { id: 'drift', label: 'Gaze', min: 0, max: 2, step: .05, def: 1, fmt: times, title: 'How far the eye wanders round the screen on its own: 0 = fixed at the centre' },
+        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: 1, fmt: times, title: 'How much the music drives it: bass dilates the pupil and swells the iris, mids stir the swirl, treble brightens the sheen' }
+      ],
+      uniforms(dt, P, st) {
+        const r = Math.min(2, dt * 60 * P.speed), r1 = Math.min(1, r); st.t = (st.t || 0) + dt * P.speed;
+        const b = beatOf(st, dt); st.kick = b.kick;
+        const br = 1 + .06 * P.drift * Math.sin(.5 * st.t) + .3 * P.beat * b.kick, h1 = (st.t * .05 * P.hue) % 1, h2 = (h1 + .38) % 1;
+        return { keep: P.trails, u_zoom: .001 * P.bloom * r * (1 + .5 * P.beat * b.energy), u_swirl: P.swirl * r * (1 + P.beat * b.n[1]),
+          u_r1: .33 * P.size * br, u_r2: .69 * P.size * br, u_swell: P.swell, u_ink: Math.min(1, P.ink * r1 * (1 + .6 * P.beat * b.kick)),
+          u_pupil: P.pupil * (1 + .35 * P.beat * b.kick), u_dark: .12 * r1, u_split: .004 * P.split * r1,
+          u_gloss: .15 * P.gloss * r1 * (1 + P.beat * b.n[2]), u_grain: P.grain * r1 * (1 + .5 * P.beat * b.n[2]), u_seed: (st.t * 60) % 97,
+          u_eye: [.18 * P.drift * Math.sin(.21 * st.t), .12 * P.drift * Math.sin(.17 * st.t + 1)], u_c1: nebHue(h1), u_c2: nebHue(h2) };
       } }
   ];
   const fxCv = $('#scopeFx'), sfFx = $('#sfFx'), SETTLE = 45;        // frames the trails take to fade out after a pause
@@ -5743,18 +6605,23 @@ const Scope = (() => {
   const SEC = { scope: { rows: srows, pre: 'sfs-', schema: () => SCOPE_PARAMS, vals: () => sv(), set: (id, x) => setView(id, x) },
     fx: { rows: prows, pre: 'sfp-', schema: () => FX[fxIx()].params || [], vals: () => fxParams(), set: (id, x) => setParam(id, x) } };
   function rowHTML(p, x, pre) {
-    const id = pre + p.id, t = esc(p.title), v = esc(p.fmt(x));
+    const id = pre + p.id, t = esc(p.title), v = esc(p.fmt(x)), al = p.short ? ` aria-label="${esc(p.label)}"` : '';
+    if (al) return rowHTML({ ...p, short: null }, x, pre).replace(`id="${id}"`, `id="${id}"${al}`).replace(`>${esc(p.label)}</label>`, `>${esc(p.short)}</label>`);
     const ctl = p.type === 'choice' ? `<select id="${id}" title="${t}">${p.opts.map((o, i) => `<option value="${i}"${i === x ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`
       : p.type === 'toggle' ? `<input type="checkbox" id="${id}"${x ? ' checked' : ''} title="${t}"><output for="${id}">${v}</output>`
       : `<input type="range" id="${id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${x}" aria-valuetext="${v}" title="${t}"><output for="${id}">${v}</output>`;
     return `<div class="sfp-row" data-p="${p.id}"><label for="${id}" title="${t}">${esc(p.label)}</label>${ctl}<button type="button" class="sfp-r" aria-label="Reset ${esc(p.label)}" title="Reset ${esc(p.label)} to ${esc(p.fmt(p.def))}">↺</button>` +
-      (p.eff ? `<small class="sfp-eff" hidden></small>` : '') + `</div>`;
+      (p.eff ? `<small class="sfp-eff" hidden></small>` : '') + (p.info ? `<small class="sfp-eff sfp-info">${esc(p.info)}</small>` : '') + `</div>`;
   }
   function rowsHTML(list, vals, pre) {
     let g = null; return list.filter(p => !p.modes || p.modes.includes(curMode().id)).map(p => (p.group && p.group !== g ? `<div class="sfp-grp" aria-hidden="true">${esc(g = p.group)}</div>` : '') + rowHTML(p, vals[p.id], pre)).join('');
   }
+  /* Round 34: Theme, the app's one theme setting (S.meta.theme, same as Settings › Theme; applyTheme saves it and the scope
+     recolours through its data-theme observer). Not a scope param: Reset all and ↺ leave it alone. */
+  const themeRow = () => `<div class="sfp-grp" aria-hidden="true">Theme</div><div class="sfp-row" data-p="theme" data-x="theme"><label for="sfs-theme" title="Colour theme of the whole app (same as Settings › Theme)">Theme</label><select id="sfs-theme" title="Colour theme of the whole app (same as Settings › Theme)">${THEMES.map(t => `<option value="${t.id}"${t.id === (S.meta.theme || 'dark') ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>`;
+  window.addEventListener('mp3lib-theme', e => { const c = $('#sfs-theme'); if (c && c.value !== e.detail) c.value = e.detail; });
   function panelBuild() {
-    srows.innerHTML = rowsHTML(SCOPE_PARAMS, sv(), 'sfs-');
+    srows.innerHTML = themeRow() + rowsHTML(SCOPE_PARAMS, sv(), 'sfs-');
     const f = FX[fxIx()], has = hasParams(f);
     fxSec.hidden = !has;
     if (has) { $('#sfpTitle').textContent = f.name; prows.innerHTML = rowsHTML(f.params, fxParams(f), 'sfp-'); const st = fxSt[f.id]; if (st && st.keep != null) effSync(f, st.keep); }
@@ -5810,7 +6677,7 @@ const Scope = (() => {
       if (on) panelBuild();
       else { clearTimeout(paramT); if (paramT) saveMeta(); paramT = 0; if (panel.contains(document.activeElement)) fs.focus({ preventScroll: true }); }
     }
-    if (on && focusIt) { const i = panel.querySelector('input,select'); if (i) i.focus({ preventScroll: true }); }
+    if (on && focusIt) { const i = panel.querySelector('.sfp-row:not([data-x]) input, .sfp-row:not([data-x]) select'); if (i) i.focus({ preventScroll: true }); }
   }
   const panelCtl = () => [...panel.querySelectorAll('input,select,button')].filter(x => !x.closest('[hidden]'));
   function gearSync() {                       // ⚙ and "Enter settings" whenever the view is open; the effect part follows the effect
@@ -5820,6 +6687,7 @@ const Scope = (() => {
   const rowSec = r => r.closest('[data-sec]').dataset.sec;
   const onCtl = e => {
     const c = e.target, r = c.closest('.sfp-row'); if (!r || !c.matches('input,select')) return;
+    if (r.dataset.x === 'theme') { if (c.value !== (S.meta.theme || 'dark')) applyTheme(c.value, true); return; }
     SEC[rowSec(r)].set(r.dataset.p, c.type === 'checkbox' ? (c.checked ? 1 : 0) : +c.value);
   };
   panel.addEventListener('input', onCtl); panel.addEventListener('change', onCtl);
@@ -5850,7 +6718,7 @@ const Scope = (() => {
     bandSync();
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
     flat(full); start();
-    if (panelOpen) panelBuild();                                   // mode-specific rows (Bounce speed, Curve speed)
+    if (panelOpen) panelBuild();                                   // mode-specific rows (Bounce speed, Curve speed, Triangle, Title)
     if (announce) modeToast(`${i + 1} · ${MODES[i].name}`);
   }
   function modeToast(txt) { const el = $('#sfMode'); el.textContent = txt; el.classList.add('show'); clearTimeout(modeT); modeT = setTimeout(() => el.classList.remove('show'), 1300); }
@@ -5987,6 +6855,18 @@ const Scope = (() => {
       reset(seed = 29) { bz = bounceSim(seed); bzT = 0; }, hold(on) { bzHold = !!on; }, drifting: () => bzDrift(full), energy: () => bzE.slice() },
     curves: { sim: (seed) => curveSim(seed), curves: () => czLive().curves(), stats: () => czLive().stats(), geo: (A, o) => czLive().geo(A, o),
       reset(seed = 32) { cz = curveSim(seed); czT = 0; }, hold(on) { czHold = !!on; }, drifting: () => czDrift(full), energy: () => czE.slice() },
+    triangle: { sim: (seed) => triangleSim(seed), sides: () => tzLive().sides(), corners: () => tzLive().corners(), bends: () => tzLive().bends(), spin: () => tzLive().spin(),
+      lightsAt: () => tzLive().lights(), lights: () => tzL.map(l => ({ ...l })), stats: () => tzLive().stats(), geo: (A, o) => tzLive().geo(A, o),
+      reset(seed = 33) { tz = triangleSim(seed); tzT = 0; }, hold(on) { tzHold = !!on; }, drifting: () => tzDrift(full), energy: () => tzE.slice(), level: () => tzLv.slice() },
+    title: { text: () => tsText(), nest(text, aspect) { const s = tsBuild(text, aspect), at = (x, y) => s.sd[Math.min(s.GH - 1, Math.max(0, Math.round(y))) * s.GW + Math.min(s.GW - 1, Math.max(0, Math.round(x)))];
+        return { text: s.text, lines: s.lines, cut: s.cut, f: s.f, GW: s.GW, GH: s.GH, lev: s.lev, dmax: s.dmax, box: s.box, ms: s.ms, rasterMs: s.rasterMs, geomMs: s.geomMs,
+          bands: s.bands.map(B => B.loops.map(l => { let m = 0; for (let i = 0; i < l.n; i++) m += at(l.x[i], l.y[i]); return { n: l.n, len: l.len, area: l.area, box: l.box, sd: m / l.n }; })) }; },
+      layout: (text, aspect) => { const r = tsRaster(text, aspect); delete r.al; return r; },
+      cur: () => tsCur && { text: tsCur.text, lines: tsCur.lines, cut: tsCur.cut, f: tsCur.f, GW: tsCur.GW, GH: tsCur.GH, lev: tsCur.lev, via: tsCur.via, rasterMs: tsCur.rasterMs, geomMs: tsCur.geomMs, ms: tsCur.ms, wall: tsCur.wall, loops: tsCur.bands.map(B => B.loops.length), len: tsCur.bands.map(B => B.len) },
+      fade: () => ({ fade: tsFade, old: tsOld ? tsOld.text : null }), box: () => tsBox && tsBox.slice(), screen: () => [W, H], tau: () => tsTau, level: () => tsLv.slice(), punch: () => tsPu.slice(),
+      xf: () => tsCur && (({ sc, rot, cx, cy }) => ({ sc, rot, cx, cy }))(tsXf(tsCur, 0)), hold(on) { tsHold = !!on; }, reset() { tsTau = 0; tsT = 0; }, clear() { tsCache.clear(); tsCur = tsOld = null; tsWant = ''; tsFade = 1; },
+      worker: () => tsW === null ? 'unstarted' : tsW ? 'on' : 'off', drifting: () => tsDrift(full) },
+    xy: { info: () => ({ ...xyInfo }), tapped: () => xyOn, built: () => !!xyN, phosphor: () => xyP.cv, box: () => xyBox() },
     bandLevels() { if (!bandNodes) return null; return bandNodes.map(b => { b.an.getFloatTimeDomainData(b.buf); let s = 0; for (const v of b.buf) s += v * v; return Math.sqrt(s / b.buf.length); }); },
     level() { if (!an || !src) return null; const b = new Float32Array(an.fftSize); an.getFloatTimeDomainData(b); let s = 0; for (const v of b) s += v * v; return Math.sqrt(s / b.length); }, setFeed(f) { feed = f; start(); },
     state: () => ({ ctx: ac && ac.state, routed: !!src, drawing: !!raf, shown: !btn.hidden, full: open, fullscreen: !!fsEl(), frames, fft: an && an.fftSize, fullSize: [fcv.width, fcv.height], mode: curMode().id, bandsBuilt: !!bandNodes, bandsOn, bandColors: col.bands, bandGain: bandNodes ? bandNodes.map(b => b.gain) : null, bandPk: bandPk.slice(), ios: IS_IOS, analysing: !!src && enabled(), rate: ac && ac.sampleRate, out: ac && (ac.outputLatency || 0) + ac.baseLatency }),
