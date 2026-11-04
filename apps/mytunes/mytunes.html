@@ -487,6 +487,11 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
 .scope-full .sf-panel[hidden],.scope-full .sf-gear[hidden],.scope-full .sf-enter[hidden]{display:none}
 .scope-full .sfp-head{display:flex;align-items:center;gap:8px;margin:0 0 4px}
 .scope-full .sfp-head b{font-weight:600;font-size:12.5px;flex:1}
+.scope-full .sfp-head{cursor:move;touch-action:none;user-select:none;-webkit-user-select:none;position:sticky;top:-9px;z-index:3;margin:-9px -10px 4px -12px;padding:9px 10px 0 12px;background:inherit}
+.scope-full .sf-panel .sfp-grip{cursor:move;touch-action:none;padding:2px 3px;margin:-2px -4px -2px -4px;font-size:13px;letter-spacing:-1px;color:var(--muted)}
+.scope-full .sf-panel .sfp-home{padding:3px 6px;font-size:11px;color:var(--text);border-color:var(--pop-line)}
+.scope-full .sf-panel .sfp-home[hidden]{display:none}
+.scope-full .sf-panel.sfp-drag{opacity:.92;box-shadow:0 12px 36px rgba(var(--shadow-rgb),.45)}
 .scope-full .sfp-note{color:var(--text);margin:2px 0 6px;padding:4px 7px;border-radius:6px;background:var(--pop-hover);font-size:11.5px}
 .scope-full .sfp-note[hidden]{display:none}
 .scope-full .sfp-credit{margin:0 0 4px;font-size:11px;color:var(--text);opacity:.8}
@@ -504,12 +509,27 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
 .scope-full .sf-panel button:hover{color:var(--text);background:var(--pop-hover)}
 .scope-full .sf-panel .sfp-all{color:var(--text);border-color:var(--pop-line);padding:5px 10px}
 .scope-full .sfp-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px}
+.scope-full .sfp-pre{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:0 0 7px}
+.scope-full .sfp-pre label{font-weight:600;margin-right:2px}
+.scope-full .sfp-pre select{flex:1 1 130px;min-width:0;height:24px;padding:0 4px;border:1px solid var(--pop-line);border-radius:6px;background:var(--pop-bg);color:var(--text);font:inherit;cursor:pointer}
+.scope-full .sf-panel .sfp-pb{padding:3px 6px;font-size:11px;color:var(--text);border-color:var(--pop-line)}
+.scope-full .sf-panel .sfp-pb:disabled{opacity:.4;cursor:default;background:transparent}
+@media (max-width:700px){.scope-full .sfp-pre select{height:30px}.scope-full .sf-panel .sfp-pb{padding:7px 8px}}
 .scope-full .sfp-sec[hidden]{display:none}
 .scope-full .sfp-sec+.sfp-sec{border-top:1px solid var(--pop-line);margin-top:8px;padding-top:7px}
-.scope-full .sfp-sh{display:flex;align-items:center;gap:8px;margin:0 0 3px}
-.scope-full .sfp-sh b{flex:1;font-weight:600;font-size:12px;letter-spacing:.3px;color:var(--text)}
-.scope-full .sf-panel .sfp-sh .sfp-all{padding:3px 8px;font-size:11.5px}
-.scope-full .sfp-grp{margin:5px 0 1px;color:var(--text);opacity:.78;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase}
+.scope-full .sfp-sh{display:flex;align-items:center;gap:8px;margin:0 0 3px;padding:2px 3px 2px 0;border-radius:5px;background:var(--sfp-hbg);color:var(--sfp-hfg)}
+.scope-full .sf-panel .sfp-st{flex:1;display:flex;align-items:center;gap:5px;padding:3px 6px;border:0;background:transparent;font-weight:700;font-size:12px;letter-spacing:.3px;color:var(--sfp-hfg);text-align:left}
+.scope-full .sf-panel .sfp-st:hover{background:transparent;color:var(--sfp-hfg)}
+.scope-full .sf-panel .sfp-sh .sfp-all{padding:3px 8px;font-size:11.5px;color:var(--sfp-hfg);border-color:color-mix(in srgb,var(--sfp-hfg) 35%,transparent)}
+.scope-full .sf-panel .sfp-sh .sfp-all:hover{background:color-mix(in srgb,var(--sfp-hfg) 12%,transparent);color:var(--sfp-hfg)}
+.scope-full .sf-panel{--sfp-hbg:color-mix(in srgb,var(--accent2) 20%,#fff);--sfp-hbg2:color-mix(in srgb,var(--accent2) 32%,#fff);--sfp-hfg:color-mix(in srgb,var(--accent2) 18%,#0b0c10)}
+.scope-full .sf-panel .sfp-grp{display:flex;align-items:center;gap:5px;width:100%;margin:6px 0 2px;padding:3px 6px;border:0;border-radius:4px;background:var(--sfp-hbg);color:var(--sfp-hfg);font-size:10.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;text-align:left;line-height:1.25}
+.scope-full .sf-panel .sfp-grp:hover,.scope-full .sf-panel .sfp-sh:hover{background:var(--sfp-hbg2);color:var(--sfp-hfg)}
+.scope-full .sfp-grp::before,.scope-full .sfp-st::before{content:'▾' / '';display:inline-block;width:9px;font-size:10px;text-align:center}
+.scope-full .sfp-grp[aria-expanded=false]::before,.scope-full .sfp-st[aria-expanded=false]::before{content:'▸' / ''}
+.scope-full .sfp-row[hidden]{display:none}
+.scope-full .sfp-sec.sfp-shut>:not(.sfp-sh){display:none}
+.scope-full .sf-panel .sfp-fold{padding:3px 7px;font-size:11px;color:var(--text);border-color:var(--pop-line)}
 .scope-full .sfp-row select{grid-column:2/4;width:100%;min-width:0;height:22px;padding:0 4px;border:1px solid var(--pop-line);border-radius:6px;background:var(--pop-bg);color:var(--text);font:inherit;cursor:pointer}
 .scope-full .sfp-row input[type=checkbox]{width:16px;height:16px;justify-self:start;accent-color:var(--accent2);-webkit-appearance:auto;appearance:auto}
 .scope-full .sfp-eff{grid-column:2/-1;margin:-3px 0 2px;font-size:11px;color:var(--text);opacity:.85}
@@ -572,7 +592,7 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
     </div>
   </footer>
 </div>
-<div class="scope-full" id="scopeFull" hidden role="dialog" aria-modal="true" aria-label="Oscilloscope, full screen" tabindex="-1"><canvas id="scopeFullCv" class="idle" aria-hidden="true"></canvas><canvas id="scopeFx" hidden aria-hidden="true"></canvas><div class="sf-meta" id="sfMeta"></div><div class="sf-mode" id="sfMode" aria-live="polite"></div><div class="sf-fx" id="sfFx" aria-live="polite"></div><div class="sf-panel" id="sfPanel" hidden role="group" aria-labelledby="sfpHead"><div class="sfp-head"><b id="sfpHead">Settings</b><button type="button" class="sfp-x" aria-label="Close settings" title="Close settings (Enter or Esc)">✕</button></div><section class="sfp-sec" id="sfpScope" data-sec="scope" aria-labelledby="sfpScopeT"><div class="sfp-sh"><b id="sfpScopeT">Scope</b><button type="button" class="sfp-all" aria-label="Reset all scope settings">Reset all</button></div><div id="sfpScopeRows"></div></section><section class="sfp-sec" id="sfpFx" data-sec="fx" hidden aria-labelledby="sfpTitle"><div class="sfp-sh"><b id="sfpTitle">Feedback</b><button type="button" class="sfp-all" aria-label="Reset all effect settings">Reset all</button></div><div class="sfp-credit" id="sfpCredit" hidden></div><div class="sfp-note" id="sfpNote" hidden></div><div id="sfpRows"></div></section><div class="sfp-foot"><span>Double-click a slider to reset it</span></div></div><button type="button" class="sf-gear" id="sfGear" hidden aria-label="Scope settings" aria-expanded="false" aria-controls="sfPanel" title="Settings (Enter)">⚙</button><div class="sf-close"><span class="sf-fine">← → or 1–<span class="sf-n">5</span> mode · ↑ ↓ effect · G grid · T text<span class="sf-enter"> · Enter settings</span> · Click or Esc to close</span><span class="sf-touch">Swipe ↔ mode · ↕ effect · ⚙ settings · Tap to close</span></div></div>
+<div class="scope-full" id="scopeFull" hidden role="dialog" aria-modal="true" aria-label="Oscilloscope, full screen" tabindex="-1"><canvas id="scopeFullCv" class="idle" aria-hidden="true"></canvas><canvas id="scopeFx" hidden aria-hidden="true"></canvas><div class="sf-meta" id="sfMeta"></div><div class="sf-mode" id="sfMode" aria-live="polite"></div><div class="sf-fx" id="sfFx" aria-live="polite"></div><div class="sf-panel" id="sfPanel" hidden role="group" aria-labelledby="sfpHead"><div class="sfp-head" title="Drag to move the panel · double-click to put it back"><button type="button" class="sfp-grip" aria-label="Move settings panel" title="Drag to move the panel; when focused, arrow keys move it (Shift: further), Home puts it back">⠿</button><b id="sfpHead">Settings</b><button type="button" class="sfp-home" hidden aria-label="Reset panel position" title="Put the panel back in its place (or double-click the header)">Reset position</button><button type="button" class="sfp-fold" title="Collapse or expand every heading in this panel">Collapse all</button><button type="button" class="sfp-x" aria-label="Close settings" title="Close settings (Enter or Esc)">✕</button></div><div class="sfp-pre" id="sfpPre" role="group" aria-label="Presets" title="Presets: S saves the current settings as a new one, Shift+← → step through them"><label for="sfpPreset">Preset</label><select id="sfpPreset" aria-describedby="sfpPreHint"></select><button type="button" class="sfp-pb" data-pa="save" title="Save the current settings as a new preset (S)">Save new</button><button type="button" class="sfp-pb" data-pa="update" title="Overwrite the preset with the current settings">Update</button><button type="button" class="sfp-pb" data-pa="rename" title="Rename the preset">Rename</button><button type="button" class="sfp-pb" data-pa="delete" title="Delete the preset">Delete</button><span id="sfpPreHint" hidden>S saves a new preset; Shift+Left and Shift+Right step through them</span></div><section class="sfp-sec" id="sfpScope" data-sec="scope" aria-labelledby="sfpScopeT"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpScopeT" aria-expanded="true" aria-controls="sfpScopeRows">Scope</button><button type="button" class="sfp-all" aria-label="Reset all scope settings">Reset all</button></div><div id="sfpScopeRows"></div></section><section class="sfp-sec" id="sfpFx" data-sec="fx" hidden aria-labelledby="sfpTitle"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpTitle" aria-expanded="true" aria-controls="sfpRows">Feedback</button><button type="button" class="sfp-all" aria-label="Reset all effect settings">Reset all</button></div><div class="sfp-credit" id="sfpCredit" hidden></div><div class="sfp-note" id="sfpNote" hidden></div><div id="sfpRows"></div></section><div class="sfp-foot"><span>Double-click a slider to reset it</span></div></div><button type="button" class="sf-gear" id="sfGear" hidden aria-label="Scope settings" aria-expanded="false" aria-controls="sfPanel" title="Settings (Enter)">⚙</button><div class="sf-close"><span class="sf-fine">← → or 1–<span class="sf-n">5</span> mode · ↑ ↓ effect · G grid · T text<span class="sf-enter"> · Enter settings</span> · Click or Esc to close</span><span class="sf-touch">Swipe ↔ mode · ↕ effect · ⚙ settings · Tap to close</span></div></div>
 <div id="toasts" aria-live="polite"></div>
 <div id="selPanel" class="sel-panel hidden" role="toolbar" aria-label="Actions for the selected tracks"></div>
 <dialog id="dlg">
@@ -2106,7 +2126,9 @@ function buildExport() {
     tracks: [...S.tracks.values()].map(t => ({ id: t.id, title: t.title, artist: t.artist, albumArtist: t.albumArtist, album: t.album, trackNo: t.trackNo, discNo: t.discNo, year: t.year, date: t.date || '', rating: t.rating || 0, bpm: t.bpm || 0, ...(t.bpmSource ? { bpmSource: t.bpmSource } : {}), key: t.mkey || '', ...(t.mkeySource ? { keySource: t.mkeySource } : {}), ...(tagOf(t) ? { tag: t.tag } : {}), ...keepAutorate(t), ...(t.detect ? { detect: t.detect } : {}), duration: t.duration || 0, format: t.format || fileFormat(t.id), ...(t.codec ? { codec: t.codec } : {}), size: t.size, lastModified: t.lastModified, addedAt: t.addedAt })),
     albums: [...S.albums.values()].map(a => ({ id: a.id, name: a.name, trackIds: a.trackIds.slice(), createdAt: a.createdAt, updatedAt: a.updatedAt })),
     // v3: hand-arranged "Album order" of folder albums (key = album name + folder, as used in the app)
-    albumOrders: Object.entries(albumOrders()).filter(([k]) => S.autoMap.has(k)).map(([key, ids]) => { const a = S.autoMap.get(key); return { key, album: a.name, folder: a.folder, trackIds: ids.slice() }; })
+    albumOrders: Object.entries(albumOrders()).filter(([k]) => S.autoMap.has(k)).map(([key, ids]) => { const a = S.autoMap.get(key); return { key, album: a.name, folder: a.folder, trackIds: ids.slice() }; }),
+    // r39: the full-screen scope's settings presets ({ version, presets: [{ id, name, created, mode, effect, theme, params, fxParams }] })
+    visualiserPresets: Scope.presetsOut()
   };
 }
 /* ---------- library file in the music folder (File System Access API: Chrome / Edge on desktop) ----------
@@ -2324,6 +2346,7 @@ async function mergeLibrary(data, opts = {}) {
   if (data.settings && typeof data.settings.autorateFromFileName === 'boolean') S.meta.autorate = data.settings.autorateFromFileName;
   if (data.settings && THEMES.some(t => t.id === data.settings.theme)) applyTheme(data.settings.theme);
   if (data.settings && data.settings.detection) detectSettingsIn(data.settings.detection);
+  if (data.visualiserPresets) { try { Scope.presetsIn(data.visualiserPresets); } catch (e) { console.warn('visualiser presets not read', e); } }
   await saveMeta();
   if (S.view.name === 'album' && S.view.key.startsWith('c:') && !S.albums.has(S.view.key)) S.view = { name: 'albums' };
   computeAuto(); renderAll();
@@ -4574,19 +4597,117 @@ const Scope = (() => {
     for (let q = 0; q < LV; q++) {
       if (!bk[q].length) continue;
       const a = (q + .5) / LV; seg(q);
-      pg.strokeStyle = col.line; pg.globalAlpha = a; pg.lineWidth = bw; pg.stroke();
-      if (!light && q >= 5) { pg.strokeStyle = P.hot; pg.globalAlpha = (q - 4) / 4 * .8; pg.lineWidth = bw * .45; pg.stroke(); }   // the hot centre of a slow beam
+      pg.strokeStyle = col.line; pg.globalAlpha = a; pg.lineWidth = bw; brStroke(pg);
+      if (!light && q >= 5) { pg.strokeStyle = P.hot; pg.globalAlpha = (q - 4) / 4 * .8; pg.lineWidth = bw * .45; brStroke(pg); }   // the hot centre of a slow beam
     }
     pg.restore();
     // the screen: graticule, the outline halo under the newest sweep (Outline > 0), then the phosphor
     g.clearRect(0, 0, W, H); xyGrat(t, V);
     if (V.outline > 0) {
       g.save(); g.beginPath(); g.moveTo(xyX[0], xyY[0]); for (let j = 1; j < m; j++) g.lineTo(xyX[j], xyY[j]);
-      g.lineJoin = 'bevel'; g.lineCap = 'round'; g.strokeStyle = oCol(V); g.lineWidth = bw + 2 * V.outline * d; g.stroke(); g.restore();
+      g.lineJoin = 'bevel'; g.lineCap = 'round'; g.strokeStyle = oCol(V); g.lineWidth = bw + 2 * V.outline * d; brStroke(g, null, 2 * V.outline * d); g.restore();
     }
     g.drawImage(P.cv, 0, 0);
     xyLabel(t, V, mono ? `XY · mono: Y = X delayed ${V.xdelay.toFixed(2)} ms` : V.xms ? 'XY · mid / side' : 'XY · X = left, Y = right');
     xyInfo = { stereo: !mono, mono, n, pts: m, delay: dS, ms: performance.now() - T0, peak, rmsL: rl, rmsR: rr };
+    if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+  /* ---- Round 41: Mirror Zoom. Our reimplementation of the idea in Shadertoy 4sXGzH (author not known to us; Shadertoy's default
+     licence CC BY-NC-SA 3.0, https://www.shadertoy.com/view/4sXGzH). Its maths is ported, not its code: each pixel is iterated a few
+     times through "zoom about the centre (more inside a soft circle, less outside), turn, shift, fold back into the unit square
+     like a mirrored torus", then a soft disc is drawn at the folded position, which gives endlessly nested mirrored circles.
+     In the original the mouse sets the turn (its angle about the centre) and the shift; here an audio-driven point does: it
+     circles the centre at a phase that runs faster when the music is loud, its distance follows the overall level, and bass vs.
+     mids+treble lean it either way. Its own small WebGL canvas (rendered at Render scale) is drawn into the 2D scope frame,
+     so the ↑ ↓ effects, tiling and the rest still apply on top. ---- */
+  const MIR_FS = `precision highp float;
+uniform vec2 u_res; uniform vec2 u_rot; uniform vec2 u_off; uniform float u_it, u_rad, u_sharp, u_z0, u_z1, u_cs; uniform vec3 u_c0, u_c1, u_c2; uniform float u_cm;
+vec2 cm(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
+vec2 fold(vec2 p) { return 1.0 - abs(fract(p * 0.5) * 2.0 - 1.0); }
+float sg(float x) { return 2.0 / (1.0 + exp2(-x)) - 1.0; }
+void main() {
+  vec2 asp = vec2(1.0, u_res.y / u_res.x), p = 0.5 + (gl_FragCoord.xy / u_res - 0.5) * asp;
+  for (int i = 0; i < 6; i++) {
+    if (float(i) >= u_it) break;
+    float f = 0.5 - 0.5 * sg((length(p - 0.5) - u_rad) * u_sharp);
+    p = fold(0.5 + cm((p - 0.5) * mix(u_z0, u_z1, f), u_rot) + u_off);
+  }
+  float c = clamp(1.0 - length((p - 0.5) * u_cs), 0.0, 1.0);
+  vec3 k = u_cm < 0.5 ? u_c0 : u_cm < 1.5 ? (c < 0.5 ? mix(u_c0, u_c1, c * 2.0) : mix(u_c1, u_c2, c * 2.0 - 1.0)) : vec3(1.0);
+  gl_FragColor = vec4(k * c, c);
+}`;
+  const mirS = { cv: document.createElement('canvas'), gl: null, failed: false, ph: 0, dr: 0, lv: [0, 0, 0], last: 0, rgb: {} };
+  let mirInfo = { ms: 0, gl: null, lv: [0, 0, 0], point: [.5, .5], rot: [0, 1], off: [0, 0], size: [0, 0], live: false };
+  function mirGL() {
+    if (mirS.gl || mirS.failed) return mirS.gl;
+    try {
+      const g = mirS.cv.getContext('webgl', { premultipliedAlpha: true, antialias: false, preserveDrawingBuffer: true });
+      if (!g) throw new Error('no WebGL');
+      const sh = (ty, src) => { const o = g.createShader(ty); g.shaderSource(o, src); g.compileShader(o); if (!g.getShaderParameter(o, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(o)); return o; };
+      const pr = g.createProgram(); g.attachShader(pr, sh(g.VERTEX_SHADER, 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }'));
+      g.attachShader(pr, sh(g.FRAGMENT_SHADER, MIR_FS)); g.linkProgram(pr);
+      if (!g.getProgramParameter(pr, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(pr));
+      g.useProgram(pr); const b = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, b);
+      g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW);
+      const la = g.getAttribLocation(pr, 'a'); g.enableVertexAttribArray(la); g.vertexAttribPointer(la, 2, g.FLOAT, false, 0, 0);
+      const U = {}; ['u_res', 'u_rot', 'u_off', 'u_it', 'u_rad', 'u_sharp', 'u_z0', 'u_z1', 'u_cs', 'u_c0', 'u_c1', 'u_c2', 'u_cm'].forEach(n => U[n] = g.getUniformLocation(pr, n));
+      mirS.gl = g; mirS.U = U;
+      mirS.cv.addEventListener('webglcontextlost', e => { e.preventDefault(); mirS.gl = null; });
+    } catch (e) { console.warn('Mirror Zoom unavailable:', e.message); mirS.failed = true; mirS.gl = null; }
+    return mirS.gl;
+  }
+  const mirCtx = document.createElement('canvas').getContext('2d');
+  function mirRGB(c) {                        // any CSS colour -> [r, g, b] 0..1 (cached)
+    if (mirS.rgb[c]) return mirS.rgb[c];
+    mirCtx.fillStyle = '#000'; mirCtx.fillStyle = c; const v = mirCtx.fillStyle; let r = [1, 1, 1];
+    if (v[0] === '#') r = [1, 3, 5].map(i => parseInt(v.substr(i, 2), 16) / 255); else { const m = v.match(/[\d.]+/g); if (m) r = m.slice(0, 3).map(x => +x / 255); }
+    return mirS.rgb[c] = r;
+  }
+  function mirLevels(dt, V) {                  // smoothed RMS of the bass, mid and treble taps, auto-levelled to about 0..1
+    const k = 1 - Math.exp(-dt / Math.max(.01, V.msmooth));
+    bandNodes.forEach((b, i) => {
+      b.an.getFloatTimeDomainData(b.buf); const d = b.buf, n = Math.min(d.length, 1024); let s = 0;
+      for (let j = d.length - n; j < d.length; j++) s += d[j] * d[j];
+      const x = Math.min(1, Math.sqrt(s / n) * 3);
+      mirS.lv[i] = reduce.matches ? x : mirS.lv[i] + (x - mirS.lv[i]) * k;
+    });
+    return mirS.lv;
+  }
+  function mirPaint(t, V, lv, dt) {
+    const T0 = performance.now(), g = t.g; g.clearRect(0, 0, W, H);
+    const G = mirGL(); if (!G) { mirInfo = { ...mirInfo, gl: null }; return; }
+    const w = Math.max(16, Math.round(W * V.mscale)), h = Math.max(16, Math.round(H * V.mscale));
+    if (mirS.cv.width !== w || mirS.cv.height !== h) { mirS.cv.width = w; mirS.cv.height = h; }
+    // the audio point that stands in for the mouse (0..1 of the screen, like iMouse / iResolution)
+    const L = (lv[0] + lv[1] + lv[2]) / 3;
+    mirS.ph = (mirS.ph + dt * V.mspin * (.25 + 2 * L)) % (2 * Math.PI);
+    mirS.dr += dt * V.mdrift;
+    const ang = mirS.ph + V.mdrive * (lv[0] - .5 * (lv[1] + lv[2])) * Math.PI, rr = .5 * Math.min(1, V.mdrive * (.15 + .7 * L));
+    const asp = h / w, mx = .5 + rr * Math.cos(ang), my = .5 + rr * Math.sin(ang) / asp;
+    const a = Math.atan2((my - .5) * asp, mx - .5), rot = [Math.sin(a), Math.cos(a)];   // (as the original: polar = (sin, cos))
+    const o = [(mx - .5) * 4 * V.moff, (my - .5) * 4 * V.moff];
+    const off = [-(o[0] * rot[0] - o[1] * rot[1]) + mirS.dr * .05, -(o[0] * rot[1] + o[1] * rot[0]) + mirS.dr * .05];
+    const U = mirS.U, c3 = c => mirRGB(c);
+    G.viewport(0, 0, w, h); G.clearColor(0, 0, 0, 0); G.clear(G.COLOR_BUFFER_BIT);
+    G.uniform2f(U.u_res, w, h); G.uniform2f(U.u_rot, rot[0], rot[1]); G.uniform2f(U.u_off, off[0], off[1]);
+    G.uniform1f(U.u_it, V.miter); G.uniform1f(U.u_rad, V.mrad); G.uniform1f(U.u_sharp, V.msharp);
+    G.uniform1f(U.u_z0, V.mzmin); G.uniform1f(U.u_z1, Math.max(V.mzmin, V.mzmax)); G.uniform1f(U.u_cs, V.mcs);
+    G.uniform3fv(U.u_c0, c3(V.mcol === 1 ? col.bands[0] : col.line)); G.uniform3fv(U.u_c1, c3(col.bands[1])); G.uniform3fv(U.u_c2, c3(col.bands[2]));
+    G.uniform1f(U.u_cm, V.mcol);
+    G.drawArrays(G.TRIANGLES, 0, 3);
+    g.save(); g.imageSmoothingEnabled = true; g.drawImage(mirS.cv, 0, 0, W, H); g.restore();
+    if (t.big && V.text) xyLabel(t, V, 'Mirror Zoom · driven by the music');
+    mirInfo = { ms: performance.now() - T0, gl: 'webgl', lv: lv.slice(), point: [mx, my], rot, off, size: [w, h], live: mirInfo.live, n: (mirInfo.n || 0) + 1 };
+  }
+  function mirFlat(t) {
+    size(t); const V = sv(); mirS.lv = [0, 0, 0]; mirInfo.live = false; mirPaint(t, V, mirS.lv, 0); mirS.last = 0; t.cv.classList.add('idle');
+  }
+  function mirFrame(t) {
+    bandSync();
+    if (!bandsOn || !running()) { mirFlat(t); if (!raf && src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); t.cv.classList.remove('idle'); frames++;
+    const V = sv(), now = performance.now(), dt = mirS.last ? Math.min(.25, Math.max(1 / 240, (now - mirS.last) / 1000)) : 1 / 60; mirS.last = now;
+    mirInfo.live = true; mirPaint(t, V, mirLevels(dt, V), reduce.matches ? 0 : dt);
     if (!reduce.matches) raf = requestAnimationFrame(frame);
   }
   /* ---- full-screen visual modes: add an entry here to add a mode (the small scope always shows mode 1) ---- */
@@ -4599,13 +4720,14 @@ const Scope = (() => {
     { id: 'curves', name: 'Curves', draw: curvesFrame, idle: curvesFlat, taps: true },
     { id: 'triangle', name: 'Triangle', draw: triangleFrame, idle: triangleFlat, taps: true },
     { id: 'title', name: 'Title', draw: titleFrame, idle: titleFlat, taps: true },
-    { id: 'xy', name: 'XY', draw: xyFrame, idle: xyFlat }
+    { id: 'xy', name: 'XY', draw: xyFrame, idle: xyFlat },
+    { id: 'mirror', name: 'Mirror Zoom', draw: mirFrame, idle: mirFlat, taps: true }
   ];
   function modeIx() { const i = MODES.findIndex(m => m.id === S.meta.scopeMode); return i < 0 ? 0 : i; }
   const curMode = () => MODES[modeIx()];
   const drawerFor = t => t.big ? curMode() : MODES[0];
   let inFrame = false;
-  function flat(t = tgt()) { const d = viewT(t); drawerFor(d).idle(d); if (d !== t) compose(); if (t.big && !inFrame) fxIdle(); }
+  function flat(t = tgt()) { const d = viewT(t); withPal(d, () => drawerFor(d).idle(d)); if (d !== t) compose(); if (t.big && !inFrame) fxIdle(); }
   /* Outline (round 24): a full-screen trace with Outline > 0 is stroked three times on the same path: the coloured line with
      its glow as before, then a wider near-black halo taken from the theme background (col.outline; V.outline CSS px per side,
      × the canvas pixel ratio D, no glow), then the coloured line again without glow on top. So the glow shows outside the halo
@@ -4613,6 +4735,41 @@ const Scope = (() => {
   /* Round 34: Outline lightness (0 black → 15% the original theme-tinted dark halo → 50% the full base colour → 100% white) and
      Outline hue (0 = Theme: the base colour is the theme background, as before; 1–360° = a pure hue at full saturation).
      At the defaults (15%, Theme) the colour is col.outline itself, so the picture is pixel-identical to round 33. */
+  /* Round 36: Line lightness (−1..+1, 0 = Theme) and Line hue (0..360°, 0 = Theme) move the full-screen trace colours: col.line,
+     col.base (the resting line) and the three band colours (so also glows, Triangle lights, Title glow, XY beam and glow, which
+     are drawn from them). Each colour is moved in HSL from its own values: lightness L → L·(1 + k) below 0, L + (1 − L)·k above;
+     hue turned by h. While a full-screen frame is drawn, col is swapped for this palette; at the defaults it is col itself. */
+  let lpCol = null, lpK = '', lpVal = null;
+  function lineHex(c, k, h) {
+    let [r, g, b] = cssRgb(c);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, dd = mx - mn;
+    let hh = 0, ss = 0;
+    if (dd > 1e-9) {
+      ss = l > .5 ? dd / (2 - mx - mn) : dd / (mx + mn);
+      hh = mx === r ? (g - b) / dd + (g < b ? 6 : 0) : mx === g ? (b - r) / dd + 2 : (r - g) / dd + 4; hh *= 60;
+    }
+    const L = Math.min(1, Math.max(0, k < 0 ? l * (1 + k) : l + (1 - l) * k)), Hh = ((hh + h) % 360 + 360) % 360;
+    const a = ss * Math.min(L, 1 - L), f = n => { const q = (n + Hh / 30) % 12; return L - a * Math.max(-1, Math.min(q - 3, 9 - q, 1)); };
+    return '#' + [f(0), f(8), f(4)].map(x => Math.round(Math.min(1, Math.max(0, x)) * 255).toString(16).padStart(2, '0')).join('');
+  }
+  function linePal(V) {
+    const k = V.llight || 0, h = (V.lhue || 0) % 360;   // 360° is a full turn: the theme again
+    if (!k && !h) return col;
+    const key = k + '|' + h;
+    if (lpCol !== col || lpK !== key) {
+      const m = c => lineHex(c, k, h);
+      lpVal = { ...col, line: m(col.line), base: m(col.base), bands: col.bands.map(m) }; lpCol = col; lpK = key;
+    }
+    return lpVal;
+  }
+  function withPal(t, f) {                   // draw f() with the Line lightness / hue palette (full screen only)
+    if (!t.big) return f();
+    const c0 = col, V = sv(), T0 = performance.now(); col = linePal(V);
+    brOn = V.brush | 0; brScale = V.bsize || 2; brN = 0;
+    if (brOn) { brRec(t.g); brRec(ovL.g); brRec(xyP.g); }
+    if (brOn === 5) { const s_ = Array.from(tsText()); if (s_.join('') !== brTxt.join('')) brTxt = s_; brInfo.text = brTxt.join(''); brInfo.chars = ''; brInfo.c0 = -1; }
+    try { return f(); } finally { col = c0; brInfo.brush = brOn; brInfo.stamps = brN; brInfo.ms = performance.now() - T0; brOn = 0; }
+  }
   let oKey = '', oVal = '';
   function oCol(V) {
     const L = V.olight, h = V.ohue, k = col.outline + '|' + L + '|' + h;
@@ -4625,12 +4782,176 @@ const Scope = (() => {
     }
     oKey = k; return oVal = c || col.outline || 'rgba(0, 0, 0, 0.85)';
   }
+  // Brush (r37). Line (0) is the plain stroke, untouched. Any other brush, while a full-screen frame draws (withPal): the contexts
+  // (and Title's Path2D) record the path as polylines alongside the real path; brStroke then stamps a pre-rendered sprite of the
+  // brush along it instead of stroking, into a scratch layer that is composited once with the target's own alpha, shadow (glow),
+  // blend mode and clip - so a glow is one blur pass as with a stroke, and overlapping stamps do not pile up alpha
+  const BR_CAP = 1500, BR_FRAME = 4500;         // stamps per stroke / per frame at most: a longer path spaces them further apart
+  let brOn = 0, brScale = 2, brN = 0;           // the brush drawing now (0 = Line), its size × line width, stamps this frame
+  const brInfo = { brush: 0, stamps: 0, ms: 0, sprites: 0 };
+  const brL = { cv: document.createElement('canvas') }; brL.g = brL.cv.getContext('2d');
+  const brSpr = new Map();
+  function brRec(o) {                           // o: a 2D context or a Path2D; afterwards o.__br = the path so far, as [x0, y0, x1, y1, ...] runs
+    if (o.__br) return o;
+    const P = o instanceof Path2D ? Path2D.prototype : CanvasRenderingContext2D.prototype, TAU = 2 * Math.PI;
+    let cur = null; o.__br = [];
+    const pt = (x, y) => { if (!cur) { cur = [x, y]; o.__br.push(cur); } else cur.push(x, y); };
+    const lx = () => cur ? cur[cur.length - 2] : NaN, ly = () => cur ? cur[cur.length - 1] : NaN;
+    if (P.beginPath) o.beginPath = function () { o.__br = []; cur = null; return P.beginPath.call(this); };
+    o.moveTo = function (x, y) { cur = [x, y]; o.__br.push(cur); return P.moveTo.call(this, x, y); };
+    o.lineTo = function (x, y) { pt(x, y); return P.lineTo.call(this, x, y); };
+    o.closePath = function () { if (cur && cur.length > 2) { const x = cur[0], y = cur[1]; cur.push(x, y); cur = [x, y]; o.__br.push(cur); } return P.closePath.call(this); };
+    o.rect = function (x, y, w, h) { o.__br.push([x, y, x + w, y, x + w, y + h, x, y + h, x, y]); cur = [x, y]; o.__br.push(cur); return P.rect.call(this, x, y, w, h); };
+    o.quadraticCurveTo = function (cx, cy, x, y) {
+      let x0 = lx(), y0 = ly(); if (x0 !== x0) { x0 = cx; y0 = cy; pt(cx, cy); }
+      const n = Math.max(2, Math.min(64, Math.ceil((Math.hypot(cx - x0, cy - y0) + Math.hypot(x - cx, y - cy)) / 4)));
+      for (let i = 1; i <= n; i++) { const u = i / n, v = 1 - u; pt(v * v * x0 + 2 * u * v * cx + u * u * x, v * v * y0 + 2 * u * v * cy + u * u * y); }
+      return P.quadraticCurveTo.call(this, cx, cy, x, y);
+    };
+    o.bezierCurveTo = function (ax, ay, bx, by, x, y) {
+      let x0 = lx(), y0 = ly(); if (x0 !== x0) { x0 = ax; y0 = ay; pt(ax, ay); }
+      const n = Math.max(2, Math.min(96, Math.ceil((Math.hypot(ax - x0, ay - y0) + Math.hypot(bx - ax, by - ay) + Math.hypot(x - bx, y - by)) / 4)));
+      for (let i = 1; i <= n; i++) { const u = i / n, v = 1 - u; pt(v * v * v * x0 + 3 * v * v * u * ax + 3 * v * u * u * bx + u * u * u * x, v * v * v * y0 + 3 * v * v * u * ay + 3 * v * u * u * by + u * u * u * y); }
+      return P.bezierCurveTo.call(this, ax, ay, bx, by, x, y);
+    };
+    o.arc = function (cx, cy, r, a0, a1, ccw) {
+      let da = a1 - a0;
+      if (!ccw) da = da >= TAU ? TAU : ((da % TAU) + TAU) % TAU; else da = -da >= TAU ? -TAU : -((((-da) % TAU) + TAU) % TAU);
+      const n = Math.max(8, Math.min(256, Math.ceil(Math.abs(da) * Math.abs(r) / 3)));
+      for (let i = 0; i <= n; i++) { const a = a0 + da * i / n; pt(cx + r * Math.cos(a), cy + r * Math.sin(a)); }
+      return P.arc.call(this, cx, cy, r, a0, a1, ccw);
+    };
+    return o;
+  }
+  function brSprite(c, s, b) {                  // brush b (1-4) in colour c, s device pixels across; cached per brush / colour / size
+    const k = b + '|' + c + '|' + s; let cv = brSpr.get(k); if (cv) return cv;
+    if (brSpr.size >= 128) brSpr.clear();
+    cv = document.createElement('canvas'); cv.width = cv.height = s; const q = cv.getContext('2d'), r = s / 2;
+    const rgb = cssRgb(c), tone = (f) => 'rgb(' + rgb.map(x => Math.round(255 * Math.min(1, Math.max(0, f >= 0 ? x + (1 - x) * f : x * (1 + f))))).join(', ') + ')';
+    if (b === 1 || b === 3) { q.fillStyle = c; if (b === 1) { q.beginPath(); q.arc(r, r, r, 0, 2 * Math.PI); q.fill(); } else q.fillRect(0, 0, s, s); }
+    else if (b === 2) {                         // shaded sphere: lit from the top left, a highlight fading through the colour to a dark rim
+      const gr = q.createRadialGradient(r * .62, r * .58, r * .04, r, r, r);
+      gr.addColorStop(0, tone(.8)); gr.addColorStop(.22, tone(.3)); gr.addColorStop(.58, tone(0)); gr.addColorStop(1, tone(-.78));
+      q.fillStyle = gr; q.beginPath(); q.arc(r, r, r, 0, 2 * Math.PI); q.fill();
+    } else {                                    // shaded square: a bevel - light top-left edges, dark bottom-right, a face shaded the same way
+      const gr = q.createLinearGradient(0, 0, s, s);
+      gr.addColorStop(0, tone(.65)); gr.addColorStop(.5, tone(0)); gr.addColorStop(1, tone(-.75));
+      q.fillStyle = gr; q.fillRect(0, 0, s, s);
+      const e = Math.max(1, Math.round(s * .2));
+      if (s - 2 * e >= 2) { const f = q.createLinearGradient(e, e, s - e, s - e); f.addColorStop(0, tone(.2)); f.addColorStop(1, tone(-.3)); q.fillStyle = f; q.fillRect(e, e, s - 2 * e, s - 2 * e); }
+    }
+    brSpr.set(k, cv); brInfo.sprites = brSpr.size; return cv;
+  }
+  function brDraw(g, sub, ext) {                // stamp the brush along sub on g; ext: device-independent extra width (an outline), drawn flat
+    const m = g.getTransform(), sc = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1, b = ext ? (brOn <= 2 ? 1 : 3) : brOn;
+    const w = (g.lineWidth - (ext || 0)) * brScale + (ext || 0), s = Math.max(2, Math.min(192, Math.round(w * sc))), us = s / sc, h = us / 2;
+    const spr = brSprite(String(g.strokeStyle), s, b);
+    let len = 0; for (const a of sub) for (let i = 2; i < a.length; i += 2) len += Math.hypot(a[i] - a[i - 2], a[i + 1] - a[i - 1]);
+    const gap = Math.max(us * .25, 1 / sc, len / Math.max(400, Math.min(BR_CAP, BR_FRAME - brN)));
+    const L = brL, cv = g.canvas; if (L.cv.width !== cv.width || L.cv.height !== cv.height) { L.cv.width = cv.width; L.cv.height = cv.height; }
+    const q = L.g; q.setTransform(m);
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, n = 0;
+    const st = (x, y) => {
+      q.drawImage(spr, x - h, y - h, us, us); n++;
+      const X = m.a * x + m.c * y + m.e, Y = m.b * x + m.d * y + m.f;
+      if (X < x0) x0 = X; if (X > x1) x1 = X; if (Y < y0) y0 = Y; if (Y > y1) y1 = Y;
+    };
+    for (const a of sub) {
+      if (a.length < 2) continue;
+      st(a[0], a[1]); let left = gap;          // left: path length to the next stamp
+      for (let i = 2; i < a.length; i += 2) {
+        const ax = a[i - 2], ay = a[i - 1], dx = a[i] - ax, dy = a[i + 1] - ay, l = Math.hypot(dx, dy);
+        let p = left; while (p <= l) { st(ax + dx * p / l, ay + dy * p / l); p += gap; }
+        left = p - l;
+      }
+      if (a.length > 2 && left < gap) st(a[a.length - 2], a[a.length - 1]);   // the end of the run
+    }
+    brN += n;
+    if (!n) return;
+    const pad = s + 2, r0 = Math.max(0, Math.floor(x0 - pad)), r1 = Math.max(0, Math.floor(y0 - pad));
+    const rw = Math.min(cv.width, Math.ceil(x1 + pad)) - r0, rh = Math.min(cv.height, Math.ceil(y1 + pad)) - r1;
+    if (rw > 0 && rh > 0) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(L.cv, r0, r1, rw, rh, r0, r1, rw, rh); g.restore(); }
+    q.save(); q.setTransform(1, 0, 0, 1, 0, 0); q.clearRect(r0 - 1, r1 - 1, rw + 2, rh + 2); q.restore();
+  }
+  /* Text brush (r38): the letters of the song title (tsText: the title, else the file name, else "MyTunes") stamped one after
+     another along the path, each rotated to the path's direction there (taken over the glyph's own width, so a jagged trace does
+     not spin it), spaced by its advance (spaces are kept as gaps) and flowing forwards, 4 letters a second (still under reduced
+     motion). Sprites are pre-rendered per letter / colour / size (an outline pass: the same glyph stroked in the outline colour);
+     letter size from Line × Brush size, at least 12 device px so it reads. The same stamp caps: a path too long for them spreads
+     its letters further apart. Placement is kept on the path (sub.__tx), so the outline pass lines up with the letters. */
+  let brTxt = Array.from('MyTunes');
+  const brGly = new Map(), brAdv = new Map(), brMq = document.createElement('canvas').getContext('2d');
+  const brFont = em => `600 ${em}px ${TS_FONT}`;
+  function brAdvOf(ch, em) { const k = em + '|' + ch; let a = brAdv.get(k); if (a == null) { if (brAdv.size > 2000) brAdv.clear(); brMq.font = brFont(em); a = brMq.measureText(ch).width; brAdv.set(k, a); } return a; }
+  function brGlyph(ch, c, em, ow) {           // letter ch in colour c, em px, stroked ow px wide (an outline) or not
+    const k = ch + '|' + c + '|' + em + '|' + ow; let cv = brGly.get(k); if (cv) return cv;
+    if (brGly.size >= 600) brGly.clear();
+    const adv = brAdvOf(ch, em), pad = Math.ceil(ow / 2) + 2;
+    cv = document.createElement('canvas'); cv.width = Math.max(2, Math.ceil(adv + em * .3) + 2 * pad); cv.height = Math.ceil(em * 1.3) + 2 * pad;
+    const q = cv.getContext('2d'); q.font = brFont(em); q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillStyle = c;
+    if (ow) { q.strokeStyle = c; q.lineWidth = ow; q.lineJoin = 'round'; q.strokeText(ch, cv.width / 2, cv.height / 2); }
+    q.fillText(ch, cv.width / 2, cv.height / 2);
+    brGly.set(k, cv); brInfo.glyphs = brGly.size; return cv;
+  }
+  function brTextDraw(g, sub, ext) {
+    const m = g.getTransform(), sc = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1, ex = ext || 0, T = brTxt, N = T.length || 1;
+    const em = Math.max(12, Math.min(160, Math.round(8 + 2.2 * (g.lineWidth - ex) * brScale * sc))), ow = ex ? Math.max(1, Math.round(ex * sc)) : 0, c = String(g.strokeStyle);
+    let tx = sub.__tx;
+    if (!tx || tx.em !== em) {                  // placement: once per path and letter size
+      let len = 0; const runs = [];
+      for (const a of sub) { if (a.length < 4) continue; const cum = [0]; for (let i = 2; i < a.length; i += 2) cum.push(cum[cum.length - 1] + Math.hypot(a[i] - a[i - 2], a[i + 1] - a[i - 1])); len += cum[cum.length - 1]; runs.push({ a, cum }); }
+      let A = 0; for (const ch of T) A += brAdvOf(ch, em); A = Math.max(1, A / N) / sc;
+      const k = Math.max(1, len / (A * Math.max(400, Math.min(BR_CAP, BR_FRAME - brN))));
+      const S = reduce.matches ? 0 : performance.now() / 1000 * 4 * A * k, base = Math.floor(S / (A * k));
+      tx = sub.__tx = { em, runs, k, shift: S - base * A * k, c0: (((-base) % N) + N) % N };
+    }
+    const at = (r, d) => {                      // point on run r at distance d (clamped)
+      const cum = r.cum, a = r.a, n = cum.length; d = Math.max(0, Math.min(cum[n - 1], d));
+      let lo = 0, hi = n - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cum[mid] <= d) lo = mid; else hi = mid; }
+      const l = cum[hi] - cum[lo], u = l > 0 ? (d - cum[lo]) / l : 0;
+      return [a[2 * lo] + (a[2 * hi] - a[2 * lo]) * u, a[2 * lo + 1] + (a[2 * hi + 1] - a[2 * lo + 1]) * u];
+    };
+    const L = brL, cv = g.canvas; if (L.cv.width !== cv.width || L.cv.height !== cv.height) { L.cv.width = cv.width; L.cv.height = cv.height; }
+    const q = L.g;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, n = 0, ci = tx.c0, pad = 0, d = tx.shift, chars = '';
+    for (const r of tx.runs) {
+      const rl = r.cum[r.cum.length - 1];
+      while (true) {
+        const ch = T[ci % N], au = brAdvOf(ch, em) / sc;
+        if (d + au / 2 > rl) break;             // the next letter starts the next run
+        if (ch.trim()) {
+          const P = at(r, d + au / 2), P0 = at(r, d), P1 = at(r, d + au), th = Math.atan2(P1[1] - P0[1], P1[0] - P0[0]);
+          const spr = brGlyph(ch, c, em, ow), cs = Math.cos(th) / sc, sn = Math.sin(th) / sc, X = m.a * P[0] + m.c * P[1] + m.e, Y = m.b * P[0] + m.d * P[1] + m.f;
+          q.setTransform(m.a * cs + m.c * sn, m.b * cs + m.d * sn, m.c * cs - m.a * sn, m.d * cs - m.b * sn, X, Y);
+          q.drawImage(spr, -spr.width / 2, -spr.height / 2); n++;
+          if (chars.length < 64) chars += ch;
+          const R = Math.max(spr.width, spr.height) * .75; if (R > pad) pad = R;
+          if (X < x0) x0 = X; if (X > x1) x1 = X; if (Y < y0) y0 = Y; if (Y > y1) y1 = Y;
+        }
+        d += au * tx.k; ci = (ci + 1) % N;
+      }
+      d = 0;
+    }
+    brN += n;
+    if (!ex) { if (!brInfo.chars) { brInfo.chars = chars; brInfo.c0 = tx.c0; } }
+    if (!n) return;
+    pad += 2; const r0 = Math.max(0, Math.floor(x0 - pad)), r1 = Math.max(0, Math.floor(y0 - pad));
+    const rw = Math.min(cv.width, Math.ceil(x1 + pad)) - r0, rh = Math.min(cv.height, Math.ceil(y1 + pad)) - r1;
+    if (rw > 0 && rh > 0) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(L.cv, r0, r1, rw, rh, r0, r1, rw, rh); g.restore(); }
+    q.save(); q.setTransform(1, 0, 0, 1, 0, 0); q.clearRect(r0 - 1, r1 - 1, rw + 2, rh + 2); q.restore();
+  }
+  function brStroke(g, p, ext) {                // g.stroke(p), or the brush along the same path
+    const sub = brOn ? (p || g).__br : null;
+    if (!sub) return p ? g.stroke(p) : g.stroke();
+    if (brOn === 5) return brTextDraw(g, sub, ext);
+    brDraw(g, sub, ext);
+  }
   function strokeO(g, t, V) {
-    g.stroke();
+    brStroke(g);
     if (!t.big || !(V.outline > 0)) return;
     g.save(); g.shadowBlur = 0; g.shadowColor = 'transparent'; const w = g.lineWidth, s = g.strokeStyle, a = g.globalAlpha;
-    g.globalAlpha = 1; g.strokeStyle = oCol(V); g.lineWidth = w + 2 * V.outline * D; g.lineJoin = 'round'; g.stroke();
-    g.globalAlpha = a; g.strokeStyle = s; g.lineWidth = w; g.stroke(); g.restore();
+    g.globalAlpha = 1; g.strokeStyle = oCol(V); g.lineWidth = w + 2 * V.outline * D; g.lineJoin = 'round'; brStroke(g, null, 2 * V.outline * D);
+    g.globalAlpha = a; g.strokeStyle = s; g.lineWidth = w; brStroke(g); g.restore();
   }
   function waveFlat(t) {
     const g = t.g; size(t); g.clearRect(0, 0, W, H); grid(t);
@@ -4643,7 +4964,7 @@ const Scope = (() => {
   function frame() {                        // the one draw loop: paints whichever scope is visible, in its mode, then its effect
     raf = 0;
     const t = tgt(), d = viewT(t); inFrame = true;
-    try { if (audio.paused || document.hidden || !enabled()) flat(d); else drawerFor(d).draw(d); if (d !== t) compose(); } finally { inFrame = false; }
+    try { if (audio.paused || document.hidden || !enabled()) flat(d); else withPal(d, () => drawerFor(d).draw(d)); if (d !== t) compose(); } finally { inFrame = false; }
     if (t.big) t.cv.classList.contains('idle') && !bzDrift(t) && !czDrift(t) && !tzDrift(t) && !tsDrift(t) ? fxIdle() : fxStep();   // a drifting Bounce / Curves / Triangle / Title keeps its trails
   }
   function waveFrame(t) {
@@ -5755,11 +6076,11 @@ const Scope = (() => {
     return { sc, c, sn, cx, cy, gx, gy, box: [cx + X0, cy + Y0, cx + X1, cy + Y1], rot };
   }
   function tsStroke(g, t, V, p) {                 // strokeO for a Path2D
-    g.stroke(p);
+    brStroke(g, p);
     if (!t.big || !(V.outline > 0)) return;
     g.save(); g.shadowBlur = 0; g.shadowColor = 'transparent'; const w = g.lineWidth, s = g.strokeStyle;
-    g.globalAlpha = 1; g.strokeStyle = oCol(V); g.lineWidth = w + 2 * V.outline * D; g.lineJoin = 'round'; g.stroke(p);
-    g.strokeStyle = s; g.lineWidth = w; g.restore(); g.stroke(p);
+    g.globalAlpha = 1; g.strokeStyle = oCol(V); g.lineWidth = w + 2 * V.outline * D; g.lineJoin = 'round'; brStroke(g, p, 2 * V.outline * D);
+    g.strokeStyle = s; g.lineWidth = w; g.restore(); brStroke(g, p);
   }
   function tsGlow(s) {                              // per shape + theme: each band's rest contour, stroked wide and blurred once, at grid resolution
     const key = col.bands.join() + '|' + D;
@@ -5781,7 +6102,7 @@ const Scope = (() => {
       const [a0, b0, a1, b1] = X.box; g.strokeRect(a0, b0, a1 - a0, b1 - b0); g.restore(); }
     const paths = [], lvs = [];
     s.bands.forEach((B, i) => {
-      const p = new Path2D(), [data, n, t0, amp] = live ? D3[i] : [null, 0, 0, 0], L = B.len || 1;
+      const p = brOn ? brRec(new Path2D()) : new Path2D(), [data, n, t0, amp] = live ? D3[i] : [null, 0, 0, 0], L = B.len || 1;
       let base = 0;
       for (const lp of B.loops) {
         const tw = Math.min(.15 * lp.len, 8);
@@ -5923,6 +6244,10 @@ const Scope = (() => {
     { id: 'width', group: 'Size', label: 'Width', min: .2, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', title: 'How much of the width the trace spans (Rings: the size of the rings; Bounce: how long the lines can get; XY: narrows the screen’s horizontal axis, also when the plot is turned; times Gain)' },
     { id: 'zoom', group: 'Size', label: 'Zoom', min: .25, max: 4, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Time zoom: above 1 shows a shorter, stretched stretch of sound; below 1 a longer one (Rings: less or more sound once round; XY: less or more sound drawn each frame)' },
     { id: 'thick', group: 'Size', label: 'Line', min: .5, max: 4, step: .1, def: 1, fmt: x => x.toFixed(1) + '×', title: 'Line thickness (and glow; XY: times Beam width)' },
+    { id: 'llight', group: 'Size', label: 'Line lightness', short: '↳ Lightness', min: -1, max: 1, step: .01, def: 0, fmt: x => x ? sgn(Math.round(x * 100)) + '%' : 'Theme', title: 'Line colour, dark to light: Theme (0) is the theme’s own colours; below 0 darker (−100% black), above lighter (+100% white). The line, its glow, the three band colours, Triangle lights, Title glow and the XY beam all move by the same amount, each from its own lightness, so the bands stay apart' },
+    { id: 'lhue', group: 'Size', label: 'Line hue', short: '↳ Hue', min: 0, max: 360, step: 1, def: 0, fmt: x => x ? '+' + Math.round(x) + '°' : 'Theme', title: 'Line colour hue: Theme (0) keeps the theme’s colours; 1–360° turns every line colour round the colour wheel by that much (bass, mid and treble turn together, so they stay apart; greys stay grey)' },
+    { id: 'brush', group: 'Size', label: 'Brush', type: 'choice', opts: ['Line', 'Circle', 'Shaded sphere', 'Square', 'Shaded square', 'Text'], min: 0, max: 5, step: 1, def: 0, title: 'What the trace is drawn with: Line is the plain stroke; the others stamp that shape along the trace, in the line colour (a shaded sphere and a shaded square are lit from the top left); Text writes the song title along it, letter after letter, flowing along the trace' },
+    { id: 'bsize', group: 'Size', label: 'Brush size', short: '↳ Size', min: 1, max: 5, step: .1, def: 2, fmt: x => x.toFixed(1) + '×', title: 'Brush size, times the line width (Line; XY: times Beam width as well). No effect with the Line brush' },
     { id: 'outline', group: 'Size', label: 'Outline', min: 0, max: 8, step: .5, def: 0, fmt: x => x ? x.toFixed(1) + ' px' : 'Off', title: 'Dark outline around the line: extra width on each side, in screen pixels (0 = off)' },
     { id: 'olight', group: 'Size', label: 'Outline lightness', short: '↳ Lightness', min: 0, max: 1, step: .01, def: .15, fmt: x => Math.round(x * 100) + '%', title: 'Outline colour, dark to light: 0% black, 15% the usual dark halo, 50% the full theme / hue colour, 100% white (needs Outline on)' },
     { id: 'ohue', group: 'Size', label: 'Outline hue', short: '↳ Hue', min: 0, max: 360, step: 1, def: 0, fmt: x => x ? Math.round(x) + '°' : 'Theme', title: 'Outline colour hue: Theme (0) tints it with the theme background; 1–360° picks a hue (red 1°/360°, green 120°, blue 240°). Lightness sets how dark or light (needs Outline on)' },
@@ -5956,6 +6281,19 @@ const Scope = (() => {
     { id: 'xglow', group: 'XY', label: 'Glow', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['xy'], title: 'Soft glow round the beam (0: none)' },
     { id: 'xms', group: 'XY', label: 'Rotate 45°', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, modes: ['xy'], title: 'Mid / side view (a goniometer): mono sound stands upright, left-only and right-only lean 45° either way, opposite phase lies flat' },
     { id: 'xgrat', group: 'XY', label: 'Graticule', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, modes: ['xy'], title: 'The scope screen’s divisions (Display › Grid / G hides them too)' },
+    { id: 'mdrive', group: 'Mirror Zoom', label: 'Audio drive', short: 'Drive', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['mirror'], info: 'After Shadertoy 4sXGzH (author unknown), CC BY-NC-SA 3.0; reimplemented, the mouse replaced by the music', title: 'How far the music moves the point that steers the pattern (it stands in for the original’s mouse). 0: the pattern only drifts' },
+    { id: 'msmooth', group: 'Mirror Zoom', label: 'Smoothing', min: .02, max: 1.5, step: .01, def: .25, fmt: x => x.toFixed(2) + ' s', modes: ['mirror'], title: 'How slowly the levels follow the music: short = twitchy, long = gliding' },
+    { id: 'mspin', group: 'Mirror Zoom', label: 'Turn speed', short: 'Turn', min: 0, max: 3, step: .05, def: .4, fmt: x => x.toFixed(2) + '×', modes: ['mirror'], title: 'How fast the steering point circles the centre (faster when the music is loud; 0: only the bass / treble lean moves it)' },
+    { id: 'moff', group: 'Mirror Zoom', label: 'Offset', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['mirror'], title: 'How much the steering point also shifts the pattern (100% as in the original)' },
+    { id: 'mdrift', group: 'Mirror Zoom', label: 'Drift speed', short: 'Drift', min: 0, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['mirror'], title: 'The slow steady slide of the pattern (1× as in the original; 0 holds it)' },
+    { id: 'miter', group: 'Mirror Zoom', label: 'Iterations', min: 1, max: 6, step: 1, def: 4, fmt: x => String(x), modes: ['mirror'], title: 'How many times the picture is folded into itself: more = finer nesting, more GPU work' },
+    { id: 'mrad', group: 'Mirror Zoom', label: 'Inner radius', short: 'Radius', min: .02, max: .5, step: .01, def: .12, fmt: x => x.toFixed(2), modes: ['mirror'], title: 'Size of the circle that zooms more strongly than the rest' },
+    { id: 'msharp', group: 'Mirror Zoom', label: 'Sharpness', min: 1, max: 80, step: 1, def: 24, fmt: x => String(x), modes: ['mirror'], title: 'How hard the edge of that circle is' },
+    { id: 'mzmin', group: 'Mirror Zoom', label: 'Zoom min', min: .5, max: 8, step: .1, def: 2, fmt: x => x.toFixed(1) + '×', modes: ['mirror'], title: 'Zoom outside the circle' },
+    { id: 'mzmax', group: 'Mirror Zoom', label: 'Zoom max', min: 1, max: 32, step: .5, def: 16, fmt: x => x.toFixed(1) + '×', modes: ['mirror'], title: 'Zoom inside the circle (never below Zoom min)' },
+    { id: 'mcs', group: 'Mirror Zoom', label: 'Circle scale', short: 'Circles', min: .5, max: 4, step: .05, def: 1.4, fmt: x => x.toFixed(2), modes: ['mirror'], title: 'Size of the discs drawn at the end: bigger number = smaller discs' },
+    { id: 'mcol', group: 'Mirror Zoom', label: 'Colour', type: 'choice', opts: ['Line colour', 'Band colours', 'White'], min: 0, max: 2, step: 1, def: 0, modes: ['mirror'], title: 'Line colour follows the theme (and Line hue / lightness); Band colours shade from bass to treble colour; White as in the original' },
+    { id: 'mscale', group: 'Mirror Zoom', label: 'Render scale', short: 'Scale', min: .25, max: 1, step: .05, def: .5, fmt: x => Math.round(x * 100) + '%', modes: ['mirror'], title: 'Resolution the pattern is computed at, then scaled up: lower is faster on slow GPUs' },
     { id: 'xdelay', group: 'XY', label: 'Mono delay', min: 0, max: 10, step: .05, def: 1, fmt: x => x.toFixed(2) + ' ms', modes: ['xy'], title: 'For mono sound (or two identical channels) Y is the same signal delayed by this much: a phase plot. 0 draws a diagonal line' }
   ];
   SCOPE_PARAMS.forEach(p => { if (p.type === 'choice') p.fmt = x => p.opts[x] || ''; });
@@ -6270,6 +6608,51 @@ const Scope = (() => {
   function nebHue(h) {                       // hue 0..1 → a bright cosine-palette colour (rgb 0..1)
     return [0, 1 / 3, 2 / 3].map(o => .5 + .45 * Math.cos(2 * Math.PI * (h - o)));
   }
+  /* Round 40: Star Warp, our own shader written after looking at "GOL Star Warp Filter V2" by matthewwachter
+     (https://www.shadertoy.com/view/3ldGDn, 2019: "interference patterns produced by a rotated star filter and some feedback
+     with Conway's game of life as an input source … a fast blur and fake normals from a flockaroo shader"). Its source states
+     CC BY-NC-SA 3.0 (Buffer B, and the Image pass by Florian Berger / flockaroo, 2016); credited here and in the credit line.
+     None of its code is used. The original runs five passes: a Game of Life seeded with an SVG logo, a star filter (30 rings of
+     8 taps, a cross and an X, each ring turned a little more, the X the other way, weights falling off outwards) whose sum picks
+     colours from a texture with two hue shifts and mod(sum, 3) banding, a 98% feedback mix, a 10-tap ring blur, and a
+     gradient-normal lighting pass. Ours folds that into the existing single ping-pong pass: the live trace (plus a little
+     echo of the old picture) stands in for the Game of Life; a star of up to 12 rings × 8 taps, twisted along its arms and
+     slowly spinning, measures how many arms hit the trace; that sum paints banded colours from a hue wheel into the trails;
+     the trails are a 6-tap ring blur of the last frame, pushed along its own relief (the warp), with a wet specular sheen
+     from fake normals. Bass widens the star, mids and treble raise its gain and the sheen. */
+  const STAR_FS = `
+    uniform sampler2D u_prev, u_src; uniform vec3 u_bg; uniform vec2 u_res;
+    uniform float u_keep, u_min, u_steps, u_space, u_twist, u_rot, u_gain, u_band, u_hue, u_ink, u_blur, u_gloss, u_warp, u_echo;
+    float E(vec2 q) { vec3 d = abs(texture2D(u_prev, q).rgb - u_bg); return smoothstep(0.08, 0.6, max(d.r, max(d.g, d.b))); }
+    float L(vec2 q) { float x = texture2D(u_src, q).a; if (u_echo > 0.0) x += u_echo * E(q); return x; }
+    vec3 pal(float h) { return 0.5 + 0.5 * cos(6.28318 * (h + vec3(0.0, 0.33, 0.67))); }
+    void main() {
+      vec2 px = 1.0 / u_res; float o = 0.0, W = 0.0;
+      for (int i = 1; i <= 12; i++) {                  // the star: a cross turned by a, an X turned the other way
+        float s = float(i); if (s > u_steps) break;
+        float m = (u_steps + 1.0 - s) / u_steps, a = u_rot + u_twist * s / u_steps, r = s * u_space;
+        vec2 ep = vec2(cos(a), sin(a)) * r, fp = vec2(cos(0.7854 - a), sin(0.7854 - a)) * r * 1.4142;   // in pixels
+        vec2 e = ep * px, e2 = vec2(-ep.y, ep.x) * px, f = fp * px, f2 = vec2(-fp.y, fp.x) * px;
+        o += m * (L(v + e) + L(v - e) + L(v + e2) + L(v - e2) + L(v + f) + L(v - f) + L(v + f2) + L(v - f2));
+        W += m;
+      }
+      o = u_gain * o / max(W, 1e-3);                     // 0..8 × gain: how many arms hit something bright
+      vec2 g = vec2(E(v + vec2(2.0 * px.x, 0.0)) - E(v - vec2(2.0 * px.x, 0.0)), E(v + vec2(0.0, 2.0 * px.y)) - E(v - vec2(0.0, 2.0 * px.y)));
+      vec2 q = v + g * u_warp * 6.0 * px;                // the trails slide along their own relief
+      vec3 c = texture2D(u_prev, q).rgb * 0.25;          // soft ring blur, as in the source's blur pass
+      for (int k = 0; k < 6; k++) { float b = 1.0472 * float(k) + 0.2; c += texture2D(u_prev, q + vec2(cos(b), sin(b)) * u_blur * px).rgb * 0.125; }
+      vec3 d = clamp(c - u_bg, -1.0, 1.0);
+      d = sign(d) * max(abs(d) * u_keep - u_min, 0.0);
+      float hit = min(o, 1.0), bri = hit * (0.55 + 0.45 * cos(2.0944 * o * u_band));   // banded, like the source's mod(sum, 3)
+      vec3 sc = mix(u_bg, pal(u_hue + 0.07 * o * u_band), bri);
+      d = mix(d, sc - u_bg, clamp(u_ink * hit, 0.0, 1.0));
+      vec3 n = normalize(vec3(-5.0 * g, 1.0)), hv = normalize(vec3(0.35, 0.35, 1.0) + vec3(0.0, 0.0, 1.0));
+      float spec = max(pow(max(dot(n, hv), 0.0), 36.0) - pow(hv.z, 36.0), 0.0);   // fake-normal sheen
+      vec3 hl = u_bg.r + u_bg.g + u_bg.b > 1.5 ? vec3(-0.5) : vec3(0.6, 0.7, 1.0);
+      d += hl * spec * u_gloss;
+      vec4 src = texture2D(u_src, v);
+      gl_FragColor = vec4(clamp((u_bg + d) * (1.0 - src.a) + src.rgb, 0.0, 1.0), 1.0);
+    }`;
   const FX = [
     { id: 'none', name: 'None' },
     { id: 'feedback', name: 'Feedback', frag: FEEDBACK_FS,
@@ -6418,6 +6801,32 @@ const Scope = (() => {
           u_pupil: P.pupil * (1 + .35 * P.beat * b.kick), u_dark: .12 * r1, u_split: .004 * P.split * r1,
           u_gloss: .15 * P.gloss * r1 * (1 + P.beat * b.n[2]), u_grain: P.grain * r1 * (1 + .5 * P.beat * b.n[2]), u_seed: (st.t * 60) % 97,
           u_eye: [.18 * P.drift * Math.sin(.21 * st.t), .12 * P.drift * Math.sin(.17 * st.t + 1)], u_c1: nebHue(h1), u_c2: nebHue(h2) };
+      } },
+    { id: 'starwarp', name: 'Star Warp', frag: STAR_FS, taps: true,
+      credit: { text: 'After “GOL Star Warp Filter V2” by matthewwachter (Shadertoy, CC BY-NC-SA 3.0), with flockaroo’s fake-normal lighting', href: 'https://www.shadertoy.com/view/3ldGDn' },
+      params: [
+        { id: 'reach', label: 'Reach', min: 2, max: 12, step: 1, def: 4, fmt: x => x + ' rings', title: 'How many rings of taps the star has: longer arms, bigger interference patterns (more work for the GPU)' },
+        { id: 'spacing', label: 'Spacing', min: .5, max: 6, step: .1, def: 3.5, fmt: x => x.toFixed(1) + ' px', title: 'Distance between the star\'s rings, in pixels' },
+        { id: 'twist', label: 'Twist', min: -360, max: 360, step: 1, def: 100, fmt: x => sgn(x) + '°', title: 'How far each arm turns from its first ring to its last (the X turns the other way): the star warp' },
+        { id: 'spin', label: 'Spin', min: -2, max: 2, step: .05, def: .3, fmt: x => sgn(x, 2) + '×', title: 'Slow turning of the whole star over time (0 = still)' },
+        { id: 'gain', label: 'Gain', min: .2, max: 4, step: .05, def: 1.2, fmt: times, title: 'How strongly the arms that hit the trace count: more gain, more colour and more bands' },
+        { id: 'bands', label: 'Bands', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'Colour and brightness banding of the star sum (0 = one smooth colour)' },
+        { id: 'echo', label: 'Echo', min: 0, max: .5, step: .01, def: 0, fmt: pct, title: 'How much the old picture feeds the star as well as the live trace: patterns breed on patterns (doubles the GPU work when above 0)' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: .5, fmt: pct, title: 'Strength of the colour the star paints into the trails' },
+        { id: 'warp', label: 'Warp', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'How far the trails slide along their own relief each 1/60 s' },
+        { id: 'blur', label: 'Blur', min: 0, max: 4, step: .1, def: 1.2, fmt: x => x.toFixed(1) + ' px', title: 'Soft ring blur of the trails as they age' },
+        { id: 'gloss', label: 'Sheen', min: 0, max: 1, step: .01, def: .4, fmt: pct, title: 'A wet highlight from fake surface normals' },
+        { id: 'hue', label: 'Colour cycle', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'How fast the colours travel round the colour wheel' },
+        { id: 'trails', label: 'Trails', min: .5, max: 1, step: .01, def: .94, fmt: pct, title: 'How much of the picture survives each 1/60 s: higher = longer trails; 100% never fades' },
+        { id: 'speed', label: 'Speed', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'Time scale of all the motion (0 freezes it; trails still fade)' },
+        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: 1, fmt: times, title: 'How much the music drives it: bass widens the star, mids and treble raise its gain and the sheen' }
+      ],
+      uniforms(dt, P, st) {
+        const r = Math.min(2, dt * 60 * P.speed), r1 = Math.min(1, r); st.t = (st.t || 0) + dt * P.speed;
+        const b = beatOf(st, dt); st.kick = b.kick;
+        return { keep: P.trails, u_steps: Math.round(P.reach), u_space: P.spacing * (1 + .3 * P.beat * b.kick), u_twist: P.twist * DEG,
+          u_rot: (st.t * .5 * P.spin) % (2 * Math.PI), u_gain: P.gain * (1 + .5 * P.beat * b.energy), u_band: P.bands, u_hue: (st.t * .05 * P.hue) % 1,
+          u_ink: Math.min(1, P.ink * r1), u_blur: P.blur, u_gloss: .3 * P.gloss * r1 * (1 + P.beat * b.n[2]), u_warp: P.warp * r1, u_echo: P.echo };
       } }
   ];
   const fxCv = $('#scopeFx'), sfFx = $('#sfFx'), SETTLE = 45;        // frames the trails take to fade out after a pause
@@ -6604,6 +7013,35 @@ const Scope = (() => {
   const panel = $('#sfPanel'), gear = $('#sfGear'), prows = $('#sfpRows'), srows = $('#sfpScopeRows'), fxSec = $('#sfpFx');
   const SEC = { scope: { rows: srows, pre: 'sfs-', schema: () => SCOPE_PARAMS, vals: () => sv(), set: (id, x) => setView(id, x) },
     fx: { rows: prows, pre: 'sfp-', schema: () => FX[fxIx()].params || [], vals: () => fxParams(), set: (id, x) => setParam(id, x) } };
+  /* Round 37: every heading in the panel folds: the two sections (Scope, the effect: keys 'scope' / 'fx') and each group in them
+     ('scope:Size', 'fx:…'). Folded rows are hidden (so also out of the Tab order); the state is kept per browser in localStorage
+     (mp3lib.scopeFold, only folded keys; none = all open, the old panel). */
+  const FOLD_K = 'mp3lib.scopeFold';
+  let fold = (() => { try { const o = JSON.parse(localStorage.getItem(FOLD_K)); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } })();
+  const foldSave = () => { try { if (Object.keys(fold).length) localStorage.setItem(FOLD_K, JSON.stringify(fold)); else localStorage.removeItem(FOLD_K); } catch (e) { } };
+  const grpHTML = g => `<button type="button" class="sfp-grp" data-g="${esc(g)}" aria-expanded="true">${esc(g)}</button>`;
+  const secEl = sec => $(sec === 'scope' ? '#sfpScope' : '#sfpFx');
+  function foldApply() {                      // reflect fold in the panel (after every build and toggle)
+    let open_ = false, shut = false;
+    for (const sec of ['scope', 'fx']) {
+      const el = secEl(sec), off = !!fold[sec]; el.classList.toggle('sfp-shut', off); el.querySelector('.sfp-st').setAttribute('aria-expanded', String(!off));
+      let on = true;
+      for (const c of SEC[sec].rows.children) {
+        if (c.classList.contains('sfp-grp')) { on = !fold[sec + ':' + c.dataset.g]; c.setAttribute('aria-expanded', String(on)); if (!el.hidden) on ? open_ = true : shut = true; }
+        else if (c.classList.contains('sfp-row')) c.hidden = !on;
+      }
+      if (!el.hidden && off) shut = true;
+    }
+    const b = panel.querySelector('.sfp-fold'), all = !open_ && shut;
+    b.textContent = all ? 'Expand all' : 'Collapse all'; b.setAttribute('aria-label', all ? 'Expand all settings headings' : 'Collapse all settings headings');
+  }
+  function foldSet(k, off) { if (off) fold[k] = 1; else delete fold[k]; foldSave(); foldApply(); }
+  function foldAll() {                        // Collapse all: every group heading (the two sections stay open, so the headings show); Expand all: everything
+    if (panel.querySelector('.sfp-fold').textContent === 'Expand all') fold = {};
+    else { fold = {}; for (const sec of ['scope', 'fx']) for (const c of SEC[sec].rows.querySelectorAll('.sfp-grp')) fold[sec + ':' + c.dataset.g] = 1;
+      for (const g of new Set(SCOPE_PARAMS.map(p => p.group).filter(Boolean))) fold['scope:' + g] = 1; }
+    foldSave(); foldApply();
+  }
   function rowHTML(p, x, pre) {
     const id = pre + p.id, t = esc(p.title), v = esc(p.fmt(x)), al = p.short ? ` aria-label="${esc(p.label)}"` : '';
     if (al) return rowHTML({ ...p, short: null }, x, pre).replace(`id="${id}"`, `id="${id}"${al}`).replace(`>${esc(p.label)}</label>`, `>${esc(p.short)}</label>`);
@@ -6614,21 +7052,21 @@ const Scope = (() => {
       (p.eff ? `<small class="sfp-eff" hidden></small>` : '') + (p.info ? `<small class="sfp-eff sfp-info">${esc(p.info)}</small>` : '') + `</div>`;
   }
   function rowsHTML(list, vals, pre) {
-    let g = null; return list.filter(p => !p.modes || p.modes.includes(curMode().id)).map(p => (p.group && p.group !== g ? `<div class="sfp-grp" aria-hidden="true">${esc(g = p.group)}</div>` : '') + rowHTML(p, vals[p.id], pre)).join('');
+    let g = null; return list.filter(p => !p.modes || p.modes.includes(curMode().id)).map(p => (p.group && p.group !== g ? grpHTML(g = p.group) : '') + rowHTML(p, vals[p.id], pre)).join('');
   }
   /* Round 34: Theme, the app's one theme setting (S.meta.theme, same as Settings › Theme; applyTheme saves it and the scope
      recolours through its data-theme observer). Not a scope param: Reset all and ↺ leave it alone. */
-  const themeRow = () => `<div class="sfp-grp" aria-hidden="true">Theme</div><div class="sfp-row" data-p="theme" data-x="theme"><label for="sfs-theme" title="Colour theme of the whole app (same as Settings › Theme)">Theme</label><select id="sfs-theme" title="Colour theme of the whole app (same as Settings › Theme)">${THEMES.map(t => `<option value="${t.id}"${t.id === (S.meta.theme || 'dark') ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>`;
-  window.addEventListener('mp3lib-theme', e => { const c = $('#sfs-theme'); if (c && c.value !== e.detail) c.value = e.detail; });
+  const themeRow = () => `${grpHTML('Theme')}<div class="sfp-row" data-p="theme" data-x="theme"><label for="sfs-theme" title="Colour theme of the whole app (same as Settings › Theme)">Theme</label><select id="sfs-theme" title="Colour theme of the whole app (same as Settings › Theme)">${THEMES.map(t => `<option value="${t.id}"${t.id === (S.meta.theme || 'dark') ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>`;
+  window.addEventListener('mp3lib-theme', e => { const c = $('#sfs-theme'); if (c && c.value !== e.detail) c.value = e.detail; preSync(); });
   function panelBuild() {
-    srows.innerHTML = themeRow() + rowsHTML(SCOPE_PARAMS, sv(), 'sfs-');
+    srows.innerHTML = themeRow() + rowsHTML(SCOPE_PARAMS, sv(), 'sfs-'); preSync();
     const f = FX[fxIx()], has = hasParams(f);
     fxSec.hidden = !has;
     if (has) { $('#sfpTitle').textContent = f.name; prows.innerHTML = rowsHTML(f.params, fxParams(f), 'sfp-'); const st = fxSt[f.id]; if (st && st.keep != null) effSync(f, st.keep); }
     else prows.innerHTML = '';
     const cr = $('#sfpCredit'), c = has && f.credit;
     cr.hidden = !c; cr.innerHTML = c ? `<a href="${esc(c.href)}" target="_blank" rel="noopener noreferrer">${esc(c.text)}</a>` : '';
-    panelNote();
+    panelNote(); foldApply();
   }
   function panelNote() {
     const n = $('#sfpNote'), f = FX[fxIx()];
@@ -6654,9 +7092,125 @@ const Scope = (() => {
     const all = S.meta.scopeFxParams = S.meta.scopeFxParams || {}, o = all[f.id] = all[f.id] || {};
     if (Math.abs(x - p.def) < 1e-9) delete o[id]; else o[id] = x;
     if (!Object.keys(o).length) delete all[f.id];
-    panelRow(p, x);
+    panelRow(p, x); preSync();
     clearTimeout(paramT); paramT = setTimeout(saveMeta, 250);      // a drag fires many inputs: save once it settles
     if (fxShown && !raf) { settle = 0; fxIdle(); }                 // paused: show the new look while the trails settle again
+  }
+  /* Round 39: presets. A preset is a snapshot of every scope setting (all SCOPE_PARAMS values, the Theme), the mode, the effect
+     and that effect's settings; not the panel's place or folds. S saves the current settings as a new one, Shift+← → step through
+     them (wrapping), the Preset list at the top of the panel picks one. Kept in S.meta.scopePresets (IndexedDB) and written to
+     the library file (visualiserPresets); a value that is missing / out of range falls back to its default / is clamped, unknown
+     values are ignored and an unknown mode or effect leaves the current one, so older and newer presets both apply. */
+  const PRESET_V = 1;
+  let preAt = -1;                                // the preset last applied or saved (Shift+← → go on from it after a tweak)
+  const preList = () => Array.isArray(S.meta.scopePresets) ? S.meta.scopePresets : (S.meta.scopePresets = []);
+  const preNum = (x, p) => { let v = typeof x === 'number' && Number.isFinite(x) ? Math.min(p.max, Math.max(p.min, x)) : p.def; if (p.step >= 1) v = Math.round(v); return v; };
+  function preSnap() {
+    const v = sv(), params = {}, f = FX[fxIx()]; SCOPE_PARAMS.forEach(p => params[p.id] = v[p.id]);
+    return { mode: MODES[modeIx()].id, effect: f.id, params, fxParams: hasParams(f) ? { ...fxParams(f) } : {}, theme: S.meta.theme || 'dark' };
+  }
+  function preNorm(pr) {                         // a preset's full values (clamped, defaults for the missing ones)
+    const P = pr && pr.params && typeof pr.params === 'object' ? pr.params : {}, params = {};
+    SCOPE_PARAMS.forEach(p => params[p.id] = preNum(P[p.id], p));
+    const mi = MODES.findIndex(m => m.id === pr.mode), fi = FX.findIndex(f => f.id === pr.effect), fxp = {};
+    const FP = pr.fxParams && typeof pr.fxParams === 'object' ? pr.fxParams : {};
+    if (fi >= 0) (FX[fi].params || []).forEach(p => fxp[p.id] = preNum(FP[p.id], p));
+    return { mi, fi, params, fxp, theme: THEMES.some(t => t.id === pr.theme) ? pr.theme : null };
+  }
+  function preMatch(pr) {                        // do the current settings equal this preset?
+    const n = preNorm(pr), v = sv(), eq = (a, b) => Math.abs(a - b) < 1e-9;
+    if (n.mi >= 0 && n.mi !== modeIx()) return false;
+    if (n.fi >= 0 && n.fi !== fxIx()) return false;
+    if (n.theme && n.theme !== (S.meta.theme || 'dark')) return false;
+    if (!SCOPE_PARAMS.every(p => eq(v[p.id], n.params[p.id]))) return false;
+    if (n.fi >= 0) { const c = fxParams(FX[n.fi]); if (!(FX[n.fi].params || []).every(p => eq(c[p.id], n.fxp[p.id]))) return false; }
+    return true;
+  }
+  const preCur = () => { const L = preList(); if (preAt >= 0 && preAt < L.length && preMatch(L[preAt])) return preAt; return L.findIndex(preMatch); };
+  const preTarget = () => { const m = preCur(), L = preList(); return m >= 0 ? m : (preAt >= 0 && preAt < L.length ? preAt : -1); };
+  function preApply(i, quiet) {
+    const L = preList(); if (!open || !L.length) return;
+    i = ((i % L.length) + L.length) % L.length; const pr = L[i], n = preNorm(pr);
+    if (n.theme && n.theme !== (S.meta.theme || 'dark')) applyTheme(n.theme, true);
+    const o = {}; SCOPE_PARAMS.forEach(p => { if (Math.abs(n.params[p.id] - p.def) >= 1e-9) o[p.id] = n.params[p.id]; });
+    if (Object.keys(o).length) S.meta.scopeView = o; else delete S.meta.scopeView;
+    svC = null; dispSync();
+    if (n.fi >= 0) {
+      const f = FX[n.fi], q = {}, all = S.meta.scopeFxParams = S.meta.scopeFxParams || {};
+      (f.params || []).forEach(p => { if (Math.abs(n.fxp[p.id] - p.def) >= 1e-9) q[p.id] = n.fxp[p.id]; });
+      if (Object.keys(q).length) all[f.id] = q; else delete all[f.id];
+      const was = fxIx(); S.meta.scopeFx = f.id;
+      if (!fxApply() && n.fi > 0) S.meta.scopeFx = FX[was].id === f.id ? 'none' : FX[was].id;
+    }
+    preAt = i; clearTimeout(paramT); paramT = 0;
+    setMode(n.mi >= 0 ? n.mi : modeIx(), false);   // redraws, retunes the filters and rebuilds the panel
+    gearSync(); saveMeta();
+    if (!quiet) modeToast(`Preset ${i + 1}/${L.length} · ${pr.name}`);
+    preSync(true);
+  }
+  function preStep(d) {
+    const L = preList(); if (!L.length) return modeToast('No presets yet · S saves one');
+    const m = preCur(), from = m >= 0 ? m : preAt;
+    preApply(from < 0 || from >= L.length ? (d > 0 ? 0 : L.length - 1) : from + d);
+  }
+  const preId = () => 'vp-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+  function preSave() {
+    if (!open) return null;
+    const L = preList(), mn = MODES[modeIx()].name, names = new Set(L.map(p => p.name));
+    let k = L.length + 1; while (names.has(`Preset ${k} – ${mn}`)) k++;
+    const pr = { id: preId(), name: `Preset ${k} – ${mn}`, created: new Date().toISOString(), ...preSnap() };
+    L.push(pr); preAt = L.length - 1; touch(); preSync(true);
+    modeToast(`Saved ${pr.name} · Shift+← → to switch`); return pr;
+  }
+  async function preAct(a, b) {
+    if (a === 'save') return preSave();
+    const L = preList(), t = preTarget(); if (t < 0) return; const pr = L[t];
+    if (a === 'update') { Object.assign(pr, preSnap(), { updated: new Date().toISOString() }); preAt = t; touch(); preSync(true); modeToast(`Updated ${pr.name}`); }
+    else if (a === 'rename') {
+      const nm = await modal({ title: 'Rename preset', input: true, value: pr.name, okLabel: 'Rename' });
+      if (typeof nm === 'string' && nm.trim() && L.includes(pr)) { pr.name = nm.trim().slice(0, 80); touch(); preSync(true); }
+    } else if (a === 'delete') {
+      const ok = await modal({ title: 'Delete preset?', message: `Delete the preset “${pr.name}”? Your current settings stay as they are.`, okLabel: 'Delete', danger: true });
+      const j = L.indexOf(pr);
+      if (ok && j >= 0) { L.splice(j, 1); preAt = preAt === j ? -1 : preAt > j ? preAt - 1 : preAt; touch(); preSync(true); modeToast(`Deleted ${pr.name}`); }
+    }
+    if (b && b.isConnected && open && panelOpen) (b.disabled ? $('#sfpPreset') : b).focus({ preventScroll: true });
+  }
+  let preN = -1;
+  function preSync(full) {                       // the Preset list and its buttons follow the settings
+    const sel = $('#sfpPreset'); if (!sel || !panelOpen) return;
+    const L = preList(), m = preCur(), t = m >= 0 ? m : (preAt >= 0 && preAt < L.length ? preAt : -1);
+    const cur = !L.length ? '— No presets yet (S saves one) —' : t >= 0 ? `— Current (changed from “${L[t].name}”) —` : '— Current (custom) —';
+    if (full || preN !== L.length || sel.options.length !== L.length + 1) {
+      sel.innerHTML = `<option value="-1">${esc(cur)}</option>` + L.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join(''); preN = L.length;
+    } else sel.options[0].textContent = cur;
+    sel.value = String(m);
+    const on = { save: true, update: t >= 0 && m < 0, rename: t >= 0, delete: t >= 0 };
+    panel.querySelectorAll('.sfp-pb').forEach(b => {
+      if (b.disabled === !on[b.dataset.pa]) return;
+      if (!on[b.dataset.pa] && document.activeElement === b) sel.focus({ preventScroll: true });
+      b.disabled = !on[b.dataset.pa];
+    });
+    if (t >= 0) panel.querySelectorAll('.sfp-pb:not([data-pa=save])').forEach(b => b.title = ({ update: 'Overwrite “%” with the current settings', rename: 'Rename “%”', delete: 'Delete “%”' })[b.dataset.pa].replace('%', L[t].name));
+  }
+  function presetsOut() {                        // for the library file
+    return { version: PRESET_V, presets: preList().map(p => ({ id: p.id, name: p.name, created: p.created, ...(p.updated ? { updated: p.updated } : {}), mode: p.mode, effect: p.effect, theme: p.theme, params: { ...p.params }, fxParams: { ...(p.fxParams || {}) } })) };
+  }
+  function presetsIn(sec) {                      // from a library file: same id (or else same name) = replaced, others added
+    const A = Array.isArray(sec) ? sec : sec && Array.isArray(sec.presets) ? sec.presets : null; if (!A) return 0;
+    const nums = o => { const r = {}; if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) if (typeof v === 'number' && Number.isFinite(v)) r[k] = v; return r; };
+    const L = preList(); let n = 0;
+    for (const x of A) {
+      if (!x || typeof x !== 'object' || !(typeof x.name === 'string' && x.name.trim() || typeof x.id === 'string' && x.id)) continue;
+      const str = v => typeof v === 'string' ? v : undefined;
+      const pr = { id: str(x.id) || preId(), name: (str(x.name) || '').trim().slice(0, 80) || 'Preset', created: str(x.created) || new Date().toISOString(), ...(str(x.updated) ? { updated: x.updated } : {}),
+        mode: str(x.mode), effect: str(x.effect), theme: str(x.theme), params: nums(x.params), fxParams: nums(x.fxParams) };
+      let j = L.findIndex(p => p.id === pr.id); if (j < 0) j = L.findIndex(p => p.name === pr.name);
+      if (j >= 0) { pr.id = L[j].id; L[j] = pr; } else L.push(pr);
+      n++;
+    }
+    if (open && panelOpen) preSync(true);
+    return n;
   }
   function setView(id, x) {
     const p = SCOPE_PARAMS.find(q => q.id === id); if (!p) return;
@@ -6664,7 +7218,7 @@ const Scope = (() => {
     const o = S.meta.scopeView = S.meta.scopeView || {};
     if (Math.abs(x - p.def) < 1e-9) delete o[id]; else o[id] = x;
     if (!Object.keys(o).length) delete S.meta.scopeView;
-    svC = null; panelRow(p, x, 'scope'); dispSync();
+    svC = null; panelRow(p, x, 'scope'); dispSync(); preSync();
     clearTimeout(paramT); paramT = setTimeout(saveMeta, 250);
     if (open && !raf) flat(full);                                   // paused: redraw the still picture in the new layout
   }
@@ -6674,12 +7228,14 @@ const Scope = (() => {
     on = !!on && open;
     if (on !== panelOpen) {
       panelOpen = on; panel.hidden = !on; gear.setAttribute('aria-expanded', String(on));
-      if (on) panelBuild();
+      if (on) { panelBuild(); posApply(); }
       else { clearTimeout(paramT); if (paramT) saveMeta(); paramT = 0; if (panel.contains(document.activeElement)) fs.focus({ preventScroll: true }); }
     }
-    if (on && focusIt) { const i = panel.querySelector('.sfp-row:not([data-x]) input, .sfp-row:not([data-x]) select'); if (i) i.focus({ preventScroll: true }); }
+    if (on && focusIt) { const sc = $('#sfpScope'), i = [...sc.querySelectorAll('.sfp-row:not([data-x]) input, .sfp-row:not([data-x]) select')].find(ctlVis)
+        || sc.querySelector('.sfp-st[aria-expanded=false]') || [...sc.querySelectorAll('.sfp-grp[aria-expanded=false]')].find(ctlVis) || panelCtl()[0]; if (i) i.focus({ preventScroll: true }); }
   }
-  const panelCtl = () => [...panel.querySelectorAll('input,select,button')].filter(x => !x.closest('[hidden]'));
+  const ctlVis = x => !x.closest('[hidden]') && !x.closest('.sfp-shut > :not(.sfp-sh)');
+  const panelCtl = () => [...panel.querySelectorAll('input,select,button')].filter(x => ctlVis(x) && !x.disabled);
   function gearSync() {                       // ⚙ and "Enter settings" whenever the view is open; the effect part follows the effect
     gear.hidden = !open; $('#scopeFull .sf-enter').hidden = !open;
     if (panelOpen) panelBuild();
@@ -6698,9 +7254,57 @@ const Scope = (() => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.classList.contains('sfp-r')) { const r = b.closest('.sfp-row'), sec = rowSec(r); SEC[sec].set(r.dataset.p, defOf(sec, r.dataset.p)); }
     else if (b.classList.contains('sfp-all')) resetAll(b.closest('[data-sec]').dataset.sec);
+    else if (b.classList.contains('sfp-grp')) foldSet(rowSec(b) + ':' + b.dataset.g, b.getAttribute('aria-expanded') === 'true');
+    else if (b.classList.contains('sfp-st')) foldSet(rowSec(b), b.getAttribute('aria-expanded') === 'true');
+    else if (b.classList.contains('sfp-fold')) foldAll();
     else if (b.classList.contains('sfp-x')) panelShow(false);
+    else if (b.classList.contains('sfp-home')) { posReset(); const g = panel.querySelector('.sfp-grip'); if (g) g.focus({ preventScroll: true }); }
+    else if (b.dataset.pa && !b.disabled) preAct(b.dataset.pa, b);
   });
+  $('#sfpPreset').addEventListener('change', e => { const i = +e.target.value; if (i >= 0) preApply(i); else preSync(); });
   gear.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); panelShow(!panelOpen, e.detail === 0); });
+  /* Round 38: the panel can be moved: drag its head (mouse, pen or touch; not from its buttons other than the grip ⠿, a 4 px
+     threshold), or arrow keys on the focused grip (Shift: 64 px). The place is kept per browser (mp3lib.scopePanelPos, px from
+     the view's top left; none = the default corner, untouched CSS) and shown clamped so the whole head stays on screen, again
+     on resize / fullscreen changes. Double-click the head, Home on the grip or "Reset position" put it back; the sections'
+     Reset all leave it alone (it is where the panel sits, not a scope setting). */
+  const POS_K = 'mp3lib.scopePanelPos', head = panel.querySelector('.sfp-head');
+  let ppos = (() => { try { const o = JSON.parse(localStorage.getItem(POS_K)); return o && Number.isFinite(o.x) && Number.isFinite(o.y) ? { x: o.x, y: o.y } : null; } catch (e) { return null; } })(), drag = null;
+  const posSave = () => { try { if (ppos) localStorage.setItem(POS_K, JSON.stringify({ x: Math.round(ppos.x), y: Math.round(ppos.y) })); else localStorage.removeItem(POS_K); } catch (e) { } };
+  function posApply() {                       // place the panel at ppos, clamped; returns where it went
+    const st = panel.style; panel.querySelector('.sfp-home').hidden = !ppos;
+    if (!ppos) { st.left = st.top = st.right = st.bottom = st.width = st.maxHeight = ''; return null; }
+    if (panel.hidden) return null;
+    const W = fs.clientWidth, H = fs.clientHeight;
+    st.right = st.bottom = 'auto'; st.width = window.matchMedia && matchMedia('(max-width:700px)').matches ? Math.max(200, W - 20) + 'px' : '';
+    const w = panel.offsetWidth, hh = head.offsetHeight + 18;
+    const x = Math.round(Math.min(Math.max(ppos.x, 0), Math.max(0, W - w))), y = Math.round(Math.min(Math.max(ppos.y, 0), Math.max(0, H - hh)));
+    st.left = x + 'px'; st.top = y + 'px'; st.maxHeight = Math.max(hh, Math.min(H - y - 12, H - 28)) + 'px';
+    return { x, y };
+  }
+  function posReset() { ppos = null; posSave(); posApply(); }
+  const posNow = () => { const r = panel.getBoundingClientRect(), f = fs.getBoundingClientRect(); return { x: r.left - f.left, y: r.top - f.top }; };
+  function posMove(dx, dy) { const c = posNow(); ppos = { x: c.x + dx, y: c.y + dy }; ppos = posApply() || ppos; posSave(); }
+  head.addEventListener('pointerdown', e => {
+    if (e.button > 0 || !panelOpen) return;
+    const b = e.target.closest('button'); if (b && !b.classList.contains('sfp-grip')) return;
+    drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ...posNow(), on: false };
+    try { head.setPointerCapture(e.pointerId); } catch (x) { }
+    if (!b) e.preventDefault();               // no text selection; the grip still takes focus
+  });
+  head.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+    if (!drag.on && Math.hypot(dx, dy) < 4) return;
+    drag.on = true; panel.classList.add('sfp-drag'); ppos = { x: drag.x + dx, y: drag.y + dy }; posApply();
+  });
+  const dragEnd = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null; panel.classList.remove('sfp-drag');
+    if (d.on) { ppos = posApply() || ppos; posSave(); }
+  };
+  head.addEventListener('pointerup', dragEnd); head.addEventListener('pointercancel', dragEnd);
+  head.addEventListener('dblclick', e => { const b = e.target.closest('button'); if (!b || b.classList.contains('sfp-grip')) posReset(); });
   function setFx(i) {
     if (!open) return;
     const n = FX.length; i = ((i % n) + n) % n;
@@ -6735,7 +7339,7 @@ const Scope = (() => {
     open = true; fs.hidden = false; meta(); svC = null; dispSync();
     if (an) { an.fftSize = 8192; buf = new Float32Array(an.fftSize); }
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
-    $('#scopeFull .sf-n').textContent = MODES.length;
+    $('#scopeFull .sf-n').textContent = MODES.length > 9 ? '9, 0' : MODES.length;   // r41: key 0 is mode 10
     bandSync();
     if (!fxApply() && fxIx() > 0 && !reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} isn’t available here (no WebGL) · None`, 2600);   // the choice is kept for next time
     else if (fxIx() > 0 && reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} · off while reduced motion is on`, 2200);
@@ -6766,12 +7370,20 @@ const Scope = (() => {
   btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); expand(); });
   fs.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (Date.now() - swipeAt < 600) return; if (panelOpen) return panelShow(false); collapse(); });
   window.addEventListener('keydown', e => {       // while open, these keys belong to the view: Esc / Space close, ← → and 1–9 switch modes, ↑ ↓ effects
-    if (!open) return;                              // Enter opens / closes the settings panel; Esc closes it first
+    if (!open || anyDlgOpen()) return;              // Enter opens / closes the settings panel; Esc closes it first (r39: a dialog keeps its keys)
     if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); if (panelOpen) panelShow(false); else collapse(); return; }
     const sp = e.key === ' ' || e.code === 'Space';
     if (panelOpen && panel.contains(e.target)) {    // inside the panel: the controls' own keys (sliders, buttons), nothing else
       e.stopImmediatePropagation();
       const btn = e.target.matches('button');
+      if (e.target.classList.contains('sfp-grip') && /^Arrow(Left|Right|Up|Down)$/.test(e.key) && !e.altKey && !e.ctrlKey && !e.metaKey) {   // r38: move the panel
+        e.preventDefault(); const k = e.shiftKey ? 64 : 16, d = { ArrowLeft: [-k, 0], ArrowRight: [k, 0], ArrowUp: [0, -k], ArrowDown: [0, k] }[e.key]; posMove(d[0], d[1]); return;
+      }
+      if (e.target.classList.contains('sfp-grip') && e.key === 'Home') { e.preventDefault(); posReset(); return; }
+      if (!e.altKey && !e.ctrlKey && !e.metaKey && (btn || e.target.type === 'checkbox')) {     // r39: preset keys on buttons / ticks
+        if ((e.key === 's' || e.key === 'S') && !e.shiftKey) { e.preventDefault(); if (!e.repeat) preSave(); return; }
+        if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.target.classList.contains('sfp-grip')) { e.preventDefault(); preStep(e.key === 'ArrowRight' ? 1 : -1); return; }
+      }
       if (e.key === 'Enter' && !btn) { e.preventDefault(); panelShow(false); }
       else if (sp && e.target.type === 'range') e.preventDefault();   // (Space still toggles a checkbox / opens a list)
       else if (e.key === 'Tab') {                   // Tab cycles inside the panel
@@ -6786,9 +7398,12 @@ const Scope = (() => {
     if (sp && panelOpen) { e.preventDefault(); e.stopImmediatePropagation(); return; }
     if (sp) { e.preventDefault(); e.stopImmediatePropagation(); collapse(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target && e.target.matches && e.target.matches('input:not([type=range]):not([type=checkbox]),textarea,select,[contenteditable]')) return;
     const n = MODES.length;
+    if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); e.stopImmediatePropagation(); preStep(e.key === 'ArrowRight' ? 1 : -1); return; }   // r39
+    if ((e.key === 's' || e.key === 'S') && !e.shiftKey) { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) preSave(); return; }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopImmediatePropagation(); setMode((modeIx() + (e.key === 'ArrowRight' ? 1 : n - 1)) % n); return; }
-    if (/^[1-9]$/.test(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); if (+e.key <= n) setMode(+e.key - 1); return; }
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); const k = +e.key || 10; if (k <= n) setMode(k - 1); return; }   // r41: 0 = mode 10
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); e.stopImmediatePropagation(); setFxAndSync(fxIx() + (e.key === 'ArrowUp' ? 1 : -1)); return; }
     const k = (e.key || '').toLowerCase();
     if (k === 'g' || k === 't') { e.preventDefault(); e.stopImmediatePropagation(); const id = k === 'g' ? 'grid' : 'text', on = !sv()[id]; setView(id, on ? 1 : 0); modeToast((k === 'g' ? 'Grid' : 'Text') + ': ' + (on ? 'On' : 'Off')); }
@@ -6803,7 +7418,7 @@ const Scope = (() => {
     else if (Math.abs(dy) >= 40 && Math.abs(dy) > 1.5 * Math.abs(dx)) { swipeAt = Date.now(); setFxAndSync(fxIx() + (dy < 0 ? 1 : -1)); }
     else if (Math.hypot(dx, dy) > 12) swipeAt = Date.now();   // some other drag: not a tap either
   });
-  ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { if (open && !fsEl() && wentFs) collapse(); }));
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { if (open && !fsEl() && wentFs) collapse(); else if (panelOpen) requestAnimationFrame(posApply); }));
   ['loadstart', 'play', 'emptied'].forEach(ev => audio.addEventListener(ev, () => { if (open) meta(); }));
   audio.addEventListener('play', () => { clearTimeout(idleT); if (ac && !running()) resume().then(ok => ok ? start() : guard()); start(); });
   audio.addEventListener('playing', start); audio.addEventListener('seeked', start);
@@ -6811,7 +7426,7 @@ const Scope = (() => {
   audio.addEventListener('pause', () => { clearTimeout(idleT); idleT = setTimeout(() => { if (audio.paused && running()) ac.suspend().catch(() => { }); }, 60000); });
   document.addEventListener('visibilitychange', () => { bandSync(); if (document.hidden) stop(); else { start(); if (!raf && open) flat(); } });
   new MutationObserver(() => { readColors(); if (!raf) flat(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  const relayout = () => { if (!raf) flat(); };
+  const relayout = () => { if (!raf) flat(); if (panelOpen) posApply(); };
   window.addEventListener('resize', relayout); window.addEventListener('orientationchange', () => setTimeout(relayout, 250));
   if (reduce.addEventListener) reduce.addEventListener('change', () => { fxApply(); bandSync(); start(); if (panelOpen) panelNote(); });
   function sync() { svC = null; btn.hidden = !enabled(); if (!enabled()) collapse(); bandSync(); readColors(); if (enabled()) { flat(); start(); } else stop(); }
@@ -6866,6 +7481,10 @@ const Scope = (() => {
       fade: () => ({ fade: tsFade, old: tsOld ? tsOld.text : null }), box: () => tsBox && tsBox.slice(), screen: () => [W, H], tau: () => tsTau, level: () => tsLv.slice(), punch: () => tsPu.slice(),
       xf: () => tsCur && (({ sc, rot, cx, cy }) => ({ sc, rot, cx, cy }))(tsXf(tsCur, 0)), hold(on) { tsHold = !!on; }, reset() { tsTau = 0; tsT = 0; }, clear() { tsCache.clear(); tsCur = tsOld = null; tsWant = ''; tsFade = 1; },
       worker: () => tsW === null ? 'unstarted' : tsW ? 'on' : 'off', drifting: () => tsDrift(full) },
+    panelPos: () => ({ saved: ppos && { ...ppos }, ...(panelOpen ? posNow() : {}), home: !panel.querySelector('.sfp-home').hidden }),   // (tests) r38
+    brushInfo: () => ({ ...brInfo }), brushSprite: (b, c, px) => brSprite(c, px, b), presetsOut, presetsIn, presets: () => preList().map(p => ({ ...p })), presetCur: () => preCur(), presetSave: () => preSave(), presetApply: i => preApply(i), presetStep: d => preStep(d), brushGlyphs: () => [...brGly.keys()], brushText: () => brTxt.join(''),   // (tests) brush b's sprite in colour c, px across
+    linePal: () => { const p = linePal(sv()); return { line: p.line, base: p.base, bands: [...p.bands], theme: p === col }; },
+    mirror: { info: () => ({ ...mirInfo }), canvas: () => mirS.cv, failed: () => mirS.failed, fs: MIR_FS },
     xy: { info: () => ({ ...xyInfo }), tapped: () => xyOn, built: () => !!xyN, phosphor: () => xyP.cv, box: () => xyBox() },
     bandLevels() { if (!bandNodes) return null; return bandNodes.map(b => { b.an.getFloatTimeDomainData(b.buf); let s = 0; for (const v of b.buf) s += v * v; return Math.sqrt(s / b.buf.length); }); },
     level() { if (!an || !src) return null; const b = new Float32Array(an.fftSize); an.getFloatTimeDomainData(b); let s = 0; for (const v of b) s += v * v; return Math.sqrt(s / b.length); }, setFeed(f) { feed = f; start(); },
