@@ -4386,9 +4386,12 @@ const Scope = (() => {
   let D = 1;                                // pixel ratio of the canvas being drawn (set by size())
   function size(t) {
     if (t.tile) {                            // the offscreen tile: one cell of the layout (sides swapped when it is turned ~90°)
-      size(full); const V = sv(), Wf = W, Hf = H, cw = Wf / V.cols * (1 - V.gap), ch = Hf / V.rows * (1 - V.gap), th = V.orient * 90 + V.rot;
+      size(full); const V = sv(), Wf = W, Hf = H, th = V.orient * 90 + V.rot, sh = shapeBox(V, Wf, Hf);
+      let cw = Wf / V.cols * (1 - V.gap), ch = Hf / V.rows * (1 - V.gap);
+      if (sh) { cw = sh.sw * (1 - V.gap); ch = sh.sh * (1 - V.gap); }
       const sw = Math.abs(Math.round(th / 90)) % 2 === 1;
       lay = { Wf, Hf, cw, ch, a: th * DEG };
+      if (sh) Object.assign(lay, sh);
       W = Math.max(1, Math.round(sw ? ch : cw)); H = Math.max(1, Math.round(sw ? cw : ch));
       if (t.cv.width !== W || t.cv.height !== H) { t.cv.width = W; t.cv.height = H; }
       return;
@@ -4437,6 +4440,7 @@ const Scope = (() => {
   function fxTaps() { const f = FX[fxIx()]; return !!(f && f.taps) && !reduce.matches; }
   function bandSync() {                     // tap the filters only while Bands or Overlay is on screen
     xySync();                                // round 35: the XY splitter, only while XY is on screen
+    avSync();                                // r53: the 3D Audio spectrum analyser, only while it is on screen
     const want = !!src && enabled() && open && (!!curMode().taps || fxTaps()) && !document.hidden;   // (+ an effect that reacts to the bands)   // Bands and Overlay
     if (want === bandsOn) return;
     if (want) {
@@ -4565,7 +4569,7 @@ const Scope = (() => {
       let a = Ld[oL + j], b = mono ? Ld[oL + j - dS] : Rd[oR + j];
       if (V.xms) { const u = (b - a) * k, v = (a + b) * k; a = u; b = v; }   // rotate 45°: mono stands upright
       peak = Math.max(peak, Math.abs(a), Math.abs(b));
-      const x = cx + a * AX - b * AXY, y = cy - b * AY + a * AXY;   // Width / Height stretch the screen's X / Y
+      const x = cx + (a * AX - b * AXY) * V.xsx, y = cy - b * AY + a * AXY;   // Width / Height stretch the screen's X / Y; r53: X scale widens X only
       if (j) { sum += Math.hypot(x - sx, y - sy); c++; }
       sx = x; sy = y;
       const l = m ? Math.hypot(x - xyX[m - 1], y - xyY[m - 1]) : 0;
@@ -4609,7 +4613,7 @@ const Scope = (() => {
     }
     g.drawImage(P.cv, 0, 0);
     xyLabel(t, V, mono ? `XY · mono: Y = X delayed ${V.xdelay.toFixed(2)} ms` : V.xms ? 'XY · mid / side' : 'XY · X = left, Y = right');
-    xyInfo = { stereo: !mono, mono, n, pts: m, delay: dS, ms: performance.now() - T0, peak, rmsL: rl, rmsR: rr };
+    xyInfo = { stereo: !mono, mono, n, pts: m, delay: dS, ms: performance.now() - T0, peak, rmsL: rl, rmsR: rr, xsx: V.xsx, ms45: !!V.xms };
     if (!reduce.matches) raf = requestAnimationFrame(frame);
   }
   /* ---- Round 41: Mirror Zoom. Our reimplementation of the idea in Shadertoy 4sXGzH (author not known to us; Shadertoy's default
@@ -4621,7 +4625,7 @@ const Scope = (() => {
      mids+treble lean it either way. Its own small WebGL canvas (rendered at Render scale) is drawn into the 2D scope frame,
      so the ↑ ↓ effects, tiling and the rest still apply on top. ---- */
   const MIR_FS = `precision highp float;
-uniform vec2 u_res; uniform vec2 u_rot; uniform vec2 u_off; uniform float u_it, u_rad, u_sharp, u_z0, u_z1, u_cs; uniform vec3 u_c0, u_c1, u_c2; uniform float u_cm;
+uniform vec2 u_res; uniform vec2 u_rot; uniform vec2 u_off; uniform float u_it, u_rad, u_sharp, u_z0, u_z1, u_cs; uniform vec3 u_c0, u_c1, u_c2; uniform float u_cm; uniform float u_op, u_key;
 vec2 cm(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
 vec2 fold(vec2 p) { return 1.0 - abs(fract(p * 0.5) * 2.0 - 1.0); }
 float sg(float x) { return 2.0 / (1.0 + exp2(-x)) - 1.0; }
@@ -4634,7 +4638,8 @@ void main() {
   }
   float c = clamp(1.0 - length((p - 0.5) * u_cs), 0.0, 1.0);
   vec3 k = u_cm < 0.5 ? u_c0 : u_cm < 1.5 ? (c < 0.5 ? mix(u_c0, u_c1, c * 2.0) : mix(u_c1, u_c2, c * 2.0 - 1.0)) : vec3(1.0);
-  gl_FragColor = vec4(k * c, c);
+  float al = u_key > 0.5 ? mix(u_op, 1.0, smoothstep(0.25, 0.6, c)) : u_op;   // r44: Opacity / See-through (1 at 100 % = as before)
+  gl_FragColor = vec4(k * c * al, c * al);
 }`;
   const mirS = { cv: document.createElement('canvas'), gl: null, failed: false, ph: 0, dr: 0, lv: [0, 0, 0], last: 0, rgb: {} };
   let mirInfo = { ms: 0, gl: null, lv: [0, 0, 0], point: [.5, .5], rot: [0, 1], off: [0, 0], size: [0, 0], live: false };
@@ -4650,7 +4655,7 @@ void main() {
       g.useProgram(pr); const b = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, b);
       g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW);
       const la = g.getAttribLocation(pr, 'a'); g.enableVertexAttribArray(la); g.vertexAttribPointer(la, 2, g.FLOAT, false, 0, 0);
-      const U = {}; ['u_res', 'u_rot', 'u_off', 'u_it', 'u_rad', 'u_sharp', 'u_z0', 'u_z1', 'u_cs', 'u_c0', 'u_c1', 'u_c2', 'u_cm'].forEach(n => U[n] = g.getUniformLocation(pr, n));
+      const U = {}; ['u_res', 'u_rot', 'u_off', 'u_it', 'u_rad', 'u_sharp', 'u_z0', 'u_z1', 'u_cs', 'u_c0', 'u_c1', 'u_c2', 'u_cm', 'u_op', 'u_key'].forEach(n => U[n] = g.getUniformLocation(pr, n));
       mirS.gl = g; mirS.U = U;
       mirS.cv.addEventListener('webglcontextlost', e => { e.preventDefault(); mirS.gl = null; });
     } catch (e) { console.warn('Mirror Zoom unavailable:', e.message); mirS.failed = true; mirS.gl = null; }
@@ -4693,7 +4698,7 @@ void main() {
     G.uniform1f(U.u_it, V.miter); G.uniform1f(U.u_rad, V.mrad); G.uniform1f(U.u_sharp, V.msharp);
     G.uniform1f(U.u_z0, V.mzmin); G.uniform1f(U.u_z1, Math.max(V.mzmin, V.mzmax)); G.uniform1f(U.u_cs, V.mcs);
     G.uniform3fv(U.u_c0, c3(V.mcol === 1 ? col.bands[0] : col.line)); G.uniform3fv(U.u_c1, c3(col.bands[1])); G.uniform3fv(U.u_c2, c3(col.bands[2]));
-    G.uniform1f(U.u_cm, V.mcol);
+    G.uniform1f(U.u_cm, V.mcol); G.uniform1f(U.u_op, V.mop == null ? 1 : V.mop); G.uniform1f(U.u_key, V.mkey ? 1 : 0);   // r44
     G.drawArrays(G.TRIANGLES, 0, 3);
     g.save(); g.imageSmoothingEnabled = true; g.drawImage(mirS.cv, 0, 0, W, H); g.restore();
     if (t.big && V.text) xyLabel(t, V, 'Mirror Zoom · driven by the music');
@@ -4710,6 +4715,355 @@ void main() {
     mirInfo.live = true; mirPaint(t, V, mirLevels(dt, V), reduce.matches ? 0 : dt);
     if (!reduce.matches) raf = requestAnimationFrame(frame);
   }
+  /* ---- Round 42: Pleiades. Our reimplementation of "Pleiades Star Cluster (M45)" by aladin (Shadertoy NcfXDf,
+     https://www.shadertoy.com/view/NcfXDf, © its author). Its maths is ported and its star tables (Gaia DR3 positions, V-magnitude
+     fluxes, B-type colours) reused: a camera orbits the 20 brightest members, each drawn as core + halo + diffraction spikes, inside a
+     ray-marched blue reflection nebula lit by the 7 brightest stars, over a Milky Way band and five parallax star shells, then
+     col/(col+1) tonemapped. The original's mouse orbit is replaced by the music: the yaw runs on a phase that speeds up with the
+     level, bass vs. treble swing the pitch, bass pulls the camera in and zooms, beats brighten the stars (bright ones on bass, faint
+     ones on treble), mids feed the nebula. With Audio drive 0 it is the original's slow automatic orbit. Its own WebGL canvas
+     (Render scale) is drawn into the 2D scope frame so effects and tiling still apply. ---- */
+  const PLE_POS = [1.15, -0.05, -0.4, 4.58, -0.62, 2.1, -4.4, -0.05, -1.9, -2.42, 2.32, -2.6, -1.41, -1.58, 5.2, -3.76, 3.21, -2.5, 4.62, 0.22, 1.9, -4.56, 1.6, -0.8, -2.28, 4.01, -4.0, -1.97, 3.78, -1.5, -3.82, 6.65, 2.3, 2.85, -6.42, -6.2, 0.74, 0.02, 2.7, -0.02, 3.71, 1.3, 3.16, 2.12, -4.2, -3.34, 1.08, 0.5, 3.75, -2.31, 3.8, -5.7, -0.95, -2.9, 0.6, 1.53, -0.1, 4.38, -3.68, 3.1], PLE_BR = [1.0, 0.5, 0.465, 0.398, 0.299, 0.268, 0.129, 0.093, 0.07, 0.037, 0.077, 0.094, 0.043, 0.026, 0.023, 0.047, 0.047, 0.033, 0.035, 0.055], PLE_COL = [0.72, 0.82, 1.0, 0.78, 0.86, 1.0, 0.68, 0.8, 1.0, 0.72, 0.82, 1.0, 0.68, 0.8, 1.0, 0.66, 0.78, 1.0, 0.78, 0.86, 1.0, 0.72, 0.82, 1.0, 0.78, 0.86, 1.0, 0.85, 0.9, 1.0, 0.78, 0.86, 1.0, 0.78, 0.86, 1.0, 0.82, 0.88, 1.0, 0.82, 0.88, 1.0, 0.85, 0.9, 1.0, 0.78, 0.86, 1.0, 0.82, 0.88, 1.0, 0.82, 0.88, 1.0, 0.8, 0.85, 1.0, 0.82, 0.88, 1.0];
+  const PLE_FS = `precision highp float;
+uniform vec2 u_res; uniform vec3 u_cam, u_look; uniform float u_zoom, u_exp, u_neb, u_steps, u_mw, u_bg, u_spk, u_cm;
+uniform vec3 u_sp[20], u_sc[20], u_nl[7]; uniform float u_sb[20]; uniform vec3 u_c0, u_c1, u_c2; uniform float u_op, u_key;
+const vec3 CC = vec3(0.0, 0.8, 0.0); const float PI = 3.14159265359; const vec3 UP = vec3(0.0, 1.0, 0.0);
+const vec3 GN = vec3(0.617, 0.679, 0.399) / 1.00226; const vec3 GC = vec3(-0.433, -0.130, 0.892) / 1.00008;
+float h21(vec2 p) { vec3 q = fract(p.xyx * vec3(0.1031, 0.1030, 0.0973)); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+float h3(vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.x + p.y) * p.z); }
+float n3(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(h3(i), h3(i + vec3(1,0,0)), f.x), mix(h3(i + vec3(0,1,0)), h3(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(h3(i + vec3(0,0,1)), h3(i + vec3(1,0,1)), f.x), mix(h3(i + vec3(0,1,1)), h3(i + vec3(1,1,1)), f.x), f.y), f.z); }
+float n2(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1,0)), f.x), mix(h21(i + vec2(0,1)), h21(i + vec2(1,1)), f.x), f.y); }
+float fbm(vec2 p) { float v = 0.0, a = 0.5; mat2 m = mat2(0.8, 0.6, -0.6, 0.8); for (int i = 0; i < 6; i++) { v += a * n2(p); p = m * p * 2.0 + 1.7; a *= 0.5; } return v; }
+vec3 star(vec3 ro, vec3 rd, vec3 p, float br, vec3 c) {
+  float t = dot(p - ro, rd); if (t < 0.0) return vec3(0.0);
+  vec3 cl = ro + rd * t - p; float d2 = dot(cl, cl), sz = 0.08 + 0.35 * sqrt(br), s2 = sz * sz;
+  if (d2 > s2 * 800.0) return vec3(0.0);
+  float core = 0.15 * br / (d2 / s2 + 0.012), halo = 0.02 * br / (d2 / (s2 * 15.0) + 0.08), sp = 0.0;
+  if (br > 0.05) { vec3 rt = normalize(cross(rd, UP)), up = normalize(cross(rt, rd)); float sx = dot(cl, rt), sy = dot(cl, up);
+    float a = max(0.0, 1.0 - abs(sx * sy * 400.0 / s2)); vec2 r = vec2(sx + sy, sx - sy) * 0.7071;
+    float b = max(0.0, 1.0 - abs(r.x * r.y * 240.0 / s2));
+    sp = (a + b * 0.4) * 0.003 * br * smoothstep(sz * 25.0, sz * 2.0, sqrt(d2)) * u_spk; }
+  return c * (core + halo + sp);
+}
+float dust(vec3 p) { float d = 0.01 + n3(p * 0.35) * 0.5 + n3(p * 0.7 + 3.7) * 0.33 + n3(p * 1.5 + 7.1) * 0.22;
+  d *= smoothstep(1.0, 0.3, length(p - CC) / 14.0); return max(d - 0.25, 0.05); }
+vec3 nebula(vec3 ro, vec3 rd) {
+  vec3 oc = ro - CC; float b = dot(oc, rd), h = b * b - dot(oc, oc) + 196.0; if (h < 0.0 || u_neb <= 0.0) return vec3(0.0);
+  float t = max(-b - sqrt(h), 0.0), tf = -b + sqrt(h); if (tf < 0.0) return vec3(0.0);
+  float ds = 0.8 * 24.0 / u_steps; vec3 sc = vec3(0.0);
+  for (int i = 0; i < 24; i++) { if (float(i) >= u_steps || t > tf) break;
+    vec3 p = ro + rd * t; float d = dust(p); vec3 l = vec3(0.0);
+    for (int s = 0; s < 7; s++) { vec3 q = u_sp[s] - p; l += u_nl[s] / (dot(q, q) + 0.5); }   // u_nl = pow(colour, 1.5) * brightness, from JS
+    sc += d * l * vec3(0.55, 0.75, 1.0) * ds; t += ds; }
+  return sc * 0.35 * u_neb;
+}
+vec3 milky(vec3 rd) {
+  float sb = dot(rd, GN), la = asin(clamp(sb, -1.0, 1.0)), band = exp(-la * la * 18.0) + 0.6 * exp(-la * la * 72.0);
+  if (band < 0.005 || u_mw <= 0.0) return vec3(0.0);
+  float lane = 1.0 - 0.58 * exp(-la * la * 360.0); vec3 ip = normalize(rd - sb * GN), gp = normalize(cross(GN, GC));
+  float lo = atan(dot(ip, gp), dot(ip, GC)), lb = 0.6 + 0.4 * (0.5 + 0.5 * cos(lo)); vec2 nc = vec2(lo * 3.0, la * 10.0);
+  float st = (0.5 + 0.5 * fbm(nc * 2.5 + 42.0)) * (0.6 + 0.4 * fbm(nc * 0.8 + 17.0));
+  return mix(vec3(0.565, 0.67, 0.88), vec3(0.95, 0.61, 0.5), exp(-la * la * 36.0)) * band * lane * lb * st * 0.11 * u_mw;
+}
+float pstar(vec2 uv, float fl, float bl) { float d = length(uv), m = 0.00008 / max(d * d, 0.00001 * bl);
+  m += max(0.0, 1.0 - abs(uv.x * uv.y * 1200.0)) * fl * 0.015; uv = mat2(0.70710678, -0.70710678, 0.70710678, 0.70710678) * uv;
+  m += max(0.0, 1.0 - abs(uv.x * uv.y * 1200.0)) * fl * 0.0045; return m * smoothstep(1.0, 0.15, d); }
+vec2 oct(vec3 n) { n /= abs(n.x) + abs(n.y) + abs(n.z); vec2 uv = n.xz; if (n.y < 0.0) uv = (1.0 - abs(uv.yx)) * sign(uv.xy); return uv; }
+vec3 layer(vec2 uv, vec3 rd, float mw) {
+  vec3 c = vec3(0.0); vec2 gv = fract(uv) - 0.5, id = floor(uv); float thr = 0.1, gw = 1.0;
+  if (mw > 0.5) { float sb = dot(rd, GN); gw = smoothstep(0.149071, 0.0, abs(sb)); vec3 ip = normalize(rd - sb * GN), gp = normalize(cross(GN, GC));
+    float de = gw * (0.5 + 0.5 * (0.5 + 0.5 * cos(atan(dot(ip, gp), dot(ip, GC))))); if (de < 0.01) return c; thr = 0.05 - 0.95 * de; }
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 o = vec2(float(x), float(y)); float n = h21(id + o), sz = fract(n * 345.32); if (sz < thr) continue;
+    vec2 lu = gv - o - vec2(n, fract(n * 34.0)) + 0.5;
+    if (mw > 0.5) c += mix(vec3(1.0, 0.8, 0.6), vec3(0.8, 0.85, 1.0), fract(n * 123.45)) * pstar(lu / 1.8, smoothstep(0.92, 1.0, sz) * 0.4, 3333.0 * (3.33 / u_res.y)) * sz * 0.5 * gw;
+    else c += mix(vec3(1.0, 0.85, 0.7), vec3(0.7, 0.85, 1.0), fract(n * 123.45)) * pstar(lu / 2.0, smoothstep(0.9, 1.0, sz) * 0.5, 1.0) * sz * 0.06; }
+  return mw > 0.5 ? c * 1.33 : c * vec3(0.67, 0.67, 1.0) * 1.2;
+}
+vec3 shell(vec3 ro, vec3 rd, float R, float sc, float b, vec2 of, float mw) {
+  vec3 oc = ro - CC; float bb = dot(oc, rd), h = bb * bb - dot(oc, oc) + R * R; if (h < 0.0) return vec3(0.0);
+  return layer(oct(normalize(ro + rd * (-bb + sqrt(h)) - CC)) * sc + of, rd, mw) * b * (mw > 0.5 ? 1.5 : 1.0);
+}
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_res - 0.5; uv.y *= u_res.y / u_res.x;
+  vec3 fw = normalize(u_look - u_cam), ur = abs(dot(fw, UP)) > 0.999 ? vec3(0.0, 0.0, 1.0) : UP, rt = normalize(cross(fw, ur)), up = normalize(cross(rt, fw));
+  vec3 ro = u_cam, rd = normalize(fw * u_zoom + rt * uv.x + up * uv.y);
+  vec3 bg = milky(rd);
+  if (u_bg > 0.0) bg += (shell(ro, rd, 40.0, 12.0, 2.3, vec2(57.3, 124.9), 0.0) + shell(ro, rd, 80.0, 16.0, 0.9, vec2(173.7, 91.4), 0.0) + shell(ro, rd, 160.0, 24.0, 0.7, vec2(311.7, 207.4), 0.0)
+    + shell(ro, rd, 180.0, 60.0, 1.33, vec2(42.1, 218.3), 1.0) + shell(ro, rd, 280.0, 120.0, 0.7, vec2(287.5, 63.9), 1.0)) * u_bg;
+  vec3 nb = nebula(ro, rd), st = vec3(0.0);
+  for (int i = 0; i < 20; i++) st += star(ro, rd, u_sp[i], u_sb[i], u_sc[i]);
+  vec3 c;
+  if (u_cm > 1.5) { const vec3 Y = vec3(0.2126, 0.7152, 0.0722); c = dot(st, Y) * u_c0 * 1.4 + dot(nb, Y) * u_c1 * 1.6 + dot(bg, Y) * u_c2 * 1.4; }
+  else c = bg + nb + st;
+  c *= u_exp; c = c / (c + 1.0);
+  if (u_cm > 0.5 && u_cm < 1.5) c = dot(c, vec3(0.2126, 0.7152, 0.0722)) * u_c0 * 1.5;
+  float al = u_op;
+  if (u_key > 0.5) al = mix(u_op, 1.0, smoothstep(0.25, 0.6, dot(c, vec3(0.2126, 0.7152, 0.0722))));   // Sky only: bright parts stay solid
+  gl_FragColor = vec4(c * al, al);   // premultiplied (the canvas default); al = 1 at Opacity 100% = as before
+}`;
+  const pleS = { cv: document.createElement('canvas'), gl: null, failed: false, ph: -4 * .48 * .35, lv: [0, 0, 0], last: 0 };
+  let pleInfo = { ms: 0, gl: null, lv: [0, 0, 0], cam: [0, 0, 0], yaw: 0, exp: 0, size: [0, 0], live: false };
+  function pleGL() {
+    if (pleS.gl || pleS.failed) return pleS.gl;
+    try {
+      const g = pleS.cv.getContext('webgl', { antialias: false, preserveDrawingBuffer: true });
+      if (!g) throw new Error('no WebGL');
+      const sh = (ty, src) => { const o = g.createShader(ty); g.shaderSource(o, src); g.compileShader(o); if (!g.getShaderParameter(o, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(o)); return o; };
+      const pr = g.createProgram(); g.attachShader(pr, sh(g.VERTEX_SHADER, 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }'));
+      g.attachShader(pr, sh(g.FRAGMENT_SHADER, PLE_FS)); g.linkProgram(pr);
+      if (!g.getProgramParameter(pr, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(pr));
+      g.useProgram(pr); const b = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, b);
+      g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW);
+      const la = g.getAttribLocation(pr, 'a'); g.enableVertexAttribArray(la); g.vertexAttribPointer(la, 2, g.FLOAT, false, 0, 0);
+      const U = {}; ['u_res', 'u_cam', 'u_look', 'u_zoom', 'u_exp', 'u_neb', 'u_steps', 'u_mw', 'u_bg', 'u_spk', 'u_cm', 'u_sp', 'u_sc', 'u_sb', 'u_nl', 'u_c0', 'u_c1', 'u_c2', 'u_op', 'u_key'].forEach(n => U[n] = g.getUniformLocation(pr, n));
+      g.uniform3fv(U.u_sp, new Float32Array(PLE_POS)); g.uniform3fv(U.u_sc, new Float32Array(PLE_COL));
+      pleS.gl = g; pleS.U = U;
+      pleS.cv.addEventListener('webglcontextlost', e => { e.preventDefault(); pleS.gl = null; });
+    } catch (e) { console.warn('Pleiades unavailable:', e.message); pleS.failed = true; pleS.gl = null; }
+    return pleS.gl;
+  }
+  const PLE_GN = (v => v.map(x => x / Math.hypot(...v)))([.617, .679, .399]), PLE_GC = (v => v.map(x => x / Math.hypot(...v)))([-.433, -.130, .892]);
+  const PLE_GX = (() => { const d = PLE_GC[0] * PLE_GN[0] + PLE_GC[1] * PLE_GN[1] + PLE_GC[2] * PLE_GN[2], v = PLE_GC.map((x, i) => x - PLE_GN[i] * d), l = Math.hypot(...v); return v.map(x => x / l); })();
+  const PLE_GY = (() => { const a = PLE_GN, b = PLE_GX, v = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], l = Math.hypot(...v); return v.map(x => x / l); })();
+  function plePaint(t, V, lv, dt) {
+    const T0 = performance.now(), g = t.g; g.clearRect(0, 0, W, H);
+    const G = pleGL(); if (!G) { pleInfo = { ...pleInfo, gl: null }; return; }
+    const w = Math.max(16, Math.round(W * V.pscale)), h = Math.max(16, Math.round(H * V.pscale));
+    if (pleS.cv.width !== w || pleS.cv.height !== h) { pleS.cv.width = w; pleS.cv.height = h; }
+    // the music in place of the original's mouse orbit (drive 0 = its automatic orbit: angle (iTime - 4) · 0.48 · 0.35)
+    const D = V.pdrive, L = (lv[0] + lv[1] + lv[2]) / 3, bass = lv[0] * D, mid = lv[1] * D, tre = lv[2] * D;
+    pleS.ph += dt * .48 * .35 * V.porbit * (1 + 2 * D * L);
+    const a = pleS.ph, R = V.pdist * (1 - .3 * V.pzoom * Math.min(1, bass)), lift = .2 + V.ppitch * .45 * (bass - tre);
+    const pd = [0, 1, 2].map(i => Math.cos(a) * PLE_GX[i] + Math.sin(a) * PLE_GY[i]);
+    const cam = [0, 1, 2].map(i => (i === 1 ? .8 : 0) + pd[i] * R + PLE_GN[i] * R * lift), look = [0, 1, 2].map(i => (i === 1 ? .8 : 0) + pd[i] * R * .35);
+    const zoom = .75 * (1 + .35 * V.pzoom * Math.min(1, bass)), exp = V.pexp * (1 + .25 * D * L);
+    const sb = PLE_BR.map(b => b * (1 + V.ppulse * 1.5 * (Math.sqrt(b) > .5 ? bass : tre)));
+    const U = pleS.U, c3 = c => mirRGB(c);
+    G.viewport(0, 0, w, h);
+    G.uniform2f(U.u_res, w, h); G.uniform3fv(U.u_cam, cam); G.uniform3fv(U.u_look, look); G.uniform1f(U.u_zoom, zoom); G.uniform1f(U.u_exp, exp);
+    G.uniform1f(U.u_neb, V.pneb * (1 + 1.2 * mid)); G.uniform1f(U.u_steps, V.psteps); G.uniform1f(U.u_mw, V.pmw); G.uniform1f(U.u_bg, V.pbg); G.uniform1f(U.u_spk, V.pspk);
+    G.uniform1fv(U.u_sb, new Float32Array(sb)); G.uniform3fv(U.u_nl, new Float32Array(sb.slice(0, 7).flatMap((b, i) => PLE_COL.slice(i * 3, i * 3 + 3).map(c => Math.pow(c, 1.5) * b)))); G.uniform1f(U.u_cm, V.pcol);
+    G.uniform3fv(U.u_c0, c3(V.pcol === 2 ? col.bands[0] : col.line)); G.uniform3fv(U.u_c1, c3(col.bands[1])); G.uniform3fv(U.u_c2, c3(col.bands[2]));
+    const op = V.pop == null ? 1 : V.pop; G.uniform1f(U.u_op, op); G.uniform1f(U.u_key, V.pkey ? 1 : 0);   // r43: Opacity / Sky only
+    G.drawArrays(G.TRIANGLES, 0, 3);
+    g.save(); g.imageSmoothingEnabled = true; g.drawImage(pleS.cv, 0, 0, W, H); g.restore();
+    if (t.big && V.text) xyLabel(t, V, 'Pleiades · driven by the music');
+    pleInfo = { ms: performance.now() - T0, gl: 'webgl', lv: lv.slice(), cam, yaw: a, zoom, exp, op, key: !!V.pkey, size: [w, h], live: pleInfo.live, n: (pleInfo.n || 0) + 1 };
+  }
+  function pleFlat(t) {
+    size(t); const V = sv(); pleS.lv = [0, 0, 0]; pleInfo.live = false; plePaint(t, V, pleS.lv, 0); pleS.last = 0; t.cv.classList.add('idle');
+  }
+  function pleFrame(t) {
+    bandSync();
+    if (!bandsOn || !running()) { pleFlat(t); if (!raf && src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); t.cv.classList.remove('idle'); frames++;
+    const V = sv(), now = performance.now(), dt = pleS.last ? Math.min(.25, Math.max(1 / 240, (now - pleS.last) / 1000)) : 1 / 60; pleS.last = now;
+    pleInfo.live = true; plePaint(t, V, mirLevels(dt, { msmooth: V.psmooth }), reduce.matches ? 0 : dt);
+    if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+  /* ---- Round 44: Spiral. The spiral shader supplied by the user (their own paste, logs/spiral-user.glsl), ported: rings
+     0.5 + 0.9·cos(25r − 3t + a) (+ a faint 50r harmonic) fading 1 − 0.4r, times the strobe 0.5 + 0.9·sin(13r − t) fading 1.2 − r,
+     plus its "dust": per-pixel value noise feeding rand(), added as (rand − 1.5, 0, 0.2), i.e. red pushed down by 0.5..1.5 (a
+     cyan-grey picture with red-tinted grain) and +0.2 blue. At the defaults that is exactly the original; Dust amount scales the
+     whole dust term, Dust hue turns it round the colour wheel. Adapted to the music: the phase runs faster with the level, bass
+     tightens the rings and warps the radius, beats (bass over its own slow average) pulse the brightness, mids twist the arms,
+     treble roughens the grain and sparks. Its own WebGL canvas (Render scale) is drawn into the 2D scope frame. ---- */
+  const SPI_FS = `precision highp float;
+uniform vec2 u_res; uniform float u_t, u_dt, u_ring, u_str, u_arms, u_tw, u_warp, u_vig, u_bri, u_dust, u_gr, u_spk, u_cm, u_op, u_key;
+uniform mat3 u_hm; uniform vec3 u_c0, u_c1, u_c2;
+float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 ip = floor(p), u = fract(p); u = u * u * (3.0 - 2.0 * u);
+  float r = mix(mix(rand(ip), rand(ip + vec2(1.0, 0.0)), u.x), mix(rand(ip + vec2(0.0, 1.0)), rand(ip + vec2(1.0, 1.0)), u.x), u.y);
+  return r * r;
+}
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_res, p = uv - 0.5; p.x *= u_res.x / u_res.y;
+  float rad = length(p), a = atan(p.y, p.x);
+  float rw = rad * (1.0 + u_warp * sin(6.0 * rad - 2.0 * u_t + u_arms * a));        // bass: radius warp (0 = none)
+  float an = u_arms * a + u_tw * rw;                                                // arms (angle multiplier) + twist
+  float sphere = 0.5 + 0.9 * cos(u_ring * rw - 3.0 * u_t + an);
+  sphere += 0.02 * sin(2.0 * u_ring * rw - 5.0 * u_t + an);
+  sphere *= 1.0 - u_vig * rad;
+  float strobe = 0.5 + 0.9 * sin(u_str * rw - u_t);
+  strobe += 0.02 * cos(50.0 * rw - 7.0 * u_t + an);
+  strobe *= 1.2 - 2.5 * u_vig * rad;
+  float lum = strobe * sphere * u_bri;
+  vec2 n = noise(uv * u_res.x) * vec2(3.14, 0.0);
+  float d = rand(n + vec2(0.0, u_dt));
+  vec3 dv = u_hm * vec3(-1.0 + (d - 0.5) * (1.0 + u_gr), 0.0, 0.2) * u_dust;        // original: (rand − 1.5, 0, 0.2)
+  vec3 c;
+  if (u_cm < 0.5) c = vec3(lum) + dv;
+  else if (u_cm < 1.5) c = lum * u_c0 * 1.2 + dv * 0.5;
+  else c = lum * mix(u_c0, u_c1, clamp(rad * 1.4, 0.0, 1.0)) + (d - 0.5) * u_dust * (1.0 + u_gr) * 0.5 * u_c2;
+  c += vec3(step(1.0 - 0.04 * u_spk, d) * u_spk);                                   // treble sparkle (0 = none)
+  c = clamp(c, 0.0, 1.0);
+  float al = u_key > 0.5 ? mix(u_op, 1.0, smoothstep(0.25, 0.6, dot(c, vec3(0.2126, 0.7152, 0.0722)))) : u_op;
+  gl_FragColor = vec4(c * al, al);
+}`;
+  const spiS = { cv: document.createElement('canvas'), gl: null, failed: false, t: 0, dt: 0, slow: 0, beat: 0, last: 0 };
+  let spiInfo = { ms: 0, gl: null, lv: [0, 0, 0], size: [0, 0], live: false };
+  function spiGL() {
+    if (spiS.gl || spiS.failed) return spiS.gl;
+    try {
+      const g = spiS.cv.getContext('webgl', { antialias: false, preserveDrawingBuffer: true });
+      if (!g) throw new Error('no WebGL');
+      const sh = (ty, src) => { const o = g.createShader(ty); g.shaderSource(o, src); g.compileShader(o); if (!g.getShaderParameter(o, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(o)); return o; };
+      const pr = g.createProgram(); g.attachShader(pr, sh(g.VERTEX_SHADER, 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }'));
+      g.attachShader(pr, sh(g.FRAGMENT_SHADER, SPI_FS)); g.linkProgram(pr);
+      if (!g.getProgramParameter(pr, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(pr));
+      g.useProgram(pr); const b = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, b);
+      g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW);
+      const la = g.getAttribLocation(pr, 'a'); g.enableVertexAttribArray(la); g.vertexAttribPointer(la, 2, g.FLOAT, false, 0, 0);
+      const U = {}; ['u_res', 'u_t', 'u_dt', 'u_ring', 'u_str', 'u_arms', 'u_tw', 'u_warp', 'u_vig', 'u_bri', 'u_dust', 'u_gr', 'u_spk', 'u_cm', 'u_op', 'u_key', 'u_hm', 'u_c0', 'u_c1', 'u_c2'].forEach(n => U[n] = g.getUniformLocation(pr, n));
+      spiS.gl = g; spiS.U = U;
+      spiS.cv.addEventListener('webglcontextlost', e => { e.preventDefault(); spiS.gl = null; });
+    } catch (e) { console.warn('Spiral unavailable:', e.message); spiS.failed = true; spiS.gl = null; }
+    return spiS.gl;
+  }
+  function spiHue(deg) {                         // RGB hue rotation about the grey axis (column-major for uniformMatrix3fv)
+    const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r), k = (1 - c) / 3, q = Math.sqrt(1 / 3) * s;
+    const m = [[c + k, k - q, k + q], [k + q, c + k, k - q], [k - q, k + q, c + k]];
+    return [m[0][0], m[1][0], m[2][0], m[0][1], m[1][1], m[2][1], m[0][2], m[1][2], m[2][2]];
+  }
+  function spiPaint(t, V, lv, dt) {
+    const T0 = performance.now(), g = t.g; g.clearRect(0, 0, W, H);
+    const G = spiGL(); if (!G) { spiInfo = { ...spiInfo, gl: null }; return; }
+    const w = Math.max(16, Math.round(W * V.sscale)), h = Math.max(16, Math.round(H * V.sscale));
+    if (spiS.cv.width !== w || spiS.cv.height !== h) { spiS.cv.width = w; spiS.cv.height = h; }
+    const D = V.sdrive, L = (lv[0] + lv[1] + lv[2]) / 3, bass = Math.min(1, lv[0] * D), mid = Math.min(1, lv[1] * D), tre = Math.min(1, lv[2] * D);
+    spiS.t = (spiS.t + dt * V.sspeed * (1 + 2 * D * L)) % 6283.1853;
+    spiS.dt = (spiS.dt + dt) % 1000;
+    spiS.slow += (lv[0] - spiS.slow) * (1 - Math.exp(-dt / .8));
+    const hit = Math.max(0, lv[0] - spiS.slow) * 3 * D; spiS.beat = Math.max(hit, spiS.beat * Math.exp(-dt / .15));
+    const beat = Math.min(1, spiS.beat) * Math.min(1, D), U = spiS.U, c3 = c => mirRGB(c);
+    const ring = V.sring * (1 + .3 * V.spulse * bass), bri = 1 + V.spulse * (.6 * beat + .25 * bass);
+    G.viewport(0, 0, w, h);
+    G.uniform2f(U.u_res, w, h); G.uniform1f(U.u_t, spiS.t); G.uniform1f(U.u_dt, spiS.dt);
+    G.uniform1f(U.u_ring, ring); G.uniform1f(U.u_str, V.sstrobe * (1 + .2 * V.spulse * bass)); G.uniform1f(U.u_arms, Math.round(V.sarms));
+    G.uniform1f(U.u_tw, V.stwist + 6 * mid); G.uniform1f(U.u_warp, .25 * bass); G.uniform1f(U.u_vig, V.svig); G.uniform1f(U.u_bri, bri);
+    G.uniform1f(U.u_dust, V.sdust); G.uniform1f(U.u_gr, 3 * tre); G.uniform1f(U.u_spk, tre); G.uniform1f(U.u_cm, V.scol);
+    G.uniform1f(U.u_op, V.sop); G.uniform1f(U.u_key, V.skey ? 1 : 0);
+    G.uniformMatrix3fv(U.u_hm, false, new Float32Array(spiHue(V.shue)));
+    G.uniform3fv(U.u_c0, c3(V.scol === 2 ? col.bands[0] : col.line)); G.uniform3fv(U.u_c1, c3(col.bands[1])); G.uniform3fv(U.u_c2, c3(col.bands[2]));
+    G.drawArrays(G.TRIANGLES, 0, 3);
+    g.save(); g.imageSmoothingEnabled = true; g.drawImage(spiS.cv, 0, 0, W, H); g.restore();
+    if (t.big && V.text) xyLabel(t, V, 'Spiral · driven by the music');
+    spiInfo = { ms: performance.now() - T0, gl: 'webgl', lv: lv.slice(), t: spiS.t, ring, bri, beat, twist: V.stwist + 6 * mid, grain: 3 * tre, size: [w, h], live: spiInfo.live, n: (spiInfo.n || 0) + 1 };
+  }
+  function spiFlat(t) {
+    size(t); const V = sv(); mirS.lv = [0, 0, 0]; spiInfo.live = false; spiPaint(t, V, [0, 0, 0], 0); spiS.last = 0; t.cv.classList.add('idle');
+  }
+  function spiFrame(t) {
+    bandSync();
+    if (!bandsOn || !running()) { spiFlat(t); if (!raf && src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); t.cv.classList.remove('idle'); frames++;
+    const V = sv(), now = performance.now(), dt = spiS.last ? Math.min(.25, Math.max(1 / 240, (now - spiS.last) / 1000)) : 1 / 60; spiS.last = now;
+    spiInfo.live = true; spiPaint(t, V, mirLevels(dt, { msmooth: V.ssmooth }), reduce.matches ? 0 : dt);
+    if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+  /* ---- Round 53: 3D Audio. After "3D Audio Visualizer" by kishimisu (https://www.shadertoy.com/view/dtl3Dr, CC BY-NC-SA 4.0),
+     reimplemented: a ray marched along each pixel's view ray (Steps, 30) through a lattice of boxes (Box size 0.3 half-width per
+     unit cell) inside a 7.5 × 6.5 × 16.5 room whose walls swell by 0.2 × volume; at every step the distance d lights the colour
+     (0.8, 0.6, 1) × (cos(0.4·cell + (0, 1, 2) + time) + 2) by 1 / (1 + |d·(falloff − volume)|^1.3), weighted by the spectrum at
+     that cell's frequency: near cells (low z) play bass-to-high, every cell adds a random 0..1.5 octaves (hashed), read an
+     octave up from 261 Hz and passed through a logistic curve centred on 0.8 → 1 over the first 10 s ("wait for the drop").
+     Volume = the mean of 8 spectrum samples. iChannel0 is rebuilt like Shadertoy's audio texture: a 2048-point analyser
+     (smoothing 0.8, −100…−30 dB → 0..255) of which the lowest 512 bins go into a 512 × 1 texture. The analyser hangs off the
+     source only while this mode is on screen and never reaches the output. No sound: black, as in the original. ---- */
+  const AV_FS = `precision highp float;
+uniform vec2 u_res; uniform sampler2D u_fft; uniform float u_ct, u_snd, u_gain, u_c, u_steps, u_att, u_box, u_wall, u_vol, u_op, u_key;
+float lev(float x) { if (x < 0.0 || x >= 1.0) return 0.0; return min(1.0, texture2D(u_fft, vec2((floor(x * 512.0) + 0.5) / 512.0, 0.5)).r * u_gain); }
+float lgx(float x) { return 1.0 / (exp(-20.0 * (x - u_c)) + 1.0); }
+float amp(float a) { float z = lgx(0.0); return (lgx(a) - z) / (lgx(1.0) - z); }
+float pitch(float f, float oct) { f = pow(2.0, f) * 261.0; f = pow(2.0, oct) * f / 12000.0; return amp(lev(f)); }
+float box(vec3 p, vec3 b) { vec3 q = abs(p) - b; return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0); }
+float h13(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
+void main() {
+  vec2 uv = (2.0 * gl_FragCoord.xy - u_res) / u_res.y;
+  vec3 c = vec3(0.0), rd = normalize(vec3(uv, 1.0));
+  float t = 0.0;
+  for (int k = 0; k < 64; k++) {
+    if (float(k) >= u_steps) break;
+    vec3 p = t * rd, id = floor(abs(p)), q = fract(p) - 0.5;
+    float d = max(box(q, vec3(u_box)), abs(box(p, vec3(7.5, 6.5, 16.5))) - u_vol * 0.2 * u_wall);
+    float f = smoothstep(16.0, 0.0, id.z) * 3.0 * u_snd + h13(id) * 1.5;
+    c += vec3(0.8, 0.6, 1.0) * (cos(id * 0.4 + vec3(0.0, 1.0, 2.0) + u_ct) + 2.0) / (1.0 + pow(abs(d * (u_att - u_vol)), 1.3)) * pitch(f, 1.0);
+    t += d;
+  }
+  c = clamp(c, 0.0, 1.0);
+  float al = u_key > 0.5 ? mix(u_op, 1.0, smoothstep(0.25, 0.6, dot(c, vec3(0.2126, 0.7152, 0.0722)))) : u_op;
+  gl_FragColor = vec4(c * al, al);
+}`;
+  const avS = { cv: document.createElement('canvas'), gl: null, failed: false, t: 0, ct: 0, last: 0, an: null, on: false, bins: new Uint8Array(1024), zero: new Uint8Array(512) };
+  let avInfo = { ms: 0, gl: null, size: [0, 0], live: false, n: 0 };
+  function avSync() {
+    const want = !!src && enabled() && open && curMode().id === 'audio3d' && !document.hidden;
+    if (want === avS.on) return;
+    if (want) {
+      if (!avS.an) { const a = ac.createAnalyser(); a.fftSize = 2048; a.smoothingTimeConstant = .8; a.minDecibels = -100; a.maxDecibels = -30; avS.an = a; }
+      src.connect(avS.an); avS.on = true;
+    }
+    else { if (avS.an) try { src.disconnect(avS.an); } catch (e) { } avS.on = false; }
+  }
+  function avGL() {
+    if (avS.gl || avS.failed) return avS.gl;
+    try {
+      const g = avS.cv.getContext('webgl', { antialias: false, preserveDrawingBuffer: true });
+      if (!g) throw new Error('no WebGL');
+      const sh = (ty, src) => { const o = g.createShader(ty); g.shaderSource(o, src); g.compileShader(o); if (!g.getShaderParameter(o, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(o)); return o; };
+      const pr = g.createProgram(); g.attachShader(pr, sh(g.VERTEX_SHADER, 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }'));
+      g.attachShader(pr, sh(g.FRAGMENT_SHADER, AV_FS)); g.linkProgram(pr);
+      if (!g.getProgramParameter(pr, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(pr));
+      g.useProgram(pr); const b = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, b);
+      g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW);
+      const la = g.getAttribLocation(pr, 'a'); g.enableVertexAttribArray(la); g.vertexAttribPointer(la, 2, g.FLOAT, false, 0, 0);
+      const tx = g.createTexture(); g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, tx); g.pixelStorei(g.UNPACK_ALIGNMENT, 1);
+      g.texImage2D(g.TEXTURE_2D, 0, g.LUMINANCE, 512, 1, 0, g.LUMINANCE, g.UNSIGNED_BYTE, avS.zero);
+      [g.TEXTURE_MIN_FILTER, g.TEXTURE_MAG_FILTER].forEach(k => g.texParameteri(g.TEXTURE_2D, k, g.NEAREST));
+      [g.TEXTURE_WRAP_S, g.TEXTURE_WRAP_T].forEach(k => g.texParameteri(g.TEXTURE_2D, k, g.CLAMP_TO_EDGE));
+      const U = {}; ['u_res', 'u_fft', 'u_ct', 'u_snd', 'u_gain', 'u_c', 'u_steps', 'u_att', 'u_box', 'u_wall', 'u_vol', 'u_op', 'u_key'].forEach(n => U[n] = g.getUniformLocation(pr, n));
+      g.uniform1i(U.u_fft, 0); avS.gl = g; avS.U = U; avS.tx = tx;
+      avS.cv.addEventListener('webglcontextlost', e => { e.preventDefault(); avS.gl = null; });
+    } catch (e) { console.warn('3D Audio unavailable:', e.message); avS.failed = true; avS.gl = null; }
+    return avS.gl;
+  }
+  function avPaint(t, V, bins, dt, snd) {             // bins: 512 bytes (Shadertoy's iChannel0 row 0) or null = silence
+    const T0 = performance.now(), g = t.g; g.clearRect(0, 0, W, H);
+    const G = avGL(); if (!G) { avInfo = { ...avInfo, gl: null }; return; }
+    const w = Math.max(16, Math.round(W * V.ascale)), h = Math.max(16, Math.round(H * V.ascale));
+    if (avS.cv.width !== w || avS.cv.height !== h) { avS.cv.width = w; avS.cv.height = h; }
+    const B = bins || avS.zero; let vol = 0, pk = 0;
+    for (let i = 0; i < 8; i++) vol += Math.min(1, B[Math.floor(i / 8 * 512)] / 255 * V.again);
+    vol /= 8; for (let i = 0; i < 512; i++) pk = Math.max(pk, B[i]);
+    avS.t += dt; avS.ct = (avS.ct + dt * V.aspeed) % 6283.1853;
+    const s = Math.min(1, Math.max(0, avS.t / 10)), c = (.8 + .2 * s * s * (3 - 2 * s)) * V.athr, U = avS.U;   // st(0, 10, .8, 1)
+    G.viewport(0, 0, w, h); G.activeTexture(G.TEXTURE0); G.bindTexture(G.TEXTURE_2D, avS.tx);
+    G.texSubImage2D(G.TEXTURE_2D, 0, 0, 0, 512, 1, G.LUMINANCE, G.UNSIGNED_BYTE, B.length === 512 ? B : B.subarray(0, 512));
+    G.uniform2f(U.u_res, w, h); G.uniform1f(U.u_ct, avS.ct); G.uniform1f(U.u_snd, snd ? 1 : 0); G.uniform1f(U.u_gain, V.again); G.uniform1f(U.u_c, c);
+    G.uniform1f(U.u_steps, Math.round(V.asteps)); G.uniform1f(U.u_att, V.aatt); G.uniform1f(U.u_box, V.abox); G.uniform1f(U.u_wall, V.awall); G.uniform1f(U.u_vol, vol);
+    G.uniform1f(U.u_op, V.aop); G.uniform1f(U.u_key, V.akey ? 1 : 0);
+    G.drawArrays(G.TRIANGLES, 0, 3);
+    g.save(); g.imageSmoothingEnabled = true; g.drawImage(avS.cv, 0, 0, W, H); g.restore();
+    if (t.big && V.text) xyLabel(t, V, '3D Audio Visualizer · lights follow the spectrum');
+    avInfo = { ms: performance.now() - T0, gl: 'webgl', t: avS.t, ct: avS.ct, c, vol, peak: pk, snd: !!snd, size: [w, h], live: avInfo.live, n: (avInfo.n || 0) + 1 };
+  }
+  function avFlat(t) {
+    size(t); avInfo.live = false; avPaint(t, sv(), null, 0, false); avS.last = 0; t.cv.classList.add('idle');
+  }
+  function avFrame(t) {
+    bandSync();
+    if (!avS.on || !running()) { avFlat(t); if (!raf && src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); t.cv.classList.remove('idle'); frames++;
+    const V = sv(), now = performance.now(), dt = avS.last ? Math.min(.25, Math.max(1 / 240, (now - avS.last) / 1000)) : 1 / 60; avS.last = now;
+    avS.an.smoothingTimeConstant = V.asmooth; avS.an.getByteFrequencyData(avS.bins);
+    avInfo.live = true; avPaint(t, V, avS.bins.subarray(0, 512), reduce.matches ? 0 : dt, true);
+    if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
   /* ---- full-screen visual modes: add an entry here to add a mode (the small scope always shows mode 1) ---- */
   const MODES = [
     { id: 'wave', name: 'Waveform', draw: waveFrame, idle: waveFlat },
@@ -4721,7 +5075,10 @@ void main() {
     { id: 'triangle', name: 'Triangle', draw: triangleFrame, idle: triangleFlat, taps: true },
     { id: 'title', name: 'Title', draw: titleFrame, idle: titleFlat, taps: true },
     { id: 'xy', name: 'XY', draw: xyFrame, idle: xyFlat },
-    { id: 'mirror', name: 'Mirror Zoom', draw: mirFrame, idle: mirFlat, taps: true }
+    { id: 'mirror', name: 'Mirror Zoom', draw: mirFrame, idle: mirFlat, taps: true },
+    { id: 'pleiades', name: 'Pleiades', draw: pleFrame, idle: pleFlat, taps: true },
+    { id: 'spiral', name: 'Spiral', draw: spiFrame, idle: spiFlat, taps: true },
+    { id: 'audio3d', name: '3D Audio', draw: avFrame, idle: avFlat }
   ];
   function modeIx() { const i = MODES.findIndex(m => m.id === S.meta.scopeMode); return i < 0 ? 0 : i; }
   const curMode = () => MODES[modeIx()];
@@ -6262,9 +6619,11 @@ void main() {
     { id: 'kzoom', group: 'Kaleidoscope', label: 'Kaleidoscope zoom', short: 'Zoom', min: .25, max: 4, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Magnifies the picture seen through the wedge (needs Kaleidoscope on)' },
     { id: 'kx', group: 'Kaleidoscope', label: 'Kaleidoscope centre ↔', short: 'Centre ↔', min: -.5, max: .5, step: .01, def: 0, fmt: x => sgn(Math.round(x * 100)) + '%', title: 'Which part of the picture sits at the centre of the pattern: left / right, as a share of the width (needs Kaleidoscope on)' },
     { id: 'ky', group: 'Kaleidoscope', label: 'Kaleidoscope centre ↕', short: 'Centre ↕', min: -.5, max: .5, step: .01, def: 0, fmt: x => sgn(Math.round(x * 100)) + '%', title: 'Which part of the picture sits at the centre of the pattern: up / down, as a share of the height (needs Kaleidoscope on)' },
+    { id: 'tshape', group: 'Tiling', label: 'Tile shape', short: 'Shape', type: 'choice', opts: ['Rectangles', 'Triangles', 'Hexagons'], min: 0, max: 2, step: 1, def: 0, title: 'Shape of the tiles. Rectangles: the Columns × Rows grid. Triangles and Hexagons: regular shapes that fill the whole screen without gaps; Columns / Rows set their size (each fits in one cell of that grid)' },
     { id: 'cols', group: 'Tiling', label: 'Columns', min: 1, max: 4, step: 1, def: 1, fmt: x => String(x), title: 'Tiles across' },
     { id: 'rows', group: 'Tiling', label: 'Rows', min: 1, max: 4, step: 1, def: 1, fmt: x => String(x), title: 'Tiles down' },
     { id: 'alt', group: 'Tiling', label: 'Alternate', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, title: 'Mirror every other tile, so neighbouring tiles meet like reflections' },
+    { id: 'tmir', group: 'Tiling', label: 'Mirror neighbours', short: 'Mirror', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, title: 'Every tile is the exact mirror image of each neighbour across the edge they share, so the picture runs on unbroken over every edge and corner (overrides Alternate). Rectangles: the same as Alternate. Triangles: each triangle is its neighbour reflected over their common side (so some show the picture turned by 120° or 240°). Hexagons: three hexagons meet at each corner, which no plain picture can mirror exactly, so each hexagon shows the picture folded into six mirrored wedges, mirrors through its corners; every edge is then an exact mirror' },
     { id: 'gap', group: 'Tiling', label: 'Spacing', min: 0, max: .4, step: .01, def: 0, fmt: x => Math.round(x * 100) + '%', title: 'Space around each tile (also shrinks a single scope)' },
     { id: 'grid', group: 'Display', label: 'Grid', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, title: 'Background grid and guide lines (G)' },
     { id: 'text', group: 'Display', label: 'Text', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, title: 'Text on the picture: band names / legend, track name, key hints (T). Mode and effect names still flash briefly when changed' },
@@ -6279,7 +6638,7 @@ void main() {
     { id: 'xpersist', group: 'XY', label: 'Persistence', min: 0, max: 2, step: .05, def: .3, fmt: x => x ? x.toFixed(2) + ' s' : 'Off', modes: ['xy'], title: 'Phosphor afterglow: how long an old trace takes to fade to a tenth (Off: only the newest sweep)' },
     { id: 'xbeam', group: 'XY', label: 'Beam width', short: 'Beam', min: .5, max: 4, step: .1, def: 1, fmt: x => x.toFixed(1) + '×', modes: ['xy'], title: 'Thickness of the beam' },
     { id: 'xglow', group: 'XY', label: 'Glow', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['xy'], title: 'Soft glow round the beam (0: none)' },
-    { id: 'xms', group: 'XY', label: 'Rotate 45°', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, modes: ['xy'], title: 'Mid / side view (a goniometer): mono sound stands upright, left-only and right-only lean 45° either way, opposite phase lies flat' },
+    { id: 'xms', group: 'XY', label: 'Rotate 45°', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, modes: ['xy'], title: 'Mid / side view (a goniometer): mono sound stands upright, left-only and right-only lean 45° either way, opposite phase lies flat' },
     { id: 'xgrat', group: 'XY', label: 'Graticule', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, modes: ['xy'], title: 'The scope screen’s divisions (Display › Grid / G hides them too)' },
     { id: 'mdrive', group: 'Mirror Zoom', label: 'Audio drive', short: 'Drive', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['mirror'], info: 'After Shadertoy 4sXGzH (author unknown), CC BY-NC-SA 3.0; reimplemented, the mouse replaced by the music', title: 'How far the music moves the point that steers the pattern (it stands in for the original’s mouse). 0: the pattern only drifts' },
     { id: 'msmooth', group: 'Mirror Zoom', label: 'Smoothing', min: .02, max: 1.5, step: .01, def: .25, fmt: x => x.toFixed(2) + ' s', modes: ['mirror'], title: 'How slowly the levels follow the music: short = twitchy, long = gliding' },
@@ -6293,8 +6652,54 @@ void main() {
     { id: 'mzmax', group: 'Mirror Zoom', label: 'Zoom max', min: 1, max: 32, step: .5, def: 16, fmt: x => x.toFixed(1) + '×', modes: ['mirror'], title: 'Zoom inside the circle (never below Zoom min)' },
     { id: 'mcs', group: 'Mirror Zoom', label: 'Circle scale', short: 'Circles', min: .5, max: 4, step: .05, def: 1.4, fmt: x => x.toFixed(2), modes: ['mirror'], title: 'Size of the discs drawn at the end: bigger number = smaller discs' },
     { id: 'mcol', group: 'Mirror Zoom', label: 'Colour', type: 'choice', opts: ['Line colour', 'Band colours', 'White'], min: 0, max: 2, step: 1, def: 0, modes: ['mirror'], title: 'Line colour follows the theme (and Line hue / lightness); Band colours shade from bass to treble colour; White as in the original' },
+    { id: 'mop', group: 'Mirror Zoom', label: 'Opacity', short: 'Opacity', min: 0, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['mirror'], title: 'How solid the pattern is: below 100% the active effect’s trails / feedback (Effect menu) show through it; 100% = as before' },
+    { id: 'mkey', group: 'Mirror Zoom', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Sky only'], min: 0, max: 1, step: 1, def: 0, modes: ['mirror'], title: 'Whole picture: Opacity applies everywhere. Sky only: only the dark parts turn see-through, bright parts stay solid (no effect at Opacity 100%)' },
     { id: 'mscale', group: 'Mirror Zoom', label: 'Render scale', short: 'Scale', min: .25, max: 1, step: .05, def: .5, fmt: x => Math.round(x * 100) + '%', modes: ['mirror'], title: 'Resolution the pattern is computed at, then scaled up: lower is faster on slow GPUs' },
-    { id: 'xdelay', group: 'XY', label: 'Mono delay', min: 0, max: 10, step: .05, def: 1, fmt: x => x.toFixed(2) + ' ms', modes: ['xy'], title: 'For mono sound (or two identical channels) Y is the same signal delayed by this much: a phase plot. 0 draws a diagonal line' }
+    { id: 'pdrive', group: 'Pleiades', label: 'Audio drive', short: 'Drive', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['pleiades'], info: 'After "Pleiades Star Cluster (M45)" by aladin (Shadertoy NcfXDf); reimplemented, mouse replaced by the music', title: 'How strongly the music flies the camera and lights the stars (it replaces the original’s mouse). 0: the original’s slow automatic orbit' },
+    { id: 'psmooth', group: 'Pleiades', label: 'Smoothing', min: .02, max: 1.5, step: .01, def: .3, fmt: x => x.toFixed(2) + ' s', modes: ['pleiades'], title: 'How slowly the levels follow the music: short = twitchy, long = gliding' },
+    { id: 'porbit', group: 'Pleiades', label: 'Orbit speed', short: 'Orbit', min: 0, max: 4, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['pleiades'], title: 'How fast the camera circles the cluster (1× as in the original; louder music speeds it up)' },
+    { id: 'ppitch', group: 'Pleiades', label: 'Pitch swing', short: 'Pitch', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['pleiades'], title: 'How far bass lifts and treble lowers the camera' },
+    { id: 'pdist', group: 'Pleiades', label: 'Distance', min: 6, max: 30, step: .5, def: 14, fmt: x => x.toFixed(1), modes: ['pleiades'], title: 'Orbit radius (14 as in the original)' },
+    { id: 'pzoom', group: 'Pleiades', label: 'Zoom pulse', short: 'Zoom', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['pleiades'], title: 'How much the bass pulls the camera in and zooms' },
+    { id: 'ppulse', group: 'Pleiades', label: 'Star pulse', short: 'Pulse', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['pleiades'], title: 'Stars flare with the music: the bright ones on the bass, the faint ones on the treble' },
+    { id: 'pexp', group: 'Pleiades', label: 'Exposure', min: .5, max: 6, step: .1, def: 2.2, fmt: x => x.toFixed(1), modes: ['pleiades'], title: 'Overall brightness before tone mapping (2.2 as in the original)' },
+    { id: 'pneb', group: 'Pleiades', label: 'Nebula', min: 0, max: 3, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['pleiades'], title: 'Strength of the blue reflection nebula (the mids make it glow)' },
+    { id: 'psteps', group: 'Pleiades', label: 'Nebula steps', short: 'Steps', min: 4, max: 24, step: 1, def: 12, fmt: x => String(x), modes: ['pleiades'], title: 'Samples through the nebula: more = smoother, slower (the original uses 24)' },
+    { id: 'pmw', group: 'Pleiades', label: 'Milky Way', short: 'Milky', min: 0, max: 3, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['pleiades'], title: 'Brightness of the Milky Way band' },
+    { id: 'pbg', group: 'Pleiades', label: 'Background stars', short: 'Bg stars', min: 0, max: 3, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['pleiades'], title: 'Brightness of the distant star shells (0 also skips them: faster)' },
+    { id: 'pspk', group: 'Pleiades', label: 'Spikes', min: 0, max: 5, step: .1, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['pleiades'], title: 'Diffraction spikes on the bright stars' },
+    { id: 'pcol', group: 'Pleiades', label: 'Colour', type: 'choice', opts: ['Natural', 'Line colour', 'Band colours'], min: 0, max: 2, step: 1, def: 0, modes: ['pleiades'], title: 'Natural as in the original; Line colour tints it with the theme line (and Line hue / lightness); Band colours: stars bass, nebula mid, background treble colour' },
+    { id: 'pop', group: 'Pleiades', label: 'Opacity', short: 'Opacity', min: 0, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['pleiades'], title: 'How solid the sky is: below 100% the active effect’s trails / feedback (Effect menu) show through it; 100% = fully opaque as before' },
+    { id: 'pkey', group: 'Pleiades', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Sky only'], min: 0, max: 1, step: 1, def: 0, modes: ['pleiades'], title: 'Whole picture: Opacity applies everywhere. Sky only: only the dark sky turns see-through, stars and bright nebula stay solid (no effect at Opacity 100%)' },
+    { id: 'pscale', group: 'Pleiades', label: 'Render scale', short: 'Scale', min: .2, max: 1, step: .05, def: .25, fmt: x => Math.round(x * 100) + '%', modes: ['pleiades'], title: 'Resolution the sky is computed at, then scaled up: lower is faster on slow GPUs' },
+    { id: 'sdrive', group: 'Spiral', label: 'Audio drive', short: 'Drive', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['spiral'], info: 'Spiral shader supplied by the user; adapted to react to the music', title: 'How strongly the music drives the spiral: 0 = the original shader, unchanged' },
+    { id: 'ssmooth', group: 'Spiral', label: 'Smoothing', min: .02, max: 1.5, step: .01, def: .3, fmt: x => x.toFixed(2) + ' s', modes: ['spiral'], title: 'How quickly the bass / mid / treble levels follow the music' },
+    { id: 'sspeed', group: 'Spiral', label: 'Speed', min: 0, max: 4, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['spiral'], title: 'Base speed of the rings (the music adds to it)' },
+    { id: 'sring', group: 'Spiral', label: 'Ring density', short: 'Rings', min: 5, max: 60, step: 1, def: 25, fmt: x => String(x), modes: ['spiral'], title: 'Rings per unit radius (original 25); bass tightens them' },
+    { id: 'sstrobe', group: 'Spiral', label: 'Strobe density', short: 'Strobe', min: 2, max: 40, step: 1, def: 13, fmt: x => String(x), modes: ['spiral'], title: 'Bands of the strobe light (original 13)' },
+    { id: 'sarms', group: 'Spiral', label: 'Arms', min: 1, max: 8, step: 1, def: 1, fmt: x => String(x), modes: ['spiral'], title: 'Number of spiral arms (angle multiplier, original 1)' },
+    { id: 'stwist', group: 'Spiral', label: 'Twist', min: -10, max: 10, step: .1, def: 0, fmt: x => x.toFixed(1), modes: ['spiral'], title: 'Extra winding of the arms with radius; the mids add to it' },
+    { id: 'spulse', group: 'Spiral', label: 'Brightness pulse', short: 'Pulse', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['spiral'], title: 'How much beats flash the brightness and bass pumps the rings' },
+    { id: 'sdust', group: 'Spiral', label: 'Dust amount', short: 'Dust', min: 0, max: 2, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['spiral'], title: 'Strength of the dust grain and its colour cast (100% = original; 0 = clean grey rings); treble roughens it' },
+    { id: 'shue', group: 'Spiral', label: 'Dust hue', min: -180, max: 180, step: 1, def: 0, fmt: x => (x > 0 ? '+' : '') + x + '°', modes: ['spiral'], title: 'Turns the dust colour cast round the colour wheel (0 = original cyan-grey with red grain)' },
+    { id: 'svig', group: 'Spiral', label: 'Vignette', min: 0, max: 1, step: .01, def: .4, fmt: x => x.toFixed(2), modes: ['spiral'], title: 'Radius falloff of rings and strobe (original 0.4)' },
+    { id: 'scol', group: 'Spiral', label: 'Colour', type: 'choice', opts: ['Original', 'Line colour', 'Band colours'], min: 0, max: 2, step: 1, def: 0, modes: ['spiral'], title: 'Original as pasted; Line colour tints with the theme line (and Line hue / lightness); Band colours: bass centre, mid rim, treble grain' },
+    { id: 'sop', group: 'Spiral', label: 'Opacity', short: 'Opacity', min: 0, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['spiral'], title: 'How solid the spiral is: below 100% the active effect’s trails show through it' },
+    { id: 'skey', group: 'Spiral', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Sky only'], min: 0, max: 1, step: 1, def: 0, modes: ['spiral'], title: 'Whole picture: Opacity applies everywhere. Sky only: only the dark parts turn see-through' },
+    { id: 'sscale', group: 'Spiral', label: 'Render scale', short: 'Scale', min: .25, max: 1, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['spiral'], title: 'Resolution the spiral is computed at, then scaled up (the grain is per computed pixel): lower is faster on slow GPUs' },
+    { id: 'xdelay', group: 'XY', label: 'Mono delay', min: 0, max: 10, step: .05, def: 1, fmt: x => x.toFixed(2) + ' ms', modes: ['xy'], title: 'For mono sound (or two identical channels) Y is the same signal delayed by this much: a phase plot. 0 draws a diagonal line' },
+    { id: 'xsx', group: 'XY', label: 'X scale', min: .25, max: 8, step: .05, def: 4, fmt: x => x.toFixed(2) + '×', modes: ['xy'], title: 'Stretches the beam across (screen X) only: 4× makes a mid / side picture four times wider; 1× = square, as before r53' },
+    { id: 'again', group: '3D Audio', label: 'Level gain', short: 'Gain', min: 0, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['audio3d'], info: 'After "3D Audio Visualizer" by kishimisu; reimplemented', href: 'https://www.shadertoy.com/view/dtl3Dr', lic: 'CC BY-NC-SA 4.0', title: 'Multiplies the spectrum the lights read (1× = Shadertoy’s audio texture as in the original)' },
+    { id: 'asmooth', group: '3D Audio', label: 'Smoothing', min: 0, max: .95, step: .01, def: .8, fmt: x => x.toFixed(2), modes: ['audio3d'], title: 'Spectrum smoothing (0.80 as on Shadertoy): lower is twitchier' },
+    { id: 'athr', group: '3D Audio', label: 'Threshold', min: .5, max: 1.2, step: .01, def: 1, fmt: x => x.toFixed(2), modes: ['audio3d'], title: 'How loud a frequency must be to light its lamps. 1 = original: 0.8 rising to 1 over the first 10 s (“wait for the drop”); lower lights more' },
+    { id: 'asteps', group: '3D Audio', label: 'Steps', min: 10, max: 64, step: 1, def: 30, fmt: x => String(x), modes: ['audio3d'], title: 'Ray-march steps (30 as in the original): more reaches further into the room, costs more' },
+    { id: 'aatt', group: '3D Audio', label: 'Light falloff', short: 'Falloff', min: 2, max: 30, step: .5, def: 10, fmt: x => x.toFixed(1), modes: ['audio3d'], title: 'How tight each glow is (10 as in the original, minus the volume): lower = bigger, softer lights' },
+    { id: 'abox', group: '3D Audio', label: 'Box size', short: 'Boxes', min: .05, max: .48, step: .01, def: .3, fmt: x => x.toFixed(2), modes: ['audio3d'], title: 'Half-size of the repeated boxes in each cell (0.30 as in the original)' },
+    { id: 'awall', group: '3D Audio', label: 'Wall pulse', short: 'Walls', min: 0, max: 3, step: .05, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['audio3d'], title: 'How far the room’s walls swell with the volume (100% as in the original)' },
+    { id: 'aspeed', group: '3D Audio', label: 'Colour speed', short: 'Colour', min: 0, max: 4, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['audio3d'], title: 'How fast the lamp colours cycle (1× as in the original; 0 holds them)' },
+    { id: 'aop', group: '3D Audio', label: 'Opacity', short: 'Opacity', min: 0, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['audio3d'], title: 'How solid the picture is: below 100% the active effect’s trails show through it' },
+    { id: 'akey', group: '3D Audio', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Sky only'], min: 0, max: 1, step: 1, def: 0, modes: ['audio3d'], title: 'Whole picture: Opacity applies everywhere. Sky only: only the dark parts turn see-through' },
+    { id: 'ascale', group: '3D Audio', label: 'Internal resolution', short: 'Resolution', min: .25, max: 1, step: .05, def: .5, fmt: x => Math.round(x * 100) + '%', modes: ['audio3d'], title: 'Resolution the scene is ray-marched at, then scaled up: lower is faster on slow GPUs' }
   ];
   SCOPE_PARAMS.forEach(p => { if (p.type === 'choice') p.fmt = x => p.opts[x] || ''; });
   const SV0 = (() => { const o = {}; SCOPE_PARAMS.forEach(p => o[p.id] = p.def); o.xf = false; return o; })();
@@ -6306,7 +6711,7 @@ void main() {
       const x = saved[p.id]; let v = typeof x === 'number' && Number.isFinite(x) ? Math.min(p.max, Math.max(p.min, x)) : p.def;
       if (p.step >= 1) v = Math.round(v); o[p.id] = v;
     }
-    o.xf = o.cols > 1 || o.rows > 1 || o.mirror > 0 || !!o.flipH || !!o.flipV || o.orient > 0 || o.rot !== 0 || o.gap > 0 || !!o.kal;
+    o.xf = o.cols > 1 || o.rows > 1 || o.mirror > 0 || !!o.flipH || !!o.flipV || o.orient > 0 || o.rot !== 0 || o.gap > 0 || !!o.kal || o.tshape > 0;
     return svC = o;
   }
   const tileT = { cv: document.createElement('canvas'), big: true, tile: true }; tileT.g = tileT.cv.getContext('2d');
@@ -6325,6 +6730,87 @@ void main() {
      point of the picture at the pattern's centre. The folded cell (kalO) is stamped into every tile (Alternate still mirrors
      every other tile), and the shader effects then work on the whole composed frame as usual, so their trails and warps
      are not folded (they may wander off the symmetry). Off (the default) nothing here runs and the picture is unchanged. */
+  /* Round 54: Tiling › Shape. Rectangles (the default) is the Columns × Rows grid exactly as before. Triangles and Hexagons
+     are the two regular tilings of the plane besides squares: equilateral triangles in rows, alternately pointing up and
+     down, and pointy-top regular hexagons in rows offset by half a hexagon. Columns / Rows set the size: the shape is the
+     largest one that fits in a cell of the Columns × Rows grid, and as many as needed (whole or cut by the edges) fill the
+     screen, with one shape centred on the screen centre. Each shape shows the tile picture (sized to the shape's bounding
+     box, Direction / Rotation / Flips / Mirror / Kaleidoscope applied as usual) clipped to the shape; Spacing shrinks each
+     shape about its box centre. Down-pointing triangles show the picture turned 180°, so it reads the same way round
+     from the triangle's point; Alternate mirrors them top to bottom instead (neighbours meet like reflections). For
+     hexagons Alternate mirrors every other hexagon along a row left to right and every other row top to bottom. */
+  function shapeBox(V, Wf, Hf) {             // size of one shape (its bounding box) and the row / column steps
+    if (!V.tshape) return null;
+    const cw = Wf / V.cols, ch = Hf / V.rows, r3 = Math.sqrt(3);
+    if (V.tshape === 1) { const b = Math.min(cw, ch * 2 / r3); return { shape: 'tri', sw: b, sh: b * r3 / 2, dx: b / 2, dy: b * r3 / 2 }; }
+    const w = Math.min(cw, ch * r3 / 2); return { shape: 'hex', sw: w, sh: w * 2 / r3, dx: w, dy: w * 2 / r3 * .75 };
+  }
+  function tiles(V, L) {                     // every tile: centre, mirror (ax, ay) and, for shapes, the outline to clip to
+    const out = [];
+    if (!L.shape) {
+      for (let j = 0; j < V.rows; j++) for (let i = 0; i < V.cols; i++)
+        out.push({ cx: (i + .5) * L.Wf / V.cols, cy: (j + .5) * L.Hf / V.rows, ax: (V.alt || V.tmir) && i % 2 ? -1 : 1, ay: (V.alt || V.tmir) && j % 2 ? -1 : 1 });
+      return out;
+    }
+    const tri = L.shape === 'tri', K = Math.ceil(L.Wf / 2 / L.dx) + 1, R = Math.ceil(L.Hf / 2 / L.dy) + 1, hw = L.sw / 2, hh = L.sh / 2;
+    const TM = tri && V.tmir ? triMirror(V, L, K, R) : null;
+    for (let r = -R; r <= R; r++) for (let k = -K - 1; k <= K; k++) {
+      const odd = r & 1, cx = L.Wf / 2 + (k + (!tri && odd ? .5 : 0)) * L.dx, cy = L.Hf / 2 + r * L.dy;
+      if (cx + hw < 0 || cx - hw > L.Wf || cy + hh < 0 || cy - hh > L.Hf) continue;
+      if (TM) { const m = TM.get(k + ',' + r); out.push({ cx: m[4], cy: m[5], ax: 1, ay: 1, poly: TRI, m }); }
+      else if (!tri && V.tmir) out.push({ cx, cy, ax: 1, ay: 1, poly: HEX, fold: 1 });
+      else if (tri) { const dn = (k + r) & 1; out.push({ cx, cy, ax: dn && !V.alt ? -1 : 1, ay: dn ? -1 : 1, poly: TRI }); }
+      else out.push({ cx, cy, ax: V.alt && k & 1 ? -1 : 1, ay: V.alt && odd ? -1 : 1, poly: HEX });
+    }
+    return out;
+  }
+  const TRI = [[0, -.5], [.5, .5], [-.5, .5]], HEX = [[0, -.5], [.5, -.25], [.5, .25], [0, .5], [-.5, .25], [-.5, -.25]];   // in box units
+  /* Round 55: Tiling › Mirror neighbours. Each tile is the reflection of its neighbour in the edge they share, so the picture
+     is continuous over every edge (a mirror line) and every corner. A tiling can do that with an arbitrary picture only when
+     its corners split into angles of 180°/n: rectangles (90°) and equilateral triangles (60°) can, hexagons (120°) cannot.
+     Rectangles: reflecting every other column ↔ and every other row ↕ is exactly that, so it is Alternate.
+     Triangles: the centre triangle keeps the picture; every other one gets the centre's placement reflected over each
+     shared side on a path to it (walked breadth first over the rows; the reflections of the triangle tiling form a group,
+     so every path gives the same answer and every side, not only the walked ones, is an exact mirror). Upward triangles end
+     up turned by 0°, 120° or 240°, downward ones reflected. Spacing shrinks each triangle about its own centre (incentre).
+     Hexagons: three meet at each corner, and three reflections never give back the start, so a plain picture cannot be
+     mirrored over all edges. Each hexagon instead shows the picture folded into six 60° wedges (corners to centre, every
+     other wedge mirrored: a 3-fold kaleidoscope with its mirrors through the corners); such a hexagon equals its own
+     reflection over any line through its centre parallel to an edge, so identical hexagons side by side are exact mirrors
+     of each other over every edge. Mirror / Flip / Rotation / Kaleidoscope still build the picture first, as before. */
+  function triMirror(V, L, K, R) {           // triangle (k, r) → canvas matrix [a, b, c, d, e, f] that places the picture
+    const hw = L.sw / 2, hh = L.sh / 2, at = new Map(), eps = 1e-6 * L.sw + 1e-9;
+    const vx = (k, r) => { const x = L.Wf / 2 + k * L.dx, y = L.Hf / 2 + r * L.dy;
+      return (k + r) & 1 ? [[x - hw, y - hh], [x + hw, y - hh], [x, y + hh]] : [[x, y - hh], [x + hw, y + hh], [x - hw, y + hh]]; };
+    at.set('0,0', [1, 0, 0, 1, L.Wf / 2, L.Hf / 2 + L.sh * V.gap / 6]);   // the centre triangle (pointing up); origin = its shrunk box centre
+    for (const Q = [[0, 0]]; Q.length;) {
+      const [k, r] = Q.shift(), M = at.get(k + ',' + r), A = vx(k, r);
+      for (const [k2, r2] of [[k - 1, r], [k + 1, r], [k, (k + r) & 1 ? r - 1 : r + 1]]) {
+        if (k2 < -K - 1 || k2 > K || Math.abs(r2) > R || at.has(k2 + ',' + r2)) continue;
+        const B = vx(k2, r2), e = A.filter(p => B.some(q => Math.hypot(p[0] - q[0], p[1] - q[1]) < eps));
+        at.set(k2 + ',' + r2, reflM(e[0], e[1], M)); Q.push([k2, r2]);
+      }
+    }
+    return at;
+  }
+  function reflM(p, q, M) {                 // the reflection in the line p–q, after M
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1]), ux = (q[0] - p[0]) / l, uy = (q[1] - p[1]) / l, c = ux * ux - uy * uy, s = 2 * ux * uy;
+    const tx = p[0] - (c * p[0] + s * p[1]), ty = p[1] - (s * p[0] - c * p[1]), [a, b, cc, d, e, f] = M;
+    return [c * a + s * b, s * a - c * b, c * cc + s * d, s * cc - c * d, c * e + s * f + tx, s * e - c * f + ty];
+  }
+  function mirStamp(g, T, L, draw) {        // a Mirror-neighbours tile: placed by its matrix (triangles) or folded into 6 wedges (hexagons)
+    for (let s = 0, n = T.fold ? 6 : 1; s < n; s++) {
+      g.save();
+      if (T.m) g.transform(...T.m); else g.translate(T.cx, T.cy);
+      if (T.fold) {
+        const a = T.poly[(s + 1) % 6], b = T.poly[(s + 2) % 6];
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(a[0] * L.cw, a[1] * L.ch); g.lineTo(b[0] * L.cw, b[1] * L.ch); g.closePath(); g.clip();
+        g.rotate(s * Math.PI / 3); if (s & 1) g.scale(1, -1);
+      } else shapeClip(g, T, L);
+      draw(); g.restore();
+    }
+  }
+  function shapeClip(g, T, L) { g.beginPath(); T.poly.forEach(([x, y], n) => g[n ? 'lineTo' : 'moveTo'](x * L.cw, y * L.ch)); g.closePath(); g.clip(); }
   const kalS = document.createElement('canvas'), kalO = document.createElement('canvas'), kalSg = kalS.getContext('2d'), kalOg = kalO.getContext('2d');
   let kalA = 0, kalT0 = 0;
   function kalCompose(g, V, L, tw, th, fx, fy) {
@@ -6350,9 +6836,9 @@ void main() {
       q.drawImage(kalS, -cw / 2, -ch / 2);
       q.restore();
     }
-    for (let j = 0; j < V.rows; j++) for (let i = 0; i < V.cols; i++) {
-      const cx = (i + .5) * L.Wf / V.cols, cy = (j + .5) * L.Hf / V.rows, ax = V.alt && i % 2 ? -1 : 1, ay = V.alt && j % 2 ? -1 : 1;
-      g.save(); g.translate(cx, cy); g.scale(ax, ay); g.drawImage(kalO, -cw / 2, -ch / 2); g.restore();
+    for (const T of tiles(V, L)) {
+      if (T.m || T.fold) { mirStamp(g, T, L, () => g.drawImage(kalO, -cw / 2, -ch / 2)); continue; }
+      g.save(); g.translate(T.cx, T.cy); g.scale(T.ax, T.ay); if (T.poly) shapeClip(g, T, L); g.drawImage(kalO, -cw / 2, -ch / 2); g.restore();
     }
   }
   function compose() {                       // stamp the tile into every cell of the full canvas
@@ -6361,10 +6847,13 @@ void main() {
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, full.cv.width, full.cv.height);
     const tw = tileT.cv.width, th = tileT.cv.height, fx = V.flipH ? -1 : 1, fy = V.flipV ? -1 : 1;
     if (V.kal) return kalCompose(g, V, L, tw, th, fx, fy);
-    for (let j = 0; j < V.rows; j++) for (let i = 0; i < V.cols; i++) {
-      const cx = (i + .5) * L.Wf / V.cols, cy = (j + .5) * L.Hf / V.rows, ax = V.alt && i % 2 ? -1 : 1, ay = V.alt && j % 2 ? -1 : 1;
+    for (const T of tiles(V, L)) {
+      if (T.m || T.fold) { mirStamp(g, T, L, () => { for (const [hx, hy, hw, hh, mx, my] of HALVES[V.mirror]) {
+        g.save(); g.beginPath(); g.rect(hx * L.cw, hy * L.ch, hw * L.cw, hh * L.ch); g.clip();
+        g.scale(mx * fx, my * fy); g.rotate(L.a); g.drawImage(tileT.cv, -tw / 2, -th / 2); g.restore(); } }); continue; }
+      const { cx, cy, ax, ay, poly } = T;
       for (const [hx, hy, hw, hh, mx, my] of HALVES[V.mirror]) {
-        g.save(); g.translate(cx, cy); g.scale(ax, ay);
+        g.save(); g.translate(cx, cy); g.scale(ax, ay); if (poly) shapeClip(g, { poly }, L);
         g.beginPath(); g.rect(hx * L.cw, hy * L.ch, hw * L.cw, hh * L.ch); g.clip();
         g.scale(mx * fx, my * fy); g.rotate(L.a); g.drawImage(tileT.cv, -tw / 2, -th / 2);
         g.restore();
@@ -6653,6 +7142,397 @@ void main() {
       vec4 src = texture2D(u_src, v);
       gl_FragColor = vec4(clamp((u_bg + d) * (1.0 - src.a) + src.rgb, 0.0, 1.0), 1.0);
     }`;
+  /* ---- Round 45: Fractal Echo, after Shadertoy 3fyXDD by MystiKethen (code supplied by the user; reimplemented). Three passes, as its tabs:
+     buffer A (the echo, at an internal resolution: the source's 480-line cap) = the average of up to 4 copies of its previous
+     frame, each turned by sin(t·k), zoomed by baseZoom + zoomRange·sin(t·k'), panned by panRange·(cos, sin) (k from the
+     source's three irrational "magic" rates), inside a soft 0.47 border; blended with the unmoved previous frame (Blend),
+     plus Blur mix × buffer B, darkened by (1 − grain) plus a tinted grain term, a slight colour cross-talk matrix, × Gain,
+     clamped. Buffer B = the source's golden-angle spiral blur of A (16 samples, read 1.5× zoomed in). Image = A tonemapped
+     2·(1 − 1/(x + 1)) over the theme background. The scope's own picture is injected into A every frame (inverse-tonemapped,
+     so it shows at its own colour), as the other effects feed on it. Its 3D noise texture is replaced by a per-pixel hash. ---- */
+  const FE_A_FS = `
+    uniform sampler2D u_prev, u_src, u_blur; uniform vec2 u_fres; uniform vec4 u_m1, u_m2, u_m3, u_m4, u_w;
+    uniform float u_blend, u_bmix, u_grain, u_con, u_gain, u_bleed, u_ink, u_keep, u_seed; uniform vec3 u_tint;
+    float hash(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+    vec2 tr(vec2 u, vec4 m) { return vec2(m.x * u.x + m.y * u.y + m.z, -m.y * u.x + m.x * u.y + m.w); }
+    void main() {
+      vec2 u = v - 0.5, a = vec2(u_fres.y / u_fres.x, 1.0);
+      float border = clamp((max(abs(u.x), abs(u.y)) - 0.47) * -30.0, 0.0, 1.0);
+      vec2 q = u / a;
+      vec3 C = texture2D(u_prev, tr(q, u_m1) * a + 0.5).rgb * u_w.x + texture2D(u_prev, tr(q, u_m2) * a + 0.5).rgb * u_w.y
+             + texture2D(u_prev, tr(q, u_m3) * a + 0.5).rgb * u_w.z + texture2D(u_prev, tr(q, u_m4) * a + 0.5).rgb * u_w.w;
+      C *= u_blend * border;
+      C += texture2D(u_prev, v).rgb * (1.0 - u_blend);
+      C += texture2D(u_blur, v).rgb * u_bmix;
+      C *= 1.0 - u_grain;
+      C += u_tint * ((hash(gl_FragCoord.xy + u_seed * 17.31) - 0.5) * u_grain * u_con + 0.02 * (1.0 - u_con) * u_grain);
+      mat3 M = mat3(vec3(0.9, 0.07, 0.03), vec3(0.02, 0.9, 0.08), vec3(0.02, 0.03, 0.95));
+      C = mix(C, M * C, u_bleed);
+      C = clamp(C * u_gain, 0.0, 1.0) * u_keep;
+      vec4 s = texture2D(u_src, v); vec3 y = s.a > 0.004 ? clamp(s.rgb / s.a, 0.0, 1.0) : vec3(0.0);
+      C = mix(C, y / (2.0 - y), s.a * u_ink);          // the live picture, inverse of the display tonemap
+      gl_FragColor = vec4(C, 1.0);
+    }`;
+  const FE_B_FS = `
+    uniform sampler2D u_tex; uniform vec2 u_fres; uniform float u_n, u_bs, u_frame;
+    void main() {
+      vec3 C2 = vec3(0.0); float i3 = 0.0, fs = u_n;
+      for (int i = 0; i < 32; i++) {
+        if (float(i) >= u_n) break;
+        float dist = (float(i) + mod(u_frame * 0.381966, 1.0)) * u_bs, ga = (u_frame + float(i)) * 2.39996322972865332;
+        vec2 s2 = vec2(sin(ga), cos(ga)) * dist;
+        i3 += 1.0 / fs;
+        C2 += clamp(texture2D(u_tex, ((gl_FragCoord.xy + s2) / u_fres - 0.5) / 1.5 + 0.5).rgb, 0.0, 1.0) / fs * 2.0 * i3;
+      }
+      gl_FragColor = vec4(clamp(C2 * 2.0, 0.0, 1.0), 1.0);
+    }`;
+  const FE_FS = `
+    uniform sampler2D u_prev, u_src, u_fe; uniform vec3 u_bg; uniform float u_tm;
+    void main() {
+      vec3 x = texture2D(u_fe, v).rgb, y = u_tm > 0.5 ? (1.0 - 1.0 / (x + 1.0)) * 2.0 : x;
+      y = clamp(y, 0.0, 1.0);
+      gl_FragColor = vec4(clamp(u_bg * (1.0 - max(y.r, max(y.g, y.b))) + y, 0.0, 1.0), 1.0);
+    }`;
+  const FE_K = [.8492416, .9593674, .7842960];       // the source's magic, majic, majik
+  function feMats(t, P, zp) {                        // the 4 copies' rotation·zoom and pan (the source's generateMatrix)
+    const [a, b, c] = FE_K, m = (r, z, sx, sy) => [Math.cos(r) * z, Math.sin(r) * z, sx, sy];
+    const Z = P.zoom + zp, zr = P.zrange, pr = P.prange;
+    return [m(Math.sin(t * a), Math.sin(t * b) * zr + Z, Math.cos(t * c) * pr, Math.sin(t) * pr),
+      m(Math.sin(t * a * a), Math.sin(t * b * a) * zr + Z, Math.cos(t * a * c) * pr, Math.sin(t * a) * pr),
+      m(Math.sin(t * a * b), Math.sin(t * b * b) * zr + Z, Math.cos(t * b * c) * pr, Math.sin(t * b) * pr),
+      m(Math.sin(t * a * a * b), Math.sin(t * b * a * b) * zr + Z, Math.cos(t * b * a * c) * pr, Math.sin(t * a * b) * pr)];
+  }
+  /* ---- Round 46: Feedback Fractal, after "Feedback Fractal" by chronos (Shadertoy; code supplied by the user; reimplemented).
+     One feedback pass: each pixel reads the previous frame at a point found by mirroring (abs) and scaling (Fold scale), shifting
+     (Offset ± wobble), folding back into −π/2..π/2 (asin(sin())), circle inversion (uv/|uv|², blended in by Inversion), a slow
+     zoom wobble and rotation, and a little cos-octave turbulence. The source's seed is a colour-cycling horizontal line; here the
+     scope's own picture is the seed (the line is an optional toggle). Contrast x·|x|^k drains the dim parts; the frame is held in
+     linear light and shown with gamma 1/2.2 (Gamma toggle). The stored frame is the shown one, so it is decoded on read. ---- */
+  const FF_FS = `
+    uniform sampler2D u_prev, u_src; uniform vec3 u_bg, u_seedc; uniform vec2 u_res;
+    uniform float u_keep, u_min, u_ang, u_fold, u_off, u_inv, u_zoom, u_turb, u_con, u_gam, u_ink, u_seed;
+    vec3 dec(vec3 x) { x = max(x, 0.0); return u_gam > 0.5 ? pow(x, vec3(2.2)) : x; }
+    void main() {
+      vec2 uv = (2.0 * v * u_res - u_res) / u_res.y, t = abs(uv) * u_fold;
+      t += u_off; t = asin(sin(t));
+      t = mix(t, t / (0.001 + dot(t, t)), u_inv);
+      t *= u_zoom;
+      float c = cos(u_ang), s = sin(u_ang); t = t * mat2(c, s, -s, c);
+      for (int i = 0; i < 7; i++) { float j = 0.01 * exp2(float(i)); t += cos(t.yx * j) / j * u_turb; }   // j = .01, .02 … .64
+      vec2 q = (t * u_res.y + u_res) * 0.5 / u_res;
+      vec3 C = dec(texture2D(u_prev, q).rgb - u_bg) * u_keep;
+      if (u_seed > 0.5) { float d = abs(uv.x) <= 1.0 ? abs(uv.y) : length(vec2(abs(uv.x) - 1.0, uv.y)); C = mix(C, u_seedc, smoothstep(0.0101, 0.01, d)); }
+      vec4 sr = texture2D(u_src, v); vec3 y = sr.a > 0.004 ? clamp(sr.rgb / sr.a, 0.0, 1.0) : vec3(0.0);
+      C = mix(C, dec(y), clamp(sr.a * u_ink, 0.0, 1.0));
+      C *= pow(abs(C), vec3(u_con));
+      vec3 o = u_gam > 0.5 ? pow(clamp(C, 0.0, 1.0), vec3(1.0 / 2.2)) : clamp(C, 0.0, 1.0);
+      o = max(o - u_min, 0.0);
+      gl_FragColor = vec4(clamp(u_bg + o, 0.0, 1.0), 1.0);
+    }`;
+  /* ---- Round 47: Plastic Cream, after "Plastic Cream" (Shadertoy; reimplemented), itself an iteration of "Wasp Blanket"
+     (NlVBz1). Buffer A holds two smooth Game-of-Life channels (r, g: each cell grows while more than Threshold of its 8
+     neighbours' sum is alive, else fades, at Fade rate per second) and a turbulence field (b: √|fbm| of gyroids). Each step the
+     buffer is advected along that turbulence (an angle from the field) plus a radial attraction wave sin(d·Ring frequency + t);
+     the border keeps spawning random cells. The scope's picture is the extra seed: lit pixels are set alive (Ink). The Image pass
+     tints both channels, lights the turbulence field as embossed relief (diffuse, specular sheen, shadow), masks by it, and turns
+     it into the source's blue-tinted black & white (Colour brings the hidden tints back). Values: b stored halved. ---- */
+  const PC_LIB = `
+    vec2 hash23(vec3 p3) { p3 = fract(p3 * vec3(.1031, .1030, .0973)); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.xx + p3.yz) * p3.zy); }
+    float gyroid(vec3 s) { return dot(sin(s), cos(s.yzx)); }
+    float fbm3(vec3 s) { float r = 0.0, a = 0.5; for (int i = 0; i < 3; i++) { s += r / 2.0; r += gyroid(s / a) * a; a /= 2.0; } return r; }`;
+  const PC_A_FS = PC_LIB + `
+    uniform sampler2D u_a, u_src; uniform vec2 u_fres; uniform float u_frame, u_dt, u_seed;
+    uniform float u_t, u_speed, u_turb, u_attr, u_ring, u_thr, u_rate, u_ink, u_corner;
+    void main() {
+      vec2 R = u_fres, fc = v * R;
+      if (u_seed > 0.5) { gl_FragColor = vec4(hash23(vec3(fc, 0.0)), 0.0, 1.0); return; }
+      vec2 p = (fc - (u_corner > 0.5 ? R : 0.5 * R)) / R.y;
+      float d = length(p), n = sqrt(abs(fbm3(vec3(p * 3.0, d - u_t * 0.1 * u_speed)))), an = n * 6.2831853;
+      vec2 off = u_turb * vec2(cos(an), sin(an)) + u_attr * (d > 0.0 ? p / d : vec2(0.0)) * sin(d * u_ring + u_t);
+      vec4 fr = texture2D(u_a, v + 40.0 * u_dt * off * u_speed / R);
+      if (fc.x < 1.0 || fc.x > R.x - 1.0 || fc.y < 1.0 || fc.y > R.y - 1.0) fr = vec4(step(0.5, hash23(vec3(fc, u_frame)).x), 0.0, 0.0, 0.0);
+      vec2 nb = vec2(0.0);
+      for (int i = 0; i < 9; i++) { if (i == 4) continue; nb += texture2D(u_a, v + vec2(float(i - 3 * (i / 3) - 1), float(i / 3 - 1)) / R).rg; }
+      fr.rg += u_rate * u_dt * vec2(nb.r > u_thr ? 1.0 : -1.0, nb.g > u_thr ? 1.0 : -1.0);
+      vec4 sr = texture2D(u_src, v); vec3 y = sr.a > 0.004 ? clamp(sr.rgb / sr.a, 0.0, 1.0) : vec3(0.0);
+      fr.rg = mix(fr.rg, vec2(1.0, 0.5 * (y.g + y.b)), clamp(sr.a * u_ink, 0.0, 1.0));
+      gl_FragColor = vec4(clamp(fr.rg, 0.0, 1.0), 0.5 * n, 1.0);
+    }`;
+  const PC_FS = `
+    uniform sampler2D u_a, u_src; uniform vec3 u_bg; uniform vec2 u_res; uniform float u_keep, u_relief, u_height, u_spec, u_blue, u_color;
+    float T(vec2 q) { return 2.0 * abs(texture2D(u_a, q).b); }
+    void main() {
+      vec4 fr = texture2D(u_a, v); float b = 2.0 * abs(fr.b), l = length(v - 0.5);
+      vec3 c = fr.r * (0.5 + 0.5 * cos(vec3(1.0, 2.0, 3.0) * 5.0 + l * 3.0)) + fr.g * (0.25 + 0.5 * cos(vec3(1.0, 2.0, 3.0) * 5.0 + l * 2.0 + 3.0));
+      vec2 e = u_relief / u_res;
+      vec3 nr = normalize(vec3(T(v + vec2(e.x, 0.0)) - T(v - vec2(e.x, 0.0)), T(v - vec2(0.0, e.y)) - T(v + vec2(0.0, e.y)), b * u_height));
+      c += 0.25 * clamp(dot(nr, normalize(vec3(-1.0, 4.0, 1.0))), 0.0, 0.6);
+      c += 0.72 * u_spec * pow(clamp(dot(nr, normalize(vec3(-1.0, 1.0, 2.0))), 0.0, 1.0), 20.0);
+      c -= 0.5 * clamp(dot(nr, normalize(vec3(0.0, -4.0, 1.0))), 0.0, 1.0);
+      c *= sqrt(max(b - 0.02, 0.0));
+      vec3 blue = vec3(0.0, 0.07, 0.37), bw = vec3((c.r + c.g + c.b) / 3.0);
+      bw = mix(bw, blue, 0.14 * u_blue) + blue * 0.75 * u_blue;
+      vec3 pic = clamp(mix(bw, c + blue * 0.75 * u_blue, u_color), 0.0, 1.0);
+      vec4 sr = texture2D(u_src, v);
+      gl_FragColor = vec4(clamp(mix(u_bg * (1.0 - sr.a) + sr.rgb, pic, u_keep), 0.0, 1.0), 1.0);
+    }`;
+  /* ---- r48: "Melting Threads" (after "Melting Threads" (Shadertoy); reimplemented). Buffer A, one value x in -1..1 (stored as
+     .5 + .5x so it also works on RGBA8): each step it re-reads itself zoomed in about a slowly orbiting centre, nudged by its own
+     value (warp), averages the centre tap (weight 30) with the four taps one whole screen away (which clamp to the edges, a faint
+     edge bleed, weight 1 each), damps, adds a little grain and folds the result with sin(x·4): the folding turns the zoom into
+     ever-splitting, melting threads. The scope picture is blended in as a value (Ink). Image: max(x, 0) as grey (as the source),
+     Colour fades in a palette by value. ---- */
+  const MT_A_FS = `
+    uniform sampler2D u_a, u_src; uniform vec2 u_fres, u_c; uniform float u_frame, u_seed;
+    uniform float u_zoom, u_warp, u_edge, u_damp, u_fold, u_grain, u_ink;
+    float D(vec2 q) { return 2.0 * texture2D(u_a, q).r - 1.0; }
+    float h12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+    void main() {
+      if (u_seed > 0.5) { gl_FragColor = vec4(0.5, 0.0, 0.0, 1.0); return; }
+      vec2 uv = v; float x = D(uv);
+      uv += u_warp * 0.001 * vec2(cos(x * 2.0) + cos(uv.x * 3.0), sin(x * 2.0));
+      vec2 q = (uv - u_c) / u_zoom + u_c;
+      float s = 30.0 * D(q) + u_edge * (D(q + vec2(1.0, 0.0)) + D(q - vec2(1.0, 0.0)) + D(q + vec2(0.0, 1.0)) + D(q - vec2(0.0, 1.0)));
+      x = s / (30.0 + 4.0 * u_edge) / u_damp + u_grain * h12(v * u_fres + vec2(u_frame * 17.0, u_frame * 3.0)) / 500.0;
+      x = sin(x * u_fold);
+      vec4 sr = texture2D(u_src, v); float y = sr.a > 0.004 ? clamp(dot(sr.rgb / sr.a, vec3(0.299, 0.587, 0.114)), 0.0, 1.0) : 0.0;
+      x = mix(x, y, clamp(sr.a * u_ink, 0.0, 1.0));
+      gl_FragColor = vec4(0.5 + 0.5 * clamp(x, -1.0, 1.0), 0.0, 0.0, 1.0);
+    }`;
+  const MT_FS = `
+    uniform sampler2D u_a, u_src; uniform vec3 u_bg; uniform float u_keep, u_color, u_hue;
+    void main() {
+      float x = 2.0 * texture2D(u_a, v).r - 1.0;
+      vec3 g = vec3(clamp(x, 0.0, 1.0)), pal = (0.5 + 0.5 * cos(6.2831853 * (0.5 * x + vec3(0.0, 0.33, 0.67)) + u_hue)) * clamp(abs(x) * 1.3, 0.0, 1.0);
+      vec3 pic = mix(g, pal, u_color);
+      vec4 sr = texture2D(u_src, v);
+      gl_FragColor = vec4(clamp(mix(u_bg * (1.0 - sr.a) + sr.rgb, pic, u_keep), 0.0, 1.0), 1.0);
+    }`;
+  /* ---- r49: "Heliostasis" (after "[sound] Heliostasis" by jeyko (fork on Shadertoy); reimplemented). Buffer A holds an RGB
+     field (any sign; half-float buffers). Each step it is pushed along the gradient of its own blue channel, measured Reach px
+     apart (30 at 540 lines, turned by Twist), and re-read there; it keeps Memory (0.999) of that and takes the rest from a
+     per-pixel noise of sinusoids (fixed column-random rate, row-random phase, all turning with time, so each pixel's noise is
+     coherent over seconds, as in the source). The scope picture replaces the
+     source's PCM wave: it is written in as grey by Ink, and the flow smears it across the screen. Image: sin(5·x + offsets
+     per channel) → smoothstep → vignette → gamma, the source's palette. On RGBA8 (no float buffers) the field is stored as
+     .5 + x/4 and Memory is capped at 0.97 (8 bits cannot hold 0.1 % steps). ---- */
+  const HS_A_FS = `
+    uniform sampler2D u_a, u_src; uniform vec2 u_fres; uniform float u_frame, u_seed, u_t;
+    uniform float u_mem, u_noise, u_flow, u_reach, u_twist, u_ink, u_enc;
+    vec3 A(vec2 q) { vec3 x = texture2D(u_a, q).rgb; return u_enc > 0.5 ? 4.0 * x - 2.0 : x; }
+    float h12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+    void main() {
+      if (u_seed > 0.5) { gl_FragColor = vec4(u_enc > 0.5 ? vec3(0.5) : vec3(0.0), 1.0); return; }
+      vec2 id = floor(v * 1000.0);
+      float rate = 4.0 + sin(id.x * 20.0) + sin(6.2831853 * h12(vec2(id.x, 1.3)));
+      float ph = 0.9 + mod(id.y * 20.4, 6.2831853) + 20.0 * h12(vec2(id.y, 3.7)) + u_t;
+      vec3 g = u_noise * 5.0 * sin(vec3(4.8, 2.9, 9.3) * rate + ph);
+      vec2 st = u_reach * (u_fres.y / 540.0) / u_fres;
+      vec2 gb = vec2(A(v + vec2(st.x, 0.0)).b - A(v - vec2(st.x, 0.0)).b, A(v + vec2(0.0, st.y)).b - A(v - vec2(0.0, st.y)).b);
+      float c = cos(u_twist), s = sin(u_twist);
+      vec2 q = v + mat2(c, s, -s, c) * gb * st * u_flow;
+      float m = u_enc > 0.5 ? min(u_mem, 0.97) : u_mem;
+      vec3 x = mix(g, A(q), m);
+      vec4 sr = texture2D(u_src, v); float y = sr.a > 0.004 ? clamp(max(sr.r, max(sr.g, sr.b)) / sr.a, 0.0, 1.0) : 0.0;
+      x = mix(x, vec3(y), clamp(sr.a * u_ink, 0.0, 1.0));
+      gl_FragColor = vec4(u_enc > 0.5 ? clamp(0.5 + 0.25 * x, 0.0, 1.0) : x, 1.0);
+    }`;
+  const HS_FS = `
+    uniform sampler2D u_a, u_src; uniform vec3 u_bg; uniform vec2 u_res; uniform float u_keep, u_t, u_bands, u_shift, u_shimmer, u_vig, u_enc;
+    void main() {
+      vec3 x = texture2D(u_a, v).rgb; if (u_enc > 0.5) x = 4.0 * x - 2.0;
+      vec3 c = sin(x * u_bands + vec3(-3.4, 0.1, -0.2) + u_shift + sin(u_t) * u_shimmer);
+      c = smoothstep(0.0, 0.7, c);
+      vec2 uv = (v - 0.5) * vec2(u_res.x / u_res.y, 1.0);
+      c = pow(max(c * (1.0 - dot(uv, uv) * u_vig), 0.0), vec3(0.45454));
+      vec4 sr = texture2D(u_src, v);
+      gl_FragColor = vec4(clamp(mix(u_bg * (1.0 - sr.a) + sr.rgb, c, u_keep), 0.0, 1.0), 1.0);
+    }`;
+  /* ---- r50: "Pendula" (Pendula by NR4 (Alexander Kraus), GPL-3.0; reimplemented). The source's Buffer A integrates, per pixel
+     and from scratch every frame, a double pendulum (start angles = the pixel's position) or a damped bob over three magnets
+     (start position = the pixel), RK4 with h = 0.03 for up to 12 s of simulated time, and colours the end state (pendulum: the
+     wrapped angles; magnets: how long it lingered near each magnet) with one of five fitted palettes; scene, palette, length
+     and magnet places change every 2 s. That is up to 400 RK4 steps per pixel per frame, far too much in software. Here the
+     integration is spread over frames instead: Buffer S keeps each pixel's state and advances Steps RK4 steps per frame at the
+     source's h until that scene's length is reached, then holds; it restarts at each scene change, so the same picture
+     grows in within the first frames of each scene. Buffer T keeps the magnet times (it re-runs the same steps from S's last
+     state, only in the magnet scene). Buffer F is the source's Buffer B: noise-advected feedback (displacement from fractal
+     noise, a gradient term read at the buffer edges as in the source, 1 % fade, a little static dither) mixing in 10 % of
+     the coloured field (Field scales that; 0 skips the integration entirely), and the scope picture written in by Ink.
+     Image: grain and the source's vignette. Without float buffers (RGBA8) S and T cannot hold the state: F then integrates
+     statelessly, at most 64 steps (a shorter, simpler picture). ---- */
+  const PD_COM = `
+    uniform float u_scene, u_n, u_h, u_reset, u_seed, u_step, u_enc; uniform vec4 u_ml; uniform vec2 u_x0, u_x1, u_x2;
+    float h12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+    vec4 pdF(vec4 t) {
+      float l1 = u_ml.x, l2 = u_ml.y, m1 = u_ml.z, m2 = u_ml.w;
+      if (u_scene < 0.5) {                    // double pendulum (canonical momenta)
+        float dd = t.x - t.y, sd = sin(dd), cd = cos(dd);
+        float p0 = l1 * l1 * (m1 + m2 * sd * sd);
+        float C1 = t.z * t.w * sd / p0;
+        float C2 = (l2 * l2 * m2 * t.z * t.z + l1 * l1 * (m1 + m2) * t.w * t.w - l1 * l2 * m2 * t.z * t.w * cd) * sin(2.0 * dd) / (2.0 * p0 * p0);
+        return vec4((l2 * t.z - l1 * t.w * cd) / (l1 * p0), (l1 * (m1 + m2) * t.w - l2 * m2 * t.z * cd) / (l2 * m2 * p0),
+          -(m1 + m2) * 9.81 * l1 * sin(t.x) - C1 + C2, -m2 * 9.81 * l2 * sin(t.y) + C1 - C2);
+      }
+      vec2 a = -0.25 * t.xy - 0.2 * t.zw, d;   // damped bob (omega0 0.5, alpha 0.2), magnets 0.3 below the plane
+      d = u_x0 - t.xy; a += d / pow(length(vec3(d, 0.3)), 3.0);
+      d = u_x1 - t.xy; a += d / pow(length(vec3(d, 0.3)), 3.0);
+      d = u_x2 - t.xy; a += d / pow(length(vec3(d, 0.3)), 3.0);
+      return vec4(t.zw, a);
+    }
+    vec4 rk4(vec4 s) { vec4 k1 = pdF(s), k2 = pdF(s + 0.5 * u_h * k1), k3 = pdF(s + 0.5 * u_h * k2), k4 = pdF(s + u_h * k3); return s + u_h / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4); }
+    vec4 s0() { return vec4((u_scene < 0.5 ? v : v - 0.5) * 6.28318, 0.0, 0.0); }
+    vec3 near(vec4 s, vec3 tt) {             // the magnet time that grows this step (first one on a tie, as in the source)
+      float a = length(s.xy - u_x0), b = length(s.xy - u_x1), c = length(s.xy - u_x2);
+      if (a <= b && a <= c) tt.x += u_h; else if (b <= c) tt.y += u_h; else tt.z += u_h; return tt;
+    }
+    bool fresh() { return u_reset > 0.5 || u_seed > 0.5; }
+  `;
+  const PD_T_FS = PD_COM + `
+    uniform sampler2D u_a, u_b;
+    void main() {
+      vec4 o = texture2D(u_a, v);
+      if (u_step > 0.5 || u_enc > 0.5) { gl_FragColor = o; return; }
+      if (fresh()) o = vec4(0.0);
+      if (u_scene > 0.5) { vec4 s = fresh() ? s0() : texture2D(u_b, v);
+        for (int i = 0; i < 64; i++) { if (float(i) >= u_n) break; s = rk4(s); o.xyz = near(s, o.xyz); } }
+      gl_FragColor = o;
+    }`;
+  const PD_S_FS = PD_COM + `
+    uniform sampler2D u_b;
+    void main() {
+      vec4 s = texture2D(u_b, v);
+      if (u_step > 0.5 || u_enc > 0.5) { gl_FragColor = s; return; }
+      if (fresh()) s = s0();
+      for (int i = 0; i < 64; i++) { if (float(i) >= u_n) break; s = rk4(s); }
+      gl_FragColor = s;
+    }`;
+  const PD_B_FS = PD_COM + `
+    uniform sampler2D u_a, u_b, u_c, u_src; uniform vec2 u_fres; uniform float u_time, u_pal, u_field, u_flow, u_fade, u_ink, u_nst;
+    float lf(vec2 t) { vec2 i = floor(t); t = smoothstep(0.0, 1.0, fract(t));
+      vec2 a = vec2(h12(i), h12(i + vec2(1.0, 0.0))), b = vec2(h12(i + vec2(0.0, 1.0)), h12(i + 1.0));
+      a = -1.0 + 2.0 * mix(a, b, t.y); return mix(a.x, a.y, t.x); }
+    float mf(vec2 x) { float n = 0.0, a = 1.0, f = 12.0; for (int i = 0; i < 7; i++) { n += a * lf(f * x); a *= 0.5; f *= 2.0; } return n * 0.5 / (1.0 - 1.0 / 128.0); }
+    vec3 pal(float t) {
+      vec3 c;
+      if (u_pal < 0.5) c = vec3(0.50,0.83,0.97)+t*(vec3(-6.20,-6.17,-3.57)+t*(vec3(38.71,34.22,6.78)+t*(vec3(-79.51,-138.95,22.48)+t*(vec3(95.74,312.27,-121.04)+t*(vec3(-82.56,-317.09,167.55)+t*vec3(33.58,115.75,-72.30))))));
+      else if (u_pal < 1.5) c = vec3(1.06,0.90,0.42)+t*(vec3(-10.93,0.76,0.01)+t*(vec3(58.05,-6.98,15.99)+t*(vec3(-176.48,-12.69,-94.07)+t*(vec3(293.04,63.85,190.98)+t*(vec3(-236.34,-70.10,-165.36)+t*vec3(72.59,25.19,52.39))))));
+      else if (u_pal < 2.5) c = vec3(0.12,0.13,0.17)+t*(vec3(0.81,3.10,1.85)+t*(vec3(-31.30,5.36,28.75)+t*(vec3(196.12,-27.35,-153.23)+t*(vec3(-420.63,16.17,269.77)+t*(vec3(384.92,15.17,-200.77)+t*vec3(-130.08,-12.46,53.58))))));
+      else if (u_pal < 3.5) c = vec3(0.18,-0.04,0.12)+t*(vec3(-6.11,4.95,-0.72)+t*(vec3(74.77,-64.38,17.68)+t*(vec3(-211.67,331.53,-69.34)+t*(vec3(211.24,-694.71,126.87)+t*(vec3(-50.67,633.85,-114.27)+t*vec3(-17.83,-211.28,39.78))))));
+      else c = vec3(0.54,0.66,0.71)+t*(vec3(-3.61,-9.81,-11.94)+t*(vec3(16.13,78.98,97.49)+t*(vec3(-87.45,-325.97,-379.33)+t*(vec3(268.76,665.33,714.73)+t*(vec3(-331.94,-628.14,-626.28)+t*vec3(138.20,219.48,205.06))))));
+      return clamp(c, 0.0, 1.0);
+    }
+    vec3 field() {
+      vec4 s; vec3 tt;
+      if (u_enc > 0.5) { s = s0(); tt = vec3(0.0);
+        for (int i = 0; i < 64; i++) { if (float(i) >= u_nst) break; s = rk4(s); if (u_scene > 0.5) tt = near(s, tt); } }
+      else { s = texture2D(u_b, v); tt = texture2D(u_a, v).xyz; }
+      float t;
+      if (u_scene > 0.5) t = 4.0 * log(max(0.2 * length(tt), 1e-6));
+      else { t = length(mod(s.xy + 3.14159, 6.28318) - 3.14159); for (int i = 0; i < 4; i++) t = log(max(0.2 * abs(t), 1e-6)); t *= 0.8; }
+      return pal(fract(t + 0.1 * u_time));
+    }
+    void main() {
+      vec2 uv = v, ex = vec2(1.0, 0.0), ey = vec2(0.0, 1.0);   // the source normalises its pixel steps: one whole screen, read at the edges
+      vec2 d = 2.0 * vec2(texture2D(u_c, uv + ex).x - texture2D(u_c, uv - ex).x, texture2D(u_c, uv + ey).x - texture2D(u_c, uv - ey).x)
+        / mix(2.0, 8.0, step(0.0, sin(6.28318 * u_time))) - 1.0;
+      vec2 w = normalize(vec2(mf(uv + u_time + 3337.0), mf(uv + u_time + 4337.0))) * d;
+      vec2 off = vec2(mf(uv + u_time), mf(uv + u_time + 1337.0));
+      vec2 px = (u_fres.y / 540.0) / u_fres;                // source pixels, measured on a 540-line buffer
+      vec4 o = (1.0 - u_fade) * texture2D(u_c, uv - (w + off) * px * u_flow);
+      o -= 0.03 * (2.0 * h12(floor(v * u_fres) + 0.5) - 1.0);
+      if (u_field > 0.0) o = mix(o, vec4(field(), 1.0), clamp(0.1 * u_field, 0.0, 1.0));
+      vec4 sr = texture2D(u_src, v);
+      if (sr.a > 0.004) o = mix(o, vec4(clamp(sr.rgb / sr.a, 0.0, 1.0), 1.0), clamp(sr.a * u_ink, 0.0, 1.0));
+      gl_FragColor = o;
+    }`;
+  const PD_FS = `
+    uniform sampler2D u_c, u_src; uniform vec3 u_bg; uniform float u_keep, u_grain, u_vig;
+    float h12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+    void main() {
+      vec2 uvn = v; vec3 c = texture2D(u_c, v).rgb;
+      c += u_grain * (2.0 * h12(100.0 * uvn) - 1.0);
+      uvn *= 1.0 - uvn.yx; c *= pow(max(uvn.x * uvn.y * 15.0, 1e-6), 0.2 * u_vig);
+      vec4 sr = texture2D(u_src, v);
+      gl_FragColor = vec4(clamp(mix(u_bg * (1.0 - sr.a) + sr.rgb, clamp(c, 0.0, 1.0), u_keep), 0.0, 1.0), 1.0);
+    }`;
+  const pdFr = Math.fround, pdFx = x => pdFr(x - Math.floor(x));      // the source's hash12 / hash22 in 32-bit floats
+  const pdH12 = (x, y) => { let a = pdFx(pdFr(x * pdFr(.1031))), b = pdFx(pdFr(y * pdFr(.1031))), c = a; const d = pdFr(pdFr(a * pdFr(b + pdFr(33.33))) + pdFr(b * pdFr(c + pdFr(33.33))) + pdFr(c * pdFr(a + pdFr(33.33))));
+    a = pdFr(a + d); b = pdFr(b + d); c = pdFr(c + d); return pdFx(pdFr(pdFr(a + b) * c)); };
+  const pdH22 = (x, y) => { let a = pdFx(pdFr(x * pdFr(.1031))), b = pdFx(pdFr(y * pdFr(.1030))), c = pdFx(pdFr(x * pdFr(.0973))); const d = pdFr(pdFr(a * pdFr(b + pdFr(33.33))) + pdFr(b * pdFr(c + pdFr(33.33))) + pdFr(c * pdFr(a + pdFr(33.33))));
+    a = pdFr(a + d); b = pdFr(b + d); c = pdFr(c + d); return [pdFx(pdFr(pdFr(a + b) * c)), pdFx(pdFr(pdFr(a + c) * b))]; };
+  const PD_PAL = ['Cycle (source)', 'Trip', 'Red–green', 'Majora’s Mask', 'Pink–turquoise', 'Brown'], PD_SCN = ['Cycle (source)', 'Double pendulum', 'Magnets'];
+  /* ---- r51: "Praeterea Nihil" (after "Praeterea Nihil" (Shadertoy); reimplemented). The source is one pass of domain-warped
+     fractal noise: q = two fbm samples of p (= uv·3 drifting by 0.1·t), r = two fbm samples of p + 4q drifting by 0.15·t /
+     0.126·t, f = fbm(p + 4r), shown as smoothstep(0.4, 0.6, f): black-and-white marble. Here Buffer A computes f and the warp
+     vector r at the internal resolution (the costly part: 5 fbm × Octaves noise lookups per pixel) and stores them (all in
+     0…1, so RGBA8 is enough); the scope's live picture can bend the field where it is lit (Bend). Image: the marble, and the
+     scope picture sampled at a point displaced by the warp vector (Displace), laid over the marble by Ink and kept to its
+     black veins by Mask, so at the defaults it still reads as the source's black-and-white marble. ---- */
+  const PN_A_FS = `
+    uniform sampler2D u_src; uniform vec2 u_fres; uniform float u_t, u_scale, u_warp, u_oct, u_bend;
+    float rnd(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453123); }
+    float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(rnd(i), rnd(i + vec2(1.0, 0.0)), f.x), mix(rnd(i + vec2(0.0, 1.0)), rnd(i + vec2(1.0, 1.0)), f.x), f.y); }
+    float fbm(vec2 p) { float s = 0.0, a = 0.5; mat2 m = mat2(0.87758256, 0.47942554, -0.47942554, 0.87758256);
+      for (int i = 0; i < 8; i++) { if (float(i) >= u_oct) break; s += a * vn(p); p = m * (p * 2.0); a *= 0.5; } return s; }
+    void main() {
+      vec2 p = (v * 2.0 - 1.0) * vec2(u_fres.x / u_fres.y, 1.0) * u_scale;
+      p.x += 0.1 * u_t;
+      vec4 sr = texture2D(u_src, v); float y = sr.a > 0.004 ? clamp(max(sr.r, max(sr.g, sr.b)) / sr.a, 0.0, 1.0) * sr.a : 0.0;
+      vec2 q = vec2(fbm(p), fbm(p + vec2(5.2, 1.3))) + u_bend * y * vec2(0.5, -0.5);
+      vec2 r = vec2(fbm(p + q * u_warp + vec2(1.7, 9.2) + 0.15 * u_t), fbm(p + q * u_warp + vec2(8.3, 2.8) + 0.126 * u_t));
+      float f = fbm(p + r * u_warp);
+      gl_FragColor = vec4(clamp(f, 0.0, 1.0), clamp(r, 0.0, 1.0), 1.0);
+    }`;
+  const PN_FS = `
+    uniform sampler2D u_a, u_src; uniform vec3 u_bg; uniform vec2 u_res; uniform float u_keep, u_lo, u_hi, u_inv, u_disp, u_ink, u_mask;
+    void main() {
+      vec4 a = texture2D(u_a, v);
+      float m = smoothstep(u_lo, u_hi, a.r); if (u_inv > 0.5) m = 1.0 - m;
+      vec2 d = (a.gb - 0.5) * u_disp * vec2(u_res.y / u_res.x, 1.0);
+      vec4 sc = texture2D(u_src, v + d);
+      float w = clamp(u_ink * mix(1.0, 1.0 - m, u_mask), 0.0, 1.0);
+      vec3 c = vec3(m) * (1.0 - sc.a * w) + sc.rgb * w;
+      vec4 sr = texture2D(u_src, v);
+      gl_FragColor = vec4(clamp(mix(u_bg * (1.0 - sr.a) + sr.rgb, c, u_keep), 0.0, 1.0), 1.0);
+    }`;
+  /* ---- r52: "Follow Me" (after "Follow Me" (Shadertoy); reimplemented). Buffer A feeds back on itself each 1/60 s step:
+     the picture turns 0.02 rad about the centre, then each colour channel is re-read at its own offset (0.10 / 0.14 / 0.18 ×)
+     taken from a noise texture sampled at a radius-scaled, time-swept position (two sweeps cross-faded, as in the source),
+     so the colours split and drift apart; it gains 1 %, a bright dot circling the centre is added (its sharpness from the
+     noise), it is soft-limited (÷ 1 + 3 % of its length) and fades by 0.001. Shadertoy's 256² RGBA noise texture (iChannel1,
+     repeat, linear) is replaced by the same thing generated in the shader: a hash per texel of a 256² repeating lattice,
+     linearly interpolated. The scope picture is written in by Ink once per frame and swept along by the feedback; the dot
+     can be switched off. Image: the buffer as it is (source passthrough). ---- */
+  const FM_A_FS = `
+    uniform sampler2D u_a, u_src; uniform float u_seed, u_step, u_t, u_rot, u_off, u_split, u_gain, u_fade, u_dot, u_dotb, u_sharp, u_nsize, u_ink;
+    vec2 h22(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973)); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.xx + p3.yz) * p3.zy); }
+    vec2 tex(vec2 q) { vec2 p = q * u_nsize - 0.5, i = floor(p), f = p - i;
+      vec2 a = h22(mod(i, u_nsize)), b = h22(mod(i + vec2(1.0, 0.0), u_nsize)), c = h22(mod(i + vec2(0.0, 1.0), u_nsize)), d = h22(mod(i + 1.0, u_nsize));
+      return mix(mix(a, b, f.x), mix(c, d, f.x), f.y); }
+    void main() {
+      if (u_seed > 0.5) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+      vec2 uv = v - 0.5; float cr = cos(u_rot), sr = sin(u_rot); uv = mat2(cr, sr, -sr, cr) * uv + 0.5;
+      float s = mod(-u_t * 0.5, 2.0);
+      float g = (1.0 - length(uv - 0.5) * 0.75) * (1.0 - sin(u_t * 0.1) * 0.9);
+      vec2 o1 = tex((uv - 0.5) * g * (1.0 + mod(s, 1.0))), o2 = tex((uv - 0.5) * -g * (1.0 + mod(s + 0.5, 1.0)));
+      vec2 o = (mix(o1, o2, abs(0.5 - mod(s, 1.0)) * 2.0) - 0.5) * u_off;
+      vec3 col = vec3(texture2D(u_a, uv + o * 0.1).r, texture2D(u_a, uv + o * (0.1 + 0.04 * u_split)).g, texture2D(u_a, uv + o * (0.1 + 0.08 * u_split)).b) * u_gain;
+      float dd = max(1.0 - length(uv - 0.5 + vec2(sin(u_t) * 0.1, cos(u_t * 1.6831) * 0.1)), 0.0);
+      col += u_dot * u_dotb * vec3(pow(dd, u_sharp * (0.5 + o1.x * 0.5)));
+      col /= 1.0 + length(col) * 0.03;
+      col -= u_fade;
+      if (u_step < 0.5) { vec4 sc = texture2D(u_src, v); col = col * (1.0 - sc.a * u_ink) + sc.rgb * u_ink; }
+      gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+    }`;
+  const FM_FS = `
+    uniform sampler2D u_a, u_src; uniform vec3 u_bg; uniform float u_keep;
+    void main() {
+      vec3 c = texture2D(u_a, v).rgb;
+      vec4 sr = texture2D(u_src, v);
+      gl_FragColor = vec4(clamp(mix(u_bg * (1.0 - sr.a) + sr.rgb, c, u_keep), 0.0, 1.0), 1.0);
+    }`;
   const FX = [
     { id: 'none', name: 'None' },
     { id: 'feedback', name: 'Feedback', frag: FEEDBACK_FS,
@@ -6827,6 +7707,221 @@ void main() {
         return { keep: P.trails, u_steps: Math.round(P.reach), u_space: P.spacing * (1 + .3 * P.beat * b.kick), u_twist: P.twist * DEG,
           u_rot: (st.t * .5 * P.spin) % (2 * Math.PI), u_gain: P.gain * (1 + .5 * P.beat * b.energy), u_band: P.bands, u_hue: (st.t * .05 * P.hue) % 1,
           u_ink: Math.min(1, P.ink * r1), u_blur: P.blur, u_gloss: .3 * P.gloss * r1 * (1 + P.beat * b.n[2]), u_warp: P.warp * r1, u_echo: P.echo };
+      } },
+    { id: 'fractalecho', name: 'Fractal Echo', frag: FE_FS, echoFrags: [FE_A_FS, FE_B_FS], taps: true,
+      credit: { text: 'After Shadertoy 3fyXDD by MystiKethen; reimplemented', href: 'https://www.shadertoy.com/view/3fyXDD' },
+      params: [
+        { id: 'speed', label: 'Speed', min: 0, max: 1, step: .01, def: .2, fmt: x => x.toFixed(2), title: 'How fast the copies turn, zoom and pan (source 0.2; 0 freezes them)' },
+        { id: 'copies', label: 'Copies', min: 1, max: 4, step: 1, def: 4, fmt: x => String(x), title: 'How many moving copies of the last frame are averaged (source 4)' },
+        { id: 'zoom', label: 'Zoom', min: .5, max: 3, step: .01, def: 1.9, fmt: x => x.toFixed(2), title: 'Base zoom of each copy (source 1.9): above 1 the copies shrink into a fractal' },
+        { id: 'zrange', label: 'Zoom range', min: 0, max: 1, step: .01, def: .2, fmt: x => x.toFixed(2), title: 'How far each copy\'s zoom swings (source 0.2)' },
+        { id: 'prange', label: 'Pan range', min: 0, max: 1, step: .01, def: .2, fmt: x => x.toFixed(2), title: 'How far each copy wanders (source 0.2)' },
+        { id: 'blend', label: 'Blend', min: 0, max: 1, step: .01, def: .5, fmt: pct, title: 'Share of the moving copies against the unmoved last frame (source 50%)' },
+        { id: 'bmix', label: 'Blur mix', min: -.5, max: .5, step: .01, def: -.07, fmt: x => x.toFixed(2), title: 'How much of the spiral blur is added (negative subtracts it, sharpening; source −0.07)' },
+        { id: 'bscale', label: 'Blur scale', min: 0, max: 1, step: .01, def: .1, fmt: x => x.toFixed(2) + ' px', title: 'Spacing of the spiral blur taps (source 0.1)' },
+        { id: 'bsamples', label: 'Blur samples', min: 4, max: 32, step: 1, def: 16, fmt: x => String(x), title: 'Taps in the spiral blur (source 16; fewer is faster)' },
+        { id: 'grain', label: 'Grain', min: 0, max: .3, step: .005, def: .05, fmt: x => x.toFixed(3), title: 'The source\'s noise: darkens each step a little and adds a tinted grain (source 0.05)' },
+        { id: 'gain', label: 'Gain', min: .5, max: 3, step: .05, def: 1.8, fmt: times, title: 'Brightness gain each step (source 1.8): higher saturates, lower fades out' },
+        { id: 'tint', label: 'Tint hue', min: -180, max: 180, step: 1, def: 0, fmt: x => (x > 0 ? '+' : '') + x + '°', title: 'Turns the grain tint (source baseColor 1, 0.7, 0.9 = pink at 0°)' },
+        { id: 'bleed', label: 'Colour bleed', min: 0, max: 2, step: .05, def: 1, fmt: pct, title: 'Strength of the slight colour cross-talk matrix (100% = source; 0 = none)' },
+        { id: 'tonemap', label: 'Tonemap', type: 'choice', opts: ['Off', 'On'], min: 0, max: 1, step: 1, def: 1, fmt: x => ['Off', 'On'][x] || '', title: 'Shows the echo through the source\'s 2·(1 − 1/(x + 1)) curve (On, as the source) or as stored (Off)' },
+        { id: 'res', label: 'Internal resolution', min: 120, max: 1080, step: 20, def: 480, fmt: x => x + ' lines', title: 'Height the echo is computed at, then scaled up (the source\'s 480 cap): lower is faster and softer' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: .6, fmt: pct, title: 'How strongly the scope\'s live picture is painted into the echo each frame' },
+        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: .5, fmt: times, title: 'How much the music drives it: the level speeds the motion, bass kicks pulse the zoom' }
+      ],
+      uniforms(dt, P, st) {
+        const b = beatOf(st, dt); st.kick = b.kick;
+        st.t = ((st.t || 0) + dt * P.speed * (1 + P.beat * b.energy)) % 1e5;
+        const M = feMats(st.t, P, -.25 * P.beat * b.kick), n = Math.round(P.copies), hr = P.tint * DEG;
+        const bc = [1, .7, .9], k = Math.cos(hr), s = Math.sin(hr), w = (1 - k) / 3, r3 = Math.sqrt(1 / 3) * s;   // hue-turn the base colour
+        const tint = [bc[0] * (k + w) + bc[1] * (w - r3) + bc[2] * (w + r3), bc[0] * (w + r3) + bc[1] * (k + w) + bc[2] * (w - r3), bc[0] * (w - r3) + bc[1] * (w + r3) + bc[2] * (k + w)];
+        return { keep: 1, u_m1: M[0], u_m2: M[1], u_m3: M[2], u_m4: M[3], u_w: [0, 1, 2, 3].map(i => i < n ? 1 / n : 0), u_blend: P.blend, u_bmix: P.bmix,
+          u_grain: P.grain, u_con: .001, u_gain: P.gain, u_bleed: P.bleed, u_tint: tint, u_ink: P.ink, u_n: Math.round(P.bsamples), u_bs: P.bscale, u_tm: P.tonemap, res: P.res };
+      } },
+    { id: 'feedbackfractal', name: 'Feedback Fractal', frag: FF_FS, taps: true,
+      credit: { text: 'After "Feedback Fractal" by chronos (Shadertoy; code supplied by the user); reimplemented', href: 'https://www.shadertoy.com/results?query=Feedback+Fractal+chronos' },
+      params: [
+        { id: 'speed', label: 'Speed', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'Time scale of all the slow motion (wobbles, rotation, seed hue); 0 freezes it' },
+        { id: 'rot', label: 'Rotation speed', min: -.1, max: .1, step: .002, def: .01, fmt: x => x.toFixed(3) + ' rev/s', title: 'Turns of the mapping per second (source 0.01)' },
+        { id: 'fold', label: 'Fold scale', min: .3, max: 2, step: .01, def: .8, fmt: x => x.toFixed(2), title: 'Scale after the mirror, before the fold (source 0.8)' },
+        { id: 'off', label: 'Offset', min: -.5, max: .5, step: .005, def: .1, fmt: x => x.toFixed(3), title: 'Shift before the fold (source 0.1)' },
+        { id: 'offw', label: 'Offset wobble', min: 0, max: .3, step: .005, def: .05, fmt: x => x.toFixed(3), title: 'How far the shift swings, slowly (source 0.05)' },
+        { id: 'inv', label: 'Inversion', min: 0, max: 1, step: .01, def: 1, fmt: pct, title: 'Blend from the plain fold (0) to the full circle inversion uv/|uv|² (100%, source)' },
+        { id: 'zoom', label: 'Zoom', min: .8, max: 1.5, step: .005, def: 1.05, fmt: x => x.toFixed(3), title: 'Scale after the inversion (source 1.05)' },
+        { id: 'zoomw', label: 'Zoom wobble', min: 0, max: .3, step: .005, def: .05, fmt: x => x.toFixed(3), title: 'How far the zoom swings, slowly (source 0.05)' },
+        { id: 'turb', label: 'Turbulence', min: 0, max: .03, step: .0005, def: .005, fmt: x => x.toFixed(4), title: 'Strength of the cos-octave ripple (source 0.005)' },
+        { id: 'con', label: 'Contrast', min: 0, max: .5, step: .01, def: .1, fmt: x => x.toFixed(2), title: 'Exponent k in x·|x|^k each frame (source 0.1): higher drains the dim parts faster' },
+        { id: 'gam', label: 'Gamma', type: 'choice', opts: ['Off', 'On'], min: 0, max: 1, step: 1, def: 1, fmt: x => ['Off', 'On'][x] || '', title: 'Hold the picture in linear light and show it with gamma 1/2.2 (On, as the source)' },
+        { id: 'keep', label: 'Persistence', min: .8, max: 1, step: .005, def: 1, eff: true, fmt: pct, title: 'How much of the previous frame is carried each frame (100% = source; lower fades faster)' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: 1, fmt: pct, title: 'How strongly the scope\'s live picture is painted in as the seed each frame' },
+        { id: 'seed', label: 'Seed line', type: 'choice', opts: ['Off', 'On'], min: 0, max: 1, step: 1, def: 0, fmt: x => ['Off', 'On'][x] || '', title: 'Also draw the source\'s colour-cycling horizontal line as a seed' },
+        { id: 'hue', label: 'Seed hue cycle', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'How fast the seed line\'s colour cycles (source 1)' },
+        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: .5, fmt: times, title: 'How much the music drives it: the level speeds the motion, bass kicks pulse the zoom' }
+      ],
+      uniforms(dt, P, st) {
+        const b = beatOf(st, dt); st.kick = b.kick;
+        st.t = ((st.t || 0) + dt * P.speed * (1 + P.beat * b.energy)) % 1e5; const T = st.t + 20;   // the source's iTime + 20
+        return { keep: P.keep, u_ang: (2 * Math.PI * P.rot * T) % (2 * Math.PI), u_fold: P.fold, u_off: P.off + Math.cos(T * .33) * P.offw, u_inv: P.inv,
+          u_zoom: P.zoom + Math.sin(T * .1) * P.zoomw + .05 * P.beat * b.kick, u_turb: P.turb, u_con: P.con, u_gam: P.gam, u_ink: P.ink, u_seed: P.seed,
+          u_seedc: [1, 2, 3].map(k => .5 + .5 * Math.cos(T * P.hue + k)) };
+      } },
+    { id: 'plasticcream', name: 'Plastic Cream', frag: PC_FS, bufFrags: [PC_A_FS], taps: true,
+      credit: { text: 'After "Plastic Cream" (Shadertoy); reimplemented', href: 'https://www.shadertoy.com/results?query=Plastic+Cream' },
+      params: [
+        { id: 'speed', label: 'Flow speed', min: 0, max: 1.5, step: .01, def: .4, fmt: x => x.toFixed(2), title: 'How fast the cream is pushed around and the turbulence drifts (source 0.4)' },
+        { id: 'turb', label: 'Turbulence', min: 0, max: 4, step: .05, def: 1.3, fmt: x => x.toFixed(2), title: 'Strength of the swirling push from the gyroid noise (source 1.3)' },
+        { id: 'attr', label: 'Attraction', min: 0, max: 2, step: .05, def: .3, fmt: x => x.toFixed(2), title: 'Strength of the radial wave that pulls rings in and out (source 0.3)' },
+        { id: 'ring', label: 'Ring frequency', min: 5, max: 80, step: 1, def: 39, fmt: x => String(x), title: 'How tightly the attraction rings are packed (source 39)' },
+        { id: 'centre', label: 'Ring centre', type: 'choice', opts: ['Corner', 'Middle'], min: 0, max: 1, step: 1, def: 0, fmt: x => ['Corner', 'Middle'][x] || '', title: 'Where the rings and the turbulence are centred: the top-right corner (as the source) or the middle' },
+        { id: 'thr', label: 'Threshold', min: 2, max: 6, step: .05, def: 4, fmt: x => x.toFixed(2), title: 'Neighbour sum above which a cell grows, else it fades (source 4): lower spreads, higher starves' },
+        { id: 'rate', label: 'Fade rate', min: .5, max: 12, step: .1, def: 4, fmt: x => x.toFixed(1) + '/s', title: 'How fast cells grow or fade per second (source 4)' },
+        { id: 'relief', label: 'Relief distance', min: 2, max: 40, step: 1, def: 20, fmt: x => x + ' px', title: 'Distance of the slope taps for the embossed lighting (source 20 px)' },
+        { id: 'height', label: 'Relief height', min: .2, max: 4, step: .05, def: 1, fmt: times, title: 'Flatter (higher) or steeper (lower) relief (source 1)' },
+        { id: 'spec', label: 'Sheen', min: 0, max: 2, step: .05, def: 1, fmt: times, title: 'Strength of the specular highlight (source 1)' },
+        { id: 'blue', label: 'Blue tint', min: 0, max: 2, step: .05, def: 1, fmt: times, title: 'Strength of the source\'s navy tint over the black & white (1 = source; 0 = plain grey)' },
+        { id: 'color', label: 'Colour', min: 0, max: 1, step: .01, def: 0, fmt: pct, title: 'Bring back the hidden rainbow tints of the two cell channels (0 = black & white, as the source)' },
+        { id: 'res', label: 'Internal resolution', min: 120, max: 1080, step: 20, def: 540, fmt: x => x + ' lines', title: 'Height the cells are simulated at, then scaled up: lower is faster and makes bigger cells' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: .5, fmt: pct, title: 'How strongly the scope\'s live picture seeds living cells each frame' },
+        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: .5, fmt: times, title: 'How much the music drives it: the level speeds the flow, bass kicks swell the attraction rings' }
+      ],
+      uniforms(dt, P, st) {
+        const b = beatOf(st, dt); st.kick = b.kick;
+        st.t = ((st.t || 0) + dt * (1 + P.beat * b.energy)) % 1e5;
+        return { u_t: st.t, u_speed: P.speed * (1 + P.beat * b.energy), u_turb: P.turb, u_attr: P.attr * (1 + 2 * P.beat * b.kick), u_ring: P.ring, u_corner: P.centre ? 0 : 1,
+          u_thr: P.thr, u_rate: P.rate, u_relief: P.relief, u_height: P.height, u_spec: P.spec, u_blue: P.blue, u_color: P.color, u_ink: P.ink, res: P.res };
+      } },
+    { id: 'meltingthreads', name: 'Melting Threads', frag: MT_FS, bufFrags: [MT_A_FS], taps: true,
+      credit: { text: 'After "Melting Threads" (Shadertoy); reimplemented', href: 'https://www.shadertoy.com/results?query=Melting+Threads' },
+      params: [
+        { id: 'zoom', label: 'Zoom', min: 1, max: 1.08, step: .001, def: 1.02, fmt: x => x.toFixed(3) + '×', title: 'How much the picture grows per 1/60 s step (source 1.02): the threads stream out of the centre' },
+        { id: 'orbit', label: 'Centre orbit speed', min: 0, max: 2, step: .01, def: .33, fmt: x => x.toFixed(2) + ' rad/s', title: 'How fast the zoom centre circles (source 1/3 rad/s)' },
+        { id: 'radius', label: 'Centre orbit radius', min: 0, max: .5, step: .01, def: .33, fmt: x => x.toFixed(2), title: 'Size of the zoom centre\'s circle, in screen widths/heights (source 1/3)' },
+        { id: 'warp', label: 'Warp', min: 0, max: 5, step: .05, def: 1, fmt: times, title: 'How far each pixel is pushed by its own value before the zoom (1 = source, 1/1000 of the screen)' },
+        { id: 'fold', label: 'Fold', min: 1, max: 8, step: .05, def: 4, fmt: x => x.toFixed(2), title: 'Gain of the sin() fold that splits the threads (source 4): below ~1.1 everything dies out, higher splits more' },
+        { id: 'damp', label: 'Damping', min: .9, max: 1.5, step: .01, def: 1.1, fmt: x => '÷' + x.toFixed(2), title: 'Division before the fold (source 1.1): higher calms, lower sharpens' },
+        { id: 'edge', label: 'Edge bleed', min: 0, max: 4, step: .05, def: 1, fmt: times, title: 'Weight of the four far taps that clamp to the screen edges (1 = source)' },
+        { id: 'grain', label: 'Grain', min: 0, max: 5, step: .05, def: 1, fmt: times, title: 'Random noise added each step, which seeds new threads (1 = source, 1/500)' },
+        { id: 'color', label: 'Colour', min: 0, max: 1, step: .01, def: 0, fmt: pct, title: 'Fade from the source\'s grey to a palette by value (negative threads show too)' },
+        { id: 'hue', label: 'Hue cycle', min: 0, max: 1, step: .01, def: .1, fmt: x => x.toFixed(2) + ' rad/s', title: 'How fast the palette turns (with Colour above 0)' },
+        { id: 'res', label: 'Internal resolution', min: 120, max: 1080, step: 20, def: 540, fmt: x => x + ' lines', title: 'Height the threads are computed at, then scaled up: lower is faster and makes thicker threads' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: .5, fmt: pct, title: 'How strongly the scope\'s live picture is written into the threads each step' },
+        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: .5, fmt: times, title: 'How much the music drives it: the level speeds the centre\'s orbit, bass kicks push the zoom' }
+      ],
+      uniforms(dt, P, st) {
+        const b = beatOf(st, dt); st.kick = b.kick;
+        st.t = ((st.t || 0) + dt * P.orbit * (1 + P.beat * b.energy)) % (2 * Math.PI * 1e3); st.h = ((st.h || 0) + dt * P.hue) % (2 * Math.PI);
+        return { iters: Math.max(1, Math.min(4, Math.round(dt * 60))), u_c: [.5 + P.radius * Math.sin(st.t), .5 + P.radius * Math.cos(st.t)],
+          u_zoom: P.zoom + .02 * P.beat * b.kick, u_warp: P.warp, u_fold: P.fold, u_damp: P.damp, u_edge: P.edge, u_grain: P.grain,
+          u_color: P.color, u_hue: st.h, u_ink: P.ink, res: P.res };
+      } },
+    { id: 'heliostasis', name: 'Heliostasis', frag: HS_FS, bufFrags: [HS_A_FS], taps: true,
+      credit: { text: 'After "[sound] Heliostasis" by jeyko (fork on Shadertoy); reimplemented', href: 'https://www.shadertoy.com/view/wssyDX' },
+      params: [
+        { id: 'memory', label: 'Memory', min: .9, max: .9999, step: .0001, def: .999, fmt: x => x.toFixed(4), title: 'How much of the flowing field is kept each 1/60 s step (source 0.999); the rest is fresh noise. Lower forgets faster' },
+        { id: 'noise', label: 'Noise', min: 0, max: 4, step: .05, def: 1, fmt: times, title: 'Strength of the sinusoid noise fed in each step (1 = source)' },
+        { id: 'speed', label: 'Time speed', min: 0, max: 4, step: .05, def: 1, fmt: times, title: 'How fast the noise phases and the palette shimmer move (1 = source)' },
+        { id: 'flow', label: 'Flow', min: 0, max: 8, step: .05, def: 2.9, fmt: x => x.toFixed(2), title: 'How far the field is pushed along its own blue gradient each step (source 2.9)' },
+        { id: 'reach', label: 'Reach', min: 5, max: 80, step: 1, def: 30, fmt: x => x + ' px', title: 'Distance the gradient is measured over, in pixels of a 540-line buffer (source 30): bigger makes broader swirls' },
+        { id: 'twist', label: 'Twist', min: -.8, max: .8, step: .001, def: .049, fmt: x => (x * 180 / Math.PI).toFixed(1) + '°', title: 'Turns the push away from the gradient (source π/64 ≈ 2.8°); larger twists make it curl' },
+        { id: 'bands', label: 'Bands', min: 1, max: 12, step: .1, def: 5, fmt: x => x.toFixed(1), title: 'Palette frequency: how many colour bands per unit of the field (source 5)' },
+        { id: 'shift', label: 'Palette shift', min: 0, max: 6.28, step: .01, def: 0, fmt: x => x.toFixed(2) + ' rad', title: 'Rotates the palette (0 = source)' },
+        { id: 'shimmer', label: 'Shimmer', min: 0, max: 1, step: .01, def: .1, fmt: x => x.toFixed(2), title: 'Slow palette sway, sin(time) × this (source 0.1)' },
+        { id: 'vig', label: 'Vignette', min: 0, max: 1.5, step: .01, def: .7, fmt: x => x.toFixed(2), title: 'Darkening towards the corners (source 0.7)' },
+        { id: 'res', label: 'Internal resolution', min: 120, max: 1080, step: 20, def: 540, fmt: x => x + ' lines', title: 'Height the field is computed at, then scaled up: lower is faster and softer' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: 1, fmt: pct, title: 'How strongly the scope\'s live picture is written into the field (100 % = as hard as the source\'s wave line); the flow smears it out' },
+        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: .5, fmt: times, title: 'How much the music drives it: the level speeds time and the flow, bass kicks jolt the palette' }
+      ],
+      uniforms(dt, P, st) {
+        const b = beatOf(st, dt); st.kick = b.kick;
+        st.t = ((st.t || 0) + dt * P.speed * (1 + P.beat * b.energy)) % (2 * Math.PI * 1e3);
+        st.k = Math.max(b.kick, (st.k || 0) * Math.pow(.9, dt * 60));
+        return { iters: Math.max(1, Math.min(4, Math.round(dt * 60))), u_t: st.t, u_mem: P.memory, u_noise: P.noise, u_flow: P.flow * (1 + P.beat * b.energy),
+          u_reach: P.reach, u_twist: P.twist, u_bands: P.bands, u_shift: P.shift + .8 * P.beat * st.k, u_shimmer: P.shimmer, u_vig: P.vig,
+          u_ink: P.ink, u_enc: dwFmt && dwFmt.enc ? 1 : 0, res: P.res };
+      } },
+    { id: 'pendula', name: 'Pendula', frag: PD_FS, bufFrags: [PD_T_FS, PD_S_FS, PD_B_FS], taps: true,
+      credit: { text: 'Pendula by NR4 (Alexander Kraus), GPL-3.0; reimplemented', href: 'https://www.shadertoy.com/user/NR4' },
+      params: [
+        { id: 'field', label: 'Pendulum field', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'How much of the coloured pendulum / magnet picture is mixed into the flowing feedback each step (1 = the source\'s 10 %). 0 turns it off and skips its cost: only the flow and the scope picture remain' },
+        { id: 'steps', label: 'Steps per frame', min: 1, max: 64, step: 1, def: 32, fmt: x => x + '', title: 'RK4 steps each pixel advances per frame (cost). The picture of each scene grows in until its full length (up to 400 steps) is reached; more steps get there sooner but cost more' },
+        { id: 'scene', label: 'Scene', type: 'choice', opts: PD_SCN, min: 0, max: 2, step: 1, def: 0, fmt: x => PD_SCN[x] || '', title: 'Cycle picks double pendulum or magnets at random for each scene, as in the source; or keep one' },
+        { id: 'palette', label: 'Palette', type: 'choice', opts: PD_PAL, min: 0, max: 5, step: 1, def: 0, fmt: x => PD_PAL[x] || '', title: 'Cycle picks one of the source\'s five palettes for each scene; or keep one' },
+        { id: 'hold', label: 'Scene length', min: .5, max: 10, step: .1, def: 2, fmt: x => x.toFixed(1) + ' s', title: 'Seconds (of effect time) each scene lasts before the next one is drawn (source 2 s)' },
+        { id: 'length', label: 'Trajectory length', min: .25, max: 2, step: .05, def: 1, fmt: times, title: 'Scales how long each pixel\'s pendulum is simulated (1 = source: up to 12 s for the magnets, 4.8 s for the double pendulum); longer is more chaotic' },
+        { id: 'speed', label: 'Time speed', min: 0, max: 4, step: .05, def: 1, fmt: times, title: 'How fast effect time runs: the noise flow, palette drift and scene changes (1 = source)' },
+        { id: 'flow', label: 'Flow', min: 0, max: 4, step: .05, def: .9, fmt: x => x.toFixed(2), title: 'How far the feedback is pushed by its noise each step, in pixels of a 540-line buffer (source 0.9)' },
+        { id: 'fade', label: 'Fade', min: 0, max: .1, step: .001, def: .01, fmt: pct, title: 'How much of the feedback is lost each step (source 1 %)' },
+        { id: 'grain', label: 'Grain', min: 0, max: .1, step: .001, def: .025, fmt: x => x.toFixed(3), title: 'Film grain added to the final picture (source 0.025)' },
+        { id: 'vig', label: 'Vignette', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'Darkening towards the edges (1 = source)' },
+        { id: 'res', label: 'Internal resolution', min: 120, max: 1080, step: 20, def: 360, fmt: x => x + ' lines', title: 'Height the buffers are computed at, then scaled up: lower is much faster (the integration runs per pixel) and softer' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: .35, fmt: pct, title: 'How strongly the scope\'s live picture is written into the feedback (the source has none); the flow carries it off' },
+        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: .5, fmt: times, title: 'How much the music drives it: the level speeds time and the flow, a strong bass kick jumps to the next scene (at most once a second)' }
+      ],
+      uniforms(dt, P, st) {
+        const b = beatOf(st, dt); st.kick = b.kick; st.wall = (st.wall || 0) + dt;
+        st.t = (st.t || 0) + dt * P.speed * (1 + P.beat * b.energy);
+        if (P.beat > 0 && b.kick * P.beat > .25 && st.wall - (st.jump == null ? -9 : st.jump) > 1) { st.bump = (st.bump || 0) + 1; st.jump = st.wall; }
+        const k = Math.floor(st.t / P.hold) + (st.bump || 0), T = st.t;
+        const pal = P.palette > 0 ? P.palette - 1 : Math.min(4, Math.floor(pdH12(k, k) * 5)), scene = P.scene > 0 ? P.scene - 1 : Math.min(1, Math.floor(pdH12(k + .215, k + .215) * 2));
+        const tmax = 12 * pdH12(k + .5219, k + .5219) * (scene === 0 ? .4 : 1) * P.length, N = Math.min(800, Math.ceil(tmax / .03));
+        const sig = [k, scene, P.length, P.res].join('|'), own = !!(fbs && fbs.mb && fbs.mb.id === 'pendula'), reset = sig !== st.sig || !own;
+        if (reset) { st.sig = sig; st.done = 0; }
+        const n = P.field > 0 ? Math.max(0, Math.min(P.steps, N - st.done)) : 0; st.done += n;
+        const x0 = pdH22(k + .21551, .21551), x1 = pdH22(k + .21551, 1.21551);
+        return { iters: Math.max(1, Math.min(4, Math.round(dt * 60))), u_time: T, u_key: k, u_scene: scene, u_pal: pal, u_n: n, u_nst: Math.min(N, 64), u_h: .03, u_reset: reset ? 1 : 0,
+          u_ml: [2 + .1 * Math.sin(T), 1 + .1 * Math.cos(3 * T), 2 + Math.sin(T), 2 + Math.cos(2 * T)],
+          u_x0: [2 * x0[0] - 1, 2 * x0[1] - 1], u_x1: [2 * x1[0] - 1, 2 * x1[1] - 1], u_x2: [.1 * Math.cos(T), .1 * Math.sin(T)],
+          u_field: P.field, u_flow: P.flow * (1 + P.beat * b.energy), u_fade: P.fade, u_grain: P.grain, u_vig: P.vig, u_ink: P.ink,
+          u_enc: dwFmt && dwFmt.enc ? 1 : 0, res: P.res };
+      } },
+    { id: 'praeterea', name: 'Praeterea Nihil', frag: PN_FS, bufFrags: [PN_A_FS], taps: true,
+      credit: { text: 'After "Praeterea Nihil" (Shadertoy); reimplemented', href: 'https://www.shadertoy.com/' },
+      params: [
+        { id: 'scale', label: 'Scale', min: .5, max: 10, step: .05, def: 3, fmt: x => x.toFixed(2), title: 'Zoom of the noise: higher shows more, smaller veins (source 3)' },
+        { id: 'warp', label: 'Warp', min: 0, max: 10, step: .05, def: 4, fmt: x => x.toFixed(2), title: 'How far each fbm layer bends the next (source 4); 0 is plain cloudy noise' },
+        { id: 'oct', label: 'Octaves', min: 1, max: 8, step: 1, def: 6, fmt: x => x + '', title: 'Noise detail layers (source 6); fewer are faster and smoother' },
+        { id: 'speed', label: 'Time speed', min: 0, max: 4, step: .05, def: 1, fmt: times, title: 'How fast it drifts and churns (1 = source)' },
+        { id: 'edge', label: 'Threshold', min: .1, max: .9, step: .01, def: .5, fmt: x => x.toFixed(2), title: 'Where black turns to white (source 0.5, the middle of smoothstep 0.4–0.6)' },
+        { id: 'soft', label: 'Softness', min: .005, max: .5, step: .005, def: .1, fmt: x => x.toFixed(3), title: 'Half-width of the black-to-white edge (source 0.1); larger gives grey, cloudy marble' },
+        { id: 'invert', label: 'Invert', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, title: 'Swap black and white' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: .9, fmt: pct, title: 'How strongly the scope\'s live picture is laid over the marble (0 = the source alone)' },
+        { id: 'mask', label: 'Mask', min: 0, max: 1, step: .01, def: 1, fmt: pct, title: 'How much the marble masks the scope: 100 % shows it only in the black veins, 0 % everywhere' },
+        { id: 'disp', label: 'Displace', min: 0, max: 1, step: .01, def: .12, fmt: x => x.toFixed(2), title: 'How far the warp field pushes the scope picture around (in screen heights)' },
+        { id: 'bend', label: 'Bend', min: 0, max: 2, step: .05, def: .3, fmt: x => x.toFixed(2), title: 'How much the lit scope picture bends the marble itself' },
+        { id: 'res', label: 'Internal resolution', min: 120, max: 1080, step: 20, def: 540, fmt: x => x + ' lines', title: 'Height the noise field is computed at, then scaled up: lower is faster and softer' },
+        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: .5, fmt: times, title: 'How much the music drives it: the level speeds the drift and strengthens the warp, bass kicks kick the scope displacement' }
+      ],
+      uniforms(dt, P, st) {
+        const b = beatOf(st, dt); st.kick = b.kick;
+        st.t = ((st.t || 0) + dt * P.speed * (1 + P.beat * b.energy)) % 1e4;
+        st.k = Math.max(b.kick, (st.k || 0) * Math.pow(.88, dt * 60));
+        return { iters: 1, u_t: st.t, u_scale: P.scale, u_warp: P.warp * (1 + .25 * P.beat * b.energy), u_oct: P.oct, u_bend: P.bend,
+          u_lo: P.edge - P.soft, u_hi: P.edge + P.soft, u_inv: P.invert, u_disp: P.disp * (1 + P.beat * (b.energy + 2 * st.k)),
+          u_ink: P.ink, u_mask: P.mask, res: P.res };
+      } },
+    { id: 'followme', name: 'Follow Me', frag: FM_FS, bufFrags: [FM_A_FS], taps: true,
+      credit: { text: 'After "Follow Me" (Shadertoy); reimplemented', href: 'https://www.shadertoy.com/' },
+      params: [
+        { id: 'rot', label: 'Rotation', min: -.1, max: .1, step: .001, def: .02, fmt: x => (x * 180 / Math.PI).toFixed(2) + '°', title: 'How far the picture turns each 1/60 s step (source 0.02 rad ≈ 1.15°)' },
+        { id: 'off', label: 'Offset', min: 0, max: 4, step: .05, def: 1, fmt: times, title: 'Strength of the noise offsets each channel is re-read at (1 = source: 0.10 / 0.14 / 0.18)' },
+        { id: 'split', label: 'Colour split', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'How differently the red, green and blue channels are offset (1 = source; 0 keeps them together, grey)' },
+        { id: 'nsize', label: 'Noise size', min: 16, max: 1024, step: 16, def: 256, fmt: x => x + '²', title: 'Texels across the generated noise texture (source: Shadertoy\'s 256² noise); smaller gives broader, smoother drifts' },
+        { id: 'gain', label: 'Gain', min: .95, max: 1.05, step: .001, def: 1.01, fmt: x => x.toFixed(3), title: 'Brightness kept each step (source 1.01: slowly brightens until the soft limit)' },
+        { id: 'fade', label: 'Fade', min: 0, max: .02, step: .0005, def: .001, fmt: x => x.toFixed(4), title: 'Subtracted each step (source 0.001)' },
+        { id: 'speed', label: 'Time speed', min: 0, max: 4, step: .05, def: 1, fmt: times, title: 'How fast the noise sweeps and the dot circles (1 = source)' },
+        { id: 'dot', label: 'Dot', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, title: 'The bright dot circling the centre that the trails follow (on = source)' },
+        { id: 'dotb', label: 'Dot brightness', min: 0, max: 3, step: .05, def: 1, fmt: times, title: 'Brightness of the dot (1 = source)' },
+        { id: 'sharp', label: 'Dot sharpness', min: 16, max: 512, step: 1, def: 132, fmt: x => x + '', title: 'Power that shapes the dot (source 132): higher is smaller' },
+        { id: 'res', label: 'Internal resolution', min: 120, max: 1080, step: 20, def: 540, fmt: x => x + ' lines', title: 'Height the feedback runs at, then scaled up: lower is faster and softer' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: .25, fmt: pct, title: 'How strongly the scope\'s live picture is written into the feedback each frame (0 = the source alone)' },
+        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: .5, fmt: times, title: 'How much the music drives it: the level speeds time and strengthens rotation and offsets, bass kicks flash the dot' }
+      ],
+      uniforms(dt, P, st) {
+        const b = beatOf(st, dt); st.kick = b.kick; const e = 1 + P.beat * b.energy;
+        st.t = ((st.t || 0) + dt * P.speed * e) % (2 * Math.PI * 1e3);
+        st.k = Math.max(b.kick, (st.k || 0) * Math.pow(.85, dt * 60));
+        return { iters: Math.max(1, Math.min(4, Math.round(dt * 60))), u_t: st.t, u_rot: P.rot * e, u_off: P.off * e, u_split: P.split, u_nsize: P.nsize,
+          u_gain: P.gain, u_fade: P.fade, u_dot: P.dot, u_dotb: P.dotb * (1 + 3 * P.beat * st.k), u_sharp: P.sharp, u_ink: P.ink, res: P.res };
       } }
   ];
   const fxCv = $('#scopeFx'), sfFx = $('#sfFx'), SETTLE = 45;        // frames the trails take to fade out after a pause
@@ -6867,7 +7962,7 @@ void main() {
   }
   function glSetup() {                       // programs + quad (also after a context restore)
     try {
-      progs = { copy: prog(COPY_FS) }; FX.forEach(f => { if (f.frag) progs[f.id] = prog(f.frag); if (f.fieldFrag) progs[f.id + ':field'] = prog(f.fieldFrag); }); dwFmt = null;
+      progs = { copy: prog(COPY_FS) }; FX.forEach(f => { if (f.frag) progs[f.id] = prog(f.frag); if (f.fieldFrag) progs[f.id + ':field'] = prog(f.fieldFrag); if (f.echoFrags) { progs[f.id + ':a'] = prog(f.echoFrags[0]); progs[f.id + ':b'] = prog(f.echoFrags[1]); } if (f.bufFrags) f.bufFrags.forEach((x, i) => { progs[f.id + ':buf' + i] = prog(x); }); }); dwFmt = null;
       quad = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quad); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
       gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
       srcTex = tex(); fbs = null; return true;
@@ -6887,6 +7982,8 @@ void main() {
     if (settleRaf) { cancelAnimationFrame(settleRaf); settleRaf = 0; }
     if (!fbs || !gl) { fbs = null; return; }
     if (!gl.isContextLost()) fbs.forEach(b => { gl.deleteFramebuffer(b.f); gl.deleteTexture(b.t); }); if (fbs.dw) fbs.dw.b.forEach(b => { gl.deleteFramebuffer(b.f); gl.deleteTexture(b.t); });
+    if (fbs.fe && !gl.isContextLost()) fbs.fe.b.forEach(b => { gl.deleteFramebuffer(b.f); gl.deleteTexture(b.t); });   // r45
+    mbDrop();                                                                                                            // r47
     fbs = null;
   }
   // which picture shows: the effect canvas when an effect is chosen, the view is open, WebGL works and motion is allowed
@@ -6907,10 +8004,14 @@ void main() {
     const dt = fxT ? Math.min(.1, Math.max(.001, (now - fxT) / 1000)) : 1 / 60; fxT = now; fxTime += dt;
     if (fxCv.width !== w || fxCv.height !== h) { fxCv.width = w; fxCv.height = h; }
     if (!fbs || fbs.w !== w || fbs.h !== h) fbAlloc(w, h);
+    if (fbs.mb && !f.bufFrags) mbDrop();                                // r47: a multi-buffer effect's buffers, once another shows
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, srcTex);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, fcv);
     if (f.fieldFrag) return dwRender(f, w, h, dt, keep);              // two-buffer effects (Diffusion Warp)
+    if (f.echoFrags) return feRender(f, w, h, dt, keep);              // r45: three-pass Fractal Echo
+    if (f.bufFrags) return mbRender(f, w, h, dt, keep);               // r47: Shadertoy-style Buffer A (+ B) + Image effects
+    if (fbs.fe) { fbs.fe.b.forEach(b => { gl.deleteFramebuffer(b.f); gl.deleteTexture(b.t); }); fbs.fe = null; }
     if (fbs.dw) { fbs.dw.b.forEach(b => { gl.deleteFramebuffer(b.f); gl.deleteTexture(b.t); }); fbs.dw = null; }   // its field, once another effect shows
     const src = fbs[cur], dst = fbs[1 - cur], P = progs[f.id];
     gl.bindFramebuffer(gl.FRAMEBUFFER, dst.f); gl.viewport(0, 0, w, h);
@@ -6994,6 +8095,113 @@ void main() {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     fxFrames++;
   }
+  /* r45: Fractal Echo's buffers A (ping-pong) and B at the internal resolution, kept on fbs (freed with it); cleared to black */
+  function feAlloc(fw, fh) {
+    const F = dwFormat(), b = [0, 1, 2].map(() => {
+      const t = tex(); gl.texImage2D(gl.TEXTURE_2D, 0, F.enc ? gl.RGBA : F.ifmt, fw, fh, 0, gl.RGBA, F.enc ? gl.UNSIGNED_BYTE : F.type, null);
+      const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+      gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT); return { t, f };
+    });
+    if (fbs.fe) fbs.fe.b.forEach(x => { gl.deleteFramebuffer(x.f); gl.deleteTexture(x.t); });
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return fbs.fe = { b, w: fw, h: fh, cur: 0, frame: 0, fmt: F.enc ? 'rgba8' : F.name };
+  }
+  function feRender(f, w, h, dt, keep) {
+    if (fbs.dw) { fbs.dw.b.forEach(b => { gl.deleteFramebuffer(b.f); gl.deleteTexture(b.t); }); fbs.dw = null; }
+    const fst = fxSt[f.id] || (fxSt[f.id] = {}); fst.asp = w / h; fst.lv = bandLv();
+    const un = f.uniforms(dt, fxParams(f), fst), fh = Math.max(16, Math.min(h, Math.round(un.res))), fw = Math.max(16, Math.round(fh * w / h));
+    const E = fbs.fe && fbs.fe.w === fw && fbs.fe.h === fh ? fbs.fe : feAlloc(fw, fh);
+    const put = Pg => { for (const k in un) { if (k === 'keep' || k === 'res') continue; const x = un[k], l = Pg.u(k); if (l == null) continue; if (Array.isArray(x)) gl['uniform' + x.length + 'fv'](l, x); else gl.uniform1f(l, x); } };
+    const Pa = progs[f.id + ':a'], Pb = progs[f.id + ':b'], Pi = progs[f.id];
+    gl.viewport(0, 0, fw, fh);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, E.b[2].f); gl.useProgram(Pb.pr);                 // B: spiral blur of A
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, E.b[E.cur].t); gl.uniform1i(Pb.u('u_tex'), 0);
+    gl.uniform2f(Pb.u('u_fres'), fw, fh); gl.uniform1f(Pb.u('u_frame'), E.frame % 1000); put(Pb);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, E.b[1 - E.cur].f); gl.useProgram(Pa.pr);         // A: the echo step
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, E.b[2].t);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, E.b[E.cur].t);
+    gl.uniform1i(Pa.u('u_prev'), 0); gl.uniform1i(Pa.u('u_src'), 1); gl.uniform1i(Pa.u('u_blur'), 2);
+    gl.uniform2f(Pa.u('u_fres'), fw, fh); gl.uniform1f(Pa.u('u_keep'), keep); gl.uniform1f(Pa.u('u_seed'), E.frame % 997); put(Pa);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); E.cur = 1 - E.cur; E.frame++;
+    const dst = fbs[1 - cur];                                                            // image: tonemap over the background
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dst.f); gl.viewport(0, 0, w, h); gl.useProgram(Pi.pr);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, E.b[E.cur].t);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fbs[cur].t);
+    gl.uniform1i(Pi.u('u_prev'), 0); gl.uniform1i(Pi.u('u_src'), 1); gl.uniform1i(Pi.u('u_fe'), 2);
+    gl.uniform3f(Pi.u('u_bg'), col.bg[0], col.bg[1], col.bg[2]); put(Pi); fst.keep = 1; fxU = un;
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); cur = 1 - cur;
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, null); gl.activeTexture(gl.TEXTURE0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
+    gl.useProgram(progs.copy.pr); gl.bindTexture(gl.TEXTURE_2D, dst.t); gl.uniform1i(progs.copy.u('u_tex'), 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    fxFrames++;
+  }
+  /* r47: generic multi-buffer effects (f.bufFrags = [A] or [A, B], then f.frag as the Image pass), like a Shadertoy with Buffer A/B.
+     Each buffer is a ping-pong pair at the internal resolution (un.res lines; full size without it), half-float when this GPU can
+     render to it (dwFormat), else RGBA8 (values clamp to 0..1); kept on fbs.mb, freed with fbs or when another effect shows.
+     Per step: A ← (u_a = A prev, u_b = B prev); B ← (u_a = A new, u_b = B prev); un.iters (1..8, default 1) steps per frame.
+     Then the Image pass at full size: u_a, u_b (current), u_prev (last shown frame), u_src (scope picture, premultiplied),
+     u_bg, u_res, u_ares (buffer size), u_keep (the pause fade × un.keep^(dt·60)), u_min. Buffer passes get u_src, u_fres, u_frame,
+     u_dt (seconds per step), u_seed (1 on the first step after the buffers are made; they start at 0) and u_keep. */
+  function mbDrop() {
+    if (!fbs || !fbs.mb) return;
+    if (gl && !gl.isContextLost()) fbs.mb.b.forEach(p => p.forEach(x => { gl.deleteFramebuffer(x.f); gl.deleteTexture(x.t); }));
+    fbs.mb = null;
+  }
+  function mbAlloc(f, fw, fh) {
+    mbDrop();
+    const F = dwFormat(), b = f.bufFrags.map(() => [0, 1].map(() => {
+      const t = tex(); if (!F.lin) { gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); }
+      gl.texImage2D(gl.TEXTURE_2D, 0, F.ifmt, fw, fh, 0, gl.RGBA, F.type, null);
+      const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); return { t, f: fb };
+    }));
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return fbs.mb = { id: f.id, b, w: fw, h: fh, cur: b.map(() => 0), frame: 0, fmt: F.name };
+  }
+  function mbRender(f, w, h, dt, keep) {
+    if (fbs.dw) { fbs.dw.b.forEach(b => { gl.deleteFramebuffer(b.f); gl.deleteTexture(b.t); }); fbs.dw = null; }
+    if (fbs.fe) { fbs.fe.b.forEach(b => { gl.deleteFramebuffer(b.f); gl.deleteTexture(b.t); }); fbs.fe = null; }
+    const fst = fxSt[f.id] || (fxSt[f.id] = {}); fst.asp = w / h; fst.lv = bandLv();
+    const un = f.uniforms(dt, fxParams(f), fst);
+    const fh = un.res ? Math.max(16, Math.min(h, Math.round(un.res))) : h, fw = un.res ? Math.max(16, Math.round(fh * w / h)) : w;
+    const M = fbs.mb && fbs.mb.id === f.id && fbs.mb.w === fw && fbs.mb.h === fh ? fbs.mb : mbAlloc(f, fw, fh);
+    const kk = (un.keep != null ? Math.pow(un.keep, dt * 60) : 1) * keep, it = Math.max(1, Math.min(8, Math.round(un.iters || 1))), nb = M.b.length;
+    const put = Pg => { for (const k in un) { if (k === 'keep' || k === 'res' || k === 'iters') continue; const x = un[k], l = Pg.u(k); if (l == null) continue; if (Array.isArray(x)) gl['uniform' + x.length + 'fv'](l, x); else gl.uniform1f(l, x); } };
+    gl.viewport(0, 0, fw, fh);
+    for (let s = 0; s < it; s++) {
+      for (let i = 0; i < nb; i++) {
+        const Pg = progs[f.id + ':buf' + i];
+        gl.bindFramebuffer(gl.FRAMEBUFFER, M.b[i][1 - M.cur[i]].f); gl.useProgram(Pg.pr);
+        if (nb > 2) { gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, M.b[2][M.cur[2]].t); gl.uniform1i(Pg.u('u_c'), 4); }   // r50: Buffer C
+        gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, nb > 1 ? M.b[1][M.cur[1]].t : null);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, M.b[0][M.cur[0]].t);
+        gl.uniform1i(Pg.u('u_a'), 0); gl.uniform1i(Pg.u('u_src'), 1); gl.uniform1i(Pg.u('u_b'), 2);
+        gl.uniform2f(Pg.u('u_fres'), fw, fh); gl.uniform1f(Pg.u('u_frame'), M.frame % 1000); gl.uniform1f(Pg.u('u_dt'), dt / it);
+        gl.uniform1f(Pg.u('u_seed'), M.frame === 0 ? 1 : 0); gl.uniform1f(Pg.u('u_keep'), kk); gl.uniform1f(Pg.u('u_step'), s); put(Pg);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); M.cur[i] = 1 - M.cur[i];
+      }
+      M.frame++;
+    }
+    const Pi = progs[f.id], dst = fbs[1 - cur];
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dst.f); gl.viewport(0, 0, w, h); gl.useProgram(Pi.pr);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, fbs[cur].t);
+    if (nb > 2) { gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, M.b[2][M.cur[2]].t); gl.uniform1i(Pi.u('u_c'), 4); }       // r50: Buffer C
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, nb > 1 ? M.b[1][M.cur[1]].t : null);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, M.b[0][M.cur[0]].t);
+    gl.uniform1i(Pi.u('u_a'), 0); gl.uniform1i(Pi.u('u_src'), 1); gl.uniform1i(Pi.u('u_b'), 2); gl.uniform1i(Pi.u('u_prev'), 3);
+    gl.uniform3f(Pi.u('u_bg'), col.bg[0], col.bg[1], col.bg[2]); gl.uniform2f(Pi.u('u_res'), w, h); gl.uniform2f(Pi.u('u_ares'), fw, fh);
+    gl.uniform1f(Pi.u('u_keep'), kk); gl.uniform1f(Pi.u('u_min'), kk >= .99995 ? 0 : 1 / 255); gl.uniform1f(Pi.u('u_dt'), dt); put(Pi);
+    fst.keep = un.keep != null ? un.keep : 1; fxU = un;
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); cur = 1 - cur;
+    if (nb > 2) { gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, null); }
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, null); gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, null); gl.activeTexture(gl.TEXTURE0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
+    gl.useProgram(progs.copy.pr); gl.bindTexture(gl.TEXTURE_2D, dst.t); gl.uniform1i(progs.copy.u('u_tex'), 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    fxFrames++;
+  }
   function fxStep() { if (!fxShown) return; settle = 0; if (settleRaf) { cancelAnimationFrame(settleRaf); settleRaf = 0; } fxRender(1); }
   // paused / idle: the trails fade out over SETTLE frames, then it holds the plain flat line (no loop, nothing moving)
   function fxIdle() {
@@ -7049,7 +8257,7 @@ void main() {
       : p.type === 'toggle' ? `<input type="checkbox" id="${id}"${x ? ' checked' : ''} title="${t}"><output for="${id}">${v}</output>`
       : `<input type="range" id="${id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${x}" aria-valuetext="${v}" title="${t}"><output for="${id}">${v}</output>`;
     return `<div class="sfp-row" data-p="${p.id}"><label for="${id}" title="${t}">${esc(p.label)}</label>${ctl}<button type="button" class="sfp-r" aria-label="Reset ${esc(p.label)}" title="Reset ${esc(p.label)} to ${esc(p.fmt(p.def))}">↺</button>` +
-      (p.eff ? `<small class="sfp-eff" hidden></small>` : '') + (p.info ? `<small class="sfp-eff sfp-info">${esc(p.info)}</small>` : '') + `</div>`;
+      (p.eff ? `<small class="sfp-eff" hidden></small>` : '') + (p.info ? `<small class="sfp-eff sfp-info">${esc(p.info)}${p.href ? ` · <a href="${esc(p.href)}" target="_blank" rel="noopener noreferrer">${esc(p.href.replace(/^https?:\/\/(www\.)?/, ''))}</a>` : ''}${p.lic ? ' · ' + esc(p.lic) : ''}</small>` : '') + `</div>`;
   }
   function rowsHTML(list, vals, pre) {
     let g = null; return list.filter(p => !p.modes || p.modes.includes(curMode().id)).map(p => (p.group && p.group !== g ? grpHTML(g = p.group) : '') + rowHTML(p, vals[p.id], pre)).join('');
@@ -7339,7 +8547,7 @@ void main() {
     open = true; fs.hidden = false; meta(); svC = null; dispSync();
     if (an) { an.fftSize = 8192; buf = new Float32Array(an.fftSize); }
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
-    $('#scopeFull .sf-n').textContent = MODES.length > 9 ? '9, 0' : MODES.length;   // r41: key 0 is mode 10
+    $('#scopeFull .sf-n').textContent = MODES.length > 12 ? '9, 0, -, =, ⌫' : MODES.length > 11 ? '9, 0, -, =' : MODES.length > 10 ? '9, 0, -' : MODES.length > 9 ? '9, 0' : MODES.length;   // r41: key 0 is mode 10; r42: - is mode 11
     bandSync();
     if (!fxApply() && fxIx() > 0 && !reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} isn’t available here (no WebGL) · None`, 2600);   // the choice is kept for next time
     else if (fxIx() > 0 && reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} · off while reduced motion is on`, 2200);
@@ -7404,6 +8612,9 @@ void main() {
     if ((e.key === 's' || e.key === 'S') && !e.shiftKey) { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) preSave(); return; }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopImmediatePropagation(); setMode((modeIx() + (e.key === 'ArrowRight' ? 1 : n - 1)) % n); return; }
     if (/^[0-9]$/.test(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); const k = +e.key || 10; if (k <= n) setMode(k - 1); return; }   // r41: 0 = mode 10
+    if (e.key === '-' && n >= 11) { e.preventDefault(); e.stopImmediatePropagation(); setMode(10); return; }   // r42: - = mode 11
+    if (e.key === '=' && n >= 12) { e.preventDefault(); e.stopImmediatePropagation(); setMode(11); return; }   // r44: = = mode 12
+    if (e.key === 'Backspace' && n >= 13) { e.preventDefault(); e.stopImmediatePropagation(); setMode(12); return; }   // r53: ⌫ (after =) = mode 13
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); e.stopImmediatePropagation(); setFxAndSync(fxIx() + (e.key === 'ArrowUp' ? 1 : -1)); return; }
     const k = (e.key || '').toLowerCase();
     if (k === 'g' || k === 't') { e.preventDefault(); e.stopImmediatePropagation(); const id = k === 'g' ? 'grid' : 'text', on = !sv()[id]; setView(id, on ? 1 : 0); modeToast((k === 'g' ? 'Grid' : 'Text') + ': ' + (on ? 'On' : 'Off')); }
@@ -7462,8 +8673,9 @@ void main() {
     fxParams: () => ({ ...fxParams() }), fxSchema: () => (FX[fxIx()].params || []).map(({ fmt, ...p }) => p), setParam,
     view: () => { const { xf, ...v } = sv(); return { ...v, composited: xf }; }, viewSchema: () => SCOPE_PARAMS.map(({ fmt, ...p }) => p), setView,
     layout: () => sv().xf && lay ? { ...lay, tile: [tileT.cv.width, tileT.cv.height] } : null, tileCanvas: () => tileT.cv,
+    tiles: () => lay ? tiles(sv(), lay).map(t => ({ ...t, poly: t.poly === TRI ? 'tri' : t.poly === HEX ? 'hex' : null })) : [],
     fxUniforms: (id, dt, P, st = {}) => { const f = FX.find(x => x.id === id); return f.uniforms(dt, { ...fxParams(f), ...P }, st); },
-    fx: () => ({ id: FX[fxIx()].id, shown: fxShown, gl: gl ? (glv === 2 ? 'webgl2' : 'webgl') : null, failed: glFailed, lost, frames: fxFrames, fbos: fbs ? [fbs.w, fbs.h] : null, field: fbs && fbs.dw ? { size: [fbs.dw.w, fbs.dw.h], fmt: fbs.dw.fmt } : null, kick: (fxSt[FX[fxIx()].id] || {}).kick || 0,
+    fx: () => ({ id: FX[fxIx()].id, shown: fxShown, gl: gl ? (glv === 2 ? 'webgl2' : 'webgl') : null, failed: glFailed, lost, frames: fxFrames, fbos: fbs ? [fbs.w, fbs.h] : null, echo: fbs && fbs.fe ? { size: [fbs.fe.w, fbs.fe.h], fmt: fbs.fe.fmt, frame: fbs.fe.frame } : null, bufs: fbs && fbs.mb ? { id: fbs.mb.id, n: fbs.mb.b.length, size: [fbs.mb.w, fbs.mb.h], fmt: fbs.mb.fmt, frame: fbs.mb.frame } : null, field: fbs && fbs.dw ? { size: [fbs.dw.w, fbs.dw.h], fmt: fbs.dw.fmt } : null, kick: (fxSt[FX[fxIx()].id] || {}).kick || 0,
       canvas: [fxCv.width, fxCv.height], hidden: fxCv.hidden, srcHidden: fcv.classList.contains('fx-src'), settle, settling: !!settleRaf, label: sfFx.textContent, labelOn: sfFx.classList.contains('show'), panel: panelOpen, gear: !gear.hidden, u: fxU }),
     _gl: () => gl,
     bounce: { sim: (seed) => bounceSim(seed), lines: () => bzLive().lines(), stats: () => bzLive().stats(), geo: (A, o) => bzLive().geo(A, o),
@@ -7484,6 +8696,9 @@ void main() {
     panelPos: () => ({ saved: ppos && { ...ppos }, ...(panelOpen ? posNow() : {}), home: !panel.querySelector('.sfp-home').hidden }),   // (tests) r38
     brushInfo: () => ({ ...brInfo }), brushSprite: (b, c, px) => brSprite(c, px, b), presetsOut, presetsIn, presets: () => preList().map(p => ({ ...p })), presetCur: () => preCur(), presetSave: () => preSave(), presetApply: i => preApply(i), presetStep: d => preStep(d), brushGlyphs: () => [...brGly.keys()], brushText: () => brTxt.join(''),   // (tests) brush b's sprite in colour c, px across
     linePal: () => { const p = linePal(sv()); return { line: p.line, base: p.base, bands: [...p.bands], theme: p === col }; },
+    spiral: { info: () => ({ ...spiInfo }), canvas: () => spiS.cv, failed: () => spiS.failed, fs: SPI_FS },
+    audio3d: { info: () => ({ ...avInfo }), canvas: () => avS.cv, failed: () => avS.failed, fs: AV_FS, tapped: () => avS.on, analyser: () => avS.an && { fft: avS.an.fftSize, smooth: avS.an.smoothingTimeConstant, min: avS.an.minDecibels, max: avS.an.maxDecibels }, reset() { avS.t = 0; avS.ct = 0; } },
+    pleiades: { info: () => ({ ...pleInfo }), canvas: () => pleS.cv, failed: () => pleS.failed, fs: PLE_FS },
     mirror: { info: () => ({ ...mirInfo }), canvas: () => mirS.cv, failed: () => mirS.failed, fs: MIR_FS },
     xy: { info: () => ({ ...xyInfo }), tapped: () => xyOn, built: () => !!xyN, phosphor: () => xyP.cv, box: () => xyBox() },
     bandLevels() { if (!bandNodes) return null; return bandNodes.map(b => { b.an.getFloatTimeDomainData(b.buf); let s = 0; for (const v of b.buf) s += v * v; return Math.sqrt(s / b.buf.length); }); },
