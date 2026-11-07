@@ -549,6 +549,7 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
 .scope-full.sf-notext .sf-meta,.scope-full.sf-notext .sf-close{display:none}
 .scope-full .sf-touch{display:none}@media (hover:none) and (pointer:coarse){.scope-full .sf-touch{display:inline}.scope-full .sf-fine{display:none}}
 .scope-full .sf-close{position:absolute;right:max(20px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));color:var(--muted);font-size:12px;pointer-events:none}
+.album-slot{border:2px dashed var(--accent);border-radius:12px;background:var(--hover);min-height:150px}.album-merge-over{outline:4px solid var(--accent);position:relative}.album-merge-over:after{content:"Release to review merge";position:absolute;inset:35% 4px auto;background:var(--panel);color:var(--text);padding:12px;text-align:center}.album-drag-help{color:var(--muted);font-size:12px}.card[draggable=true]{cursor:grab}
 </style>
 </head>
 <body>
@@ -592,7 +593,7 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
     </div>
   </footer>
 </div>
-<div class="scope-full" id="scopeFull" hidden role="dialog" aria-modal="true" aria-label="Oscilloscope, full screen" tabindex="-1"><canvas id="scopeFullCv" class="idle" aria-hidden="true"></canvas><canvas id="scopeFx" hidden aria-hidden="true"></canvas><div class="sf-meta" id="sfMeta"></div><div class="sf-mode" id="sfMode" aria-live="polite"></div><div class="sf-fx" id="sfFx" aria-live="polite"></div><div class="sf-panel" id="sfPanel" hidden role="group" aria-labelledby="sfpHead"><div class="sfp-head" title="Drag to move the panel · double-click to put it back"><button type="button" class="sfp-grip" aria-label="Move settings panel" title="Drag to move the panel; when focused, arrow keys move it (Shift: further), Home puts it back">⠿</button><b id="sfpHead">Settings</b><button type="button" class="sfp-home" hidden aria-label="Reset panel position" title="Put the panel back in its place (or double-click the header)">Reset position</button><button type="button" class="sfp-fold" title="Collapse or expand every heading in this panel">Collapse all</button><button type="button" class="sfp-x" aria-label="Close settings" title="Close settings (Enter or Esc)">✕</button></div><div class="sfp-pre" id="sfpPre" role="group" aria-label="Presets" title="Presets: S saves the current settings as a new one, Shift+← → step through them"><label for="sfpPreset">Preset</label><select id="sfpPreset" aria-describedby="sfpPreHint"></select><button type="button" class="sfp-pb" data-pa="save" title="Save the current settings as a new preset (S)">Save new</button><button type="button" class="sfp-pb" data-pa="update" title="Overwrite the preset with the current settings">Update</button><button type="button" class="sfp-pb" data-pa="rename" title="Rename the preset">Rename</button><button type="button" class="sfp-pb" data-pa="delete" title="Delete the preset">Delete</button><span id="sfpPreHint" hidden>S saves a new preset; Shift+Left and Shift+Right step through them</span></div><section class="sfp-sec" id="sfpScope" data-sec="scope" aria-labelledby="sfpScopeT"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpScopeT" aria-expanded="true" aria-controls="sfpScopeRows">Scope</button><button type="button" class="sfp-all" aria-label="Reset all scope settings">Reset all</button></div><div id="sfpScopeRows"></div></section><section class="sfp-sec" id="sfpFx" data-sec="fx" hidden aria-labelledby="sfpTitle"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpTitle" aria-expanded="true" aria-controls="sfpRows">Feedback</button><button type="button" class="sfp-all" aria-label="Reset all effect settings">Reset all</button></div><div class="sfp-credit" id="sfpCredit" hidden></div><div class="sfp-note" id="sfpNote" hidden></div><div id="sfpRows"></div></section><div class="sfp-foot"><span>Double-click a slider to reset it</span></div></div><button type="button" class="sf-gear" id="sfGear" hidden aria-label="Scope settings" aria-expanded="false" aria-controls="sfPanel" title="Settings (Enter)">⚙</button><div class="sf-close"><span class="sf-fine">← → or 1–<span class="sf-n">5</span> mode · ↑ ↓ effect · G grid · T text<span class="sf-enter"> · Enter settings</span> · Click or Esc to close</span><span class="sf-touch">Swipe ↔ mode · ↕ effect · ⚙ settings · Tap to close</span></div></div>
+<div class="scope-full" id="scopeFull" hidden role="dialog" aria-modal="true" aria-label="Oscilloscope, full screen" tabindex="-1"><canvas id="scopeFullCv" class="idle" aria-hidden="true"></canvas><canvas id="scopeFx" hidden aria-hidden="true"></canvas><div class="sf-meta" id="sfMeta"></div><div class="sf-mode" id="sfMode" aria-live="polite"></div><div class="sf-fx" id="sfFx" aria-live="polite"></div><div class="sf-panel" id="sfPanel" hidden role="group" aria-labelledby="sfpHead"><div class="sfp-head" title="Drag to move the panel · double-click to put it back"><button type="button" class="sfp-grip" aria-label="Move settings panel" title="Drag to move the panel; when focused, arrow keys move it (Shift: further), Home puts it back">⠿</button><b id="sfpHead">Settings</b><button type="button" class="sfp-home" hidden aria-label="Reset panel position" title="Put the panel back in its place (or double-click the header)">Reset position</button><button type="button" class="sfp-fold" title="Collapse or expand every heading in this panel">Collapse all</button><button type="button" class="sfp-x" aria-label="Close settings" title="Close settings (Enter or Esc)">✕</button></div><div class="sfp-pre" id="sfpPre" role="group" aria-label="Presets" title="Presets: S saves the current settings as a new one, Shift+← → step through them"><label for="sfpPreset">Preset</label><select id="sfpPreset" aria-describedby="sfpPreHint"></select><button type="button" class="sfp-pb" data-pa="save" title="Save the current settings as a new preset (S)">Save new</button><button type="button" class="sfp-pb" data-pa="update" title="Overwrite the preset with the current settings">Update</button><button type="button" class="sfp-pb" data-pa="rename" title="Rename the preset">Rename</button><button type="button" class="sfp-pb" data-pa="delete" title="Delete the preset">Delete</button><span id="sfpPreHint" hidden>S saves a new preset; Shift+Left and Shift+Right step through them</span></div><section class="sfp-sec" id="sfpScope" data-sec="scope" aria-labelledby="sfpScopeT"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpScopeT" aria-expanded="true" aria-controls="sfpScopeRows">Scope</button><button type="button" class="sfp-all" aria-label="Reset all scope settings">Reset all</button></div><div id="sfpScopeRows"></div></section><section class="sfp-sec" id="sfpVig" data-sec="vig" hidden aria-labelledby="sfpVigT"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpVigT" aria-expanded="true" aria-controls="sfpVigRows">Vignette</button><button type="button" class="sfp-all" aria-label="Reset all vignette settings">Reset all</button></div><div id="sfpVigRows"></div></section><section class="sfp-sec" id="sfpFx" data-sec="fx" hidden aria-labelledby="sfpTitle"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpTitle" aria-expanded="true" aria-controls="sfpRows">Feedback</button><button type="button" class="sfp-all" aria-label="Reset all effect settings">Reset all</button></div><div class="sfp-credit" id="sfpCredit" hidden></div><div class="sfp-note" id="sfpNote" hidden></div><div id="sfpRows"></div></section><div class="sfp-foot"><span>Double-click a slider to reset it</span></div></div><button type="button" class="sf-gear" id="sfGear" hidden aria-label="Scope settings" aria-expanded="false" aria-controls="sfPanel" title="Settings (Enter)">⚙</button><div class="sf-close"><span class="sf-fine">← → or 1–<span class="sf-n">5</span> mode · ↑ ↓ effect · G grid · T text<span class="sf-enter"> · Enter settings</span> · Click or Esc to close</span><span class="sf-touch">Swipe ↔ mode · ↕ effect · ⚙ settings · Tap to close</span></div></div>
 <div id="toasts" aria-live="polite"></div>
 <div id="selPanel" class="sel-panel hidden" role="toolbar" aria-label="Actions for the selected tracks"></div>
 <dialog id="dlg">
@@ -1815,6 +1816,99 @@ function albumFolder(id) {
   return parts.join('/');
 }
 function autoKeyOf(t, folder = albumFolder(t.id), name = t.album || folder.split('/').pop() || 'Unknown album') { return 'a:' + name.toLowerCase() + '|' + folder; }
+/* r70: album layout is library metadata only; never edits audio files or track identities. */
+function albumLayout() {
+  return S.meta.albumLayout || (S.meta.albumLayout = { order: [], redirects: {}, members: {} });
+}
+function albumResolved(key) {
+  const seen = new Set(), r = albumLayout().redirects;
+  while (r[key] && !seen.has(key)) { seen.add(key); key = r[key]; }
+  return key;
+}
+function albumExtra(key, tracks) {
+  return [...new Set([...tracks.map(t => t.id), ...(albumLayout().members[key] || [])])].map(id => S.tracks.get(id)).filter(Boolean);
+}
+function albumVisibleKeys() { return [...document.querySelectorAll('#list .card[data-key]')].map(c => c.dataset.key); }
+function albumCommitOrder(keys) {
+  const l = albumLayout(), seen = new Set(keys);
+  l.order = [...keys, ...l.order.filter(k => !seen.has(k))]; l.manual = true;
+  S.albumSort = 'manual'; S.meta.albumSortChoice = 'manual'; touch(); renderAlbumsView();
+}
+async function albumMerge(from, to) {
+  from = albumResolved(from); to = albumResolved(to);
+  const a = getAlbum(from), b = getAlbum(to); if (!a || !b || from === to) return;
+  const ok = await modal({ title: 'Merge albums?', message: `Merge “${a.name}” (${a.tracks.length} tracks) into “${b.name}” (${b.tracks.length} tracks)? The destination keeps its name and cover. The source disappears from Albums. Tracks, ratings and files are kept; no audio files are changed.`, okLabel: 'Merge albums' });
+  if (!ok || albumResolved(from) !== from || albumResolved(to) !== to || !getAlbum(from) || !getAlbum(to)) return;
+  const l = albumLayout();
+  const ids = [...new Set([...b.tracks, ...a.tracks].map(t => t.id))];
+  if (b.custom) { b.raw.trackIds = ids; delete l.members[to]; saveAlbum(b.raw); }
+  else l.members[to] = ids;
+  l.redirects[from] = to;
+  if (S.view.name === 'album' && S.view.key === from) S.view.key = to;
+  if (S.searchAlbumKey === from) S.searchAlbumKey = to;
+  if (S.queueCtx === from) S.queueCtx = to;
+  if (S.queueSrc && S.queueSrc.key === from) S.queueSrc.key = to;
+  computeAuto(); touch(); renderAll(); toast(`Merged “${a.name}” into “${b.name}”.`, 'ok');
+}
+let albumDrag = null, albumSuppressClick = 0;
+function albumDragEnd() {
+  if (!albumDrag) return;
+  cancelAnimationFrame(albumDrag.raf);
+  albumDrag.source.style.display = ''; albumDrag.slot.remove();
+  document.querySelectorAll('.album-merge-over').forEach(c => c.classList.remove('album-merge-over'));
+  albumDrag = null; albumSuppressClick = Date.now() + 200;
+}
+document.addEventListener('click', e => {
+  if (Date.now() < albumSuppressClick && e.target.closest('#list .card')) { e.stopImmediatePropagation(); e.preventDefault(); }
+}, true);
+document.addEventListener('dragstart', e => {
+  const c = e.target.closest('#list .card[data-key]'); if (!c || e.target.closest('button')) return;
+  const slot = document.createElement('div'); slot.className = 'album-slot'; slot.style.height = c.offsetHeight + 'px'; slot.setAttribute('aria-label', 'Drop album here');
+  albumDrag = { source: c, slot, key: c.dataset.key, keys: albumVisibleKeys(), merge: null, y: 0, raf: 0 };
+  e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', c.dataset.key);
+  c.after(slot);
+  // Keep the browser's native drag image, hide original only after capture.
+  requestAnimationFrame(() => { if (albumDrag) c.style.display = 'none'; });
+  const scroll = () => {
+    if (!albumDrag) return;
+    const y = albumDrag.y, el = document.querySelector('#main');
+    if (y && el) { const r = el.getBoundingClientRect(); const dy = y < r.top + 65 ? -16 : y > Math.min(r.bottom, innerHeight) - 65 ? 16 : 0; el.scrollTop += dy; window.scrollBy(0, dy); }
+    albumDrag.raf = requestAnimationFrame(scroll);
+  }; scroll();
+});
+document.addEventListener('dragover', e => {
+  if (!albumDrag || !e.target.closest('#list')) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const d = albumDrag; d.y = e.clientY; d.merge = null;
+  document.querySelectorAll('.album-merge-over').forEach(c => c.classList.remove('album-merge-over'));
+  const c = e.target.closest('.card[data-key]');
+  if (c && c !== d.source) {
+    const r = c.getBoundingClientRect(), x = (e.clientX-r.left)/r.width, y = (e.clientY-r.top)/r.height;
+    if (x > .28 && x < .72 && y > .25 && y < .75) { d.merge = c.dataset.key; c.classList.add('album-merge-over'); return; }
+    if (x < .5) c.before(d.slot); else c.after(d.slot);
+  }
+});
+document.addEventListener('drop', e => {
+  if (!albumDrag) return;
+  e.preventDefault(); const d = albumDrag, merge = d.merge, inside = e.target.closest('#list');
+  const keys = [...document.querySelectorAll('#list .card[data-key], #list .album-slot')].filter(c => c !== d.source).map(c => c === d.slot ? d.key : c.dataset.key);
+  albumDragEnd();
+  if (inside) { if (merge) albumMerge(d.key, merge); else albumCommitOrder(keys); }
+});
+document.addEventListener('dragend', albumDragEnd);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') albumDragEnd();
+  const c = e.target.closest('#list .card[data-key]'); if (!c || e.target !== c) return;
+  if (e.altKey && ['ArrowLeft','ArrowRight'].includes(e.key)) {
+    e.preventDefault(); const keys = albumVisibleKeys(), i = keys.indexOf(c.dataset.key), j = i + (e.key === 'ArrowLeft' ? -1 : 1);
+    if (j >= 0 && j < keys.length) { [keys[i],keys[j]] = [keys[j],keys[i]]; albumCommitOrder(keys); [...document.querySelectorAll('#list .card')].find(x => x.dataset.key === c.dataset.key)?.focus(); }
+  }
+  if (e.altKey && e.key.toLowerCase() === 'm') {
+    e.preventDefault(); const keys = albumVisibleKeys().filter(k => k !== c.dataset.key);
+    if (!keys.length) return;
+    modal({ title: 'Merge into album', message: 'Choose a destination. You will confirm before anything changes.', okLabel: 'Continue', select: { label: 'Destination album', html: keys.map(k => `<option value="${esc(k)}">${esc(getAlbum(k).name)}</option>`).join('') } }).then(k => { if (k) albumMerge(c.dataset.key, k); });
+  }
+});
+
 function computeAuto() {
   const m = new Map();
   for (const t of S.tracks.values()) {
@@ -1827,6 +1921,7 @@ function computeAuto() {
   }
   const orders = albumOrders(); let ordersChanged = false;
   for (const a of m.values()) {
+    a.tracks = albumExtra(a.key, a.tracks);
     a.tracks.sort((x, y) => (x.discNo || 1) - (y.discNo || 1) || (x.trackNo || 9999) - (y.trackNo || 9999) || cmp(x.id, y.id));
     a.tagIds = a.tracks.map(t => t.id); a.manual = false;
     if (Array.isArray(orders[a.key])) {
@@ -1848,9 +1943,10 @@ function computeAuto() {
   if (ordersChanged) saveMeta();
 }
 function getAlbum(key) {
+  key = albumResolved(key);
   if (key && key.startsWith('c:')) {
     const c = S.albums.get(key); if (!c) return null;
-    return { key, id: c.id, name: c.name, custom: true, artist: '', tracks: c.trackIds.map(id => S.tracks.get(id)).filter(Boolean), raw: c };
+    return { key, id: c.id, name: c.name, custom: true, artist: '', tracks: albumExtra(key, c.trackIds.map(id => S.tracks.get(id)).filter(Boolean)), raw: c };
   }
   return S.autoMap.get(key) || null;
 }
@@ -2126,6 +2222,7 @@ function buildExport() {
     tracks: [...S.tracks.values()].map(t => ({ id: t.id, title: t.title, artist: t.artist, albumArtist: t.albumArtist, album: t.album, trackNo: t.trackNo, discNo: t.discNo, year: t.year, date: t.date || '', rating: t.rating || 0, bpm: t.bpm || 0, ...(t.bpmSource ? { bpmSource: t.bpmSource } : {}), key: t.mkey || '', ...(t.mkeySource ? { keySource: t.mkeySource } : {}), ...(tagOf(t) ? { tag: t.tag } : {}), ...keepAutorate(t), ...(t.detect ? { detect: t.detect } : {}), duration: t.duration || 0, format: t.format || fileFormat(t.id), ...(t.codec ? { codec: t.codec } : {}), size: t.size, lastModified: t.lastModified, addedAt: t.addedAt })),
     albums: [...S.albums.values()].map(a => ({ id: a.id, name: a.name, trackIds: a.trackIds.slice(), createdAt: a.createdAt, updatedAt: a.updatedAt })),
     // v3: hand-arranged "Album order" of folder albums (key = album name + folder, as used in the app)
+    albumLayout: JSON.parse(JSON.stringify(albumLayout())),
     albumOrders: Object.entries(albumOrders()).filter(([k]) => S.autoMap.has(k)).map(([key, ids]) => { const a = S.autoMap.get(key); return { key, album: a.name, folder: a.folder, trackIds: ids.slice() }; }),
     // r39: the full-screen scope's settings presets ({ version, presets: [{ id, name, created, mode, effect, theme, params, fxParams }] })
     visualiserPresets: Scope.presetsOut()
@@ -2341,6 +2438,7 @@ async function mergeLibrary(data, opts = {}) {
     for (const x of data.albumOrders) if (x && typeof x.key === 'string' && x.key.startsWith('a:') && Array.isArray(x.trackIds)) o[x.key] = [...new Set(x.trackIds.filter(id => typeof id === 'string'))];
     S.meta.albumOrders = o;
   } else if ((+data.version || 0) >= 3) S.meta.albumOrders = {};
+  if (data.albumLayout && Array.isArray(data.albumLayout.order) && data.albumLayout.redirects && data.albumLayout.members) S.meta.albumLayout = JSON.parse(JSON.stringify(data.albumLayout));
   S.meta.lastSaved = jt || Date.now(); S.meta.lastExported = S.meta.lastSaved;
   if (!S.meta.rootFolder && data.rootFolder) S.meta.rootFolder = data.rootFolder;
   if (data.settings && typeof data.settings.autorateFromFileName === 'boolean') S.meta.autorate = data.settings.autorateFromFileName;
@@ -3310,7 +3408,7 @@ function renderSidebar() {
     nav('albums', 'album', 'Albums', S.autoAlbums.length + S.albums.size, v.name === 'albums' || (v.name === 'album' && !v.key.startsWith('c:'))) +
     nav('tracks', 'list', 'All tracks', S.tracks.size, v.name === 'tracks') +
     `<div class="side-h">My albums <button data-action="new-album" title="New album">${svg('plus')}</button></div>`;
-  const albums = [...S.albums.values()].sort((a, b) => cmp(a.name, b.name));
+  const albums = [...S.albums.values()].filter(a => !albumLayout().redirects[a.id]).sort((a, b) => cmp(a.name, b.name));
   h += albums.length ? albums.map(a => `<button class="nav${v.name === 'album' && v.key === a.id ? ' active' : ''}" data-action="open-album" data-key="${esc(a.id)}">${svg('star')}<span class="lbl">${esc(a.name)}</span><span class="cnt">${a.trackIds.length}</span></button>`).join('')
     : `<button class="nav" data-action="new-album">${svg('plus')}<span class="lbl">New album…</span></button>`;
   h += `<div class="side-stats">${S.tracks.size.toLocaleString()} tracks · ${S.autoAlbums.length} albums<br>${S.linked ? '🟢 Folder linked' : S.tracks.size ? '🟠 Folder not linked' : ''}${missing ? `<br>⚠️ ${missing} missing` : ''}</div>`;
@@ -3337,20 +3435,24 @@ function go(view) {
   S.view = view; S.limit = 400; S.sel.clear(); S.selAnchor = null; $('#main').scrollTop = 0; renderSidebar(); renderMain(); renderSelPanel(); }
 
 function renderAlbumsView() {
+  if (albumLayout().manual && !S.meta.albumSortChoice) S.albumSort = 'manual';
+  else if (S.meta.albumSortChoice) S.albumSort = S.meta.albumSortChoice;
   $('#main').innerHTML = `<div class="toolbar"><h1>Albums</h1>
     <input class="input search" id="albumSearch" type="search" placeholder="Search albums or artists…" value="${esc(S.albumSearch)}">
     <select class="select" id="albumSort" aria-label="Sort albums">
-      ${[['artist', 'Artist'], ['name', 'Album name'], ['added', 'Recently added'], ['rating', 'Top rated'], ['year', 'Year']].map(([v, l]) => `<option value="${v}"${S.albumSort === v ? ' selected' : ''}>Sort: ${l}</option>`).join('')}
+      ${[['manual', 'Manual order'], ['artist', 'Artist'], ['name', 'Album name'], ['added', 'Recently added'], ['rating', 'Top rated'], ['year', 'Year']].map(([v, l]) => `<option value="${v}"${S.albumSort === v ? ' selected' : ''}>Sort: ${l}</option>`).join('')}
     </select>
     ${missingCount() ? cleanupBtnHTML(missingCount()) : ''}<button class="btn" data-action="new-album">${svg('plus')}New album</button></div><div id="list"></div>`;
   renderAlbumGrid();
 }
 function renderAlbumGrid() {
+  if (albumLayout().manual && S.albumSort === 'artist' && !S.meta.albumSortChoice) S.albumSort = 'manual';
   const terms = S.albumSearch.toLowerCase().split(/\s+/).filter(Boolean);
-  const match = a => !terms.length || terms.every(w => (a.name + ' ' + (a.artist || '')).toLowerCase().includes(w));
-  const custom = [...S.albums.values()].map(c => { const a = getAlbum(c.id); a.artist = customArtist(a.tracks); a.addedAt = c.createdAt; return a; }).filter(match);
+  const match = a => !albumLayout().redirects[a.key] && (!terms.length || terms.every(w => (a.name + ' ' + (a.artist || '')).toLowerCase().includes(w)));
+  const custom = [...S.albums.values()].filter(c => !albumLayout().redirects[c.id]).map(c => { const a = getAlbum(c.id); a.artist = customArtist(a.tracks); a.addedAt = c.createdAt; return a; }).filter(match);
   const auto = S.autoAlbums.filter(match);
   const sorters = {
+    manual: (a,b) => { const o = albumLayout().order; return (o.includes(a.key) ? o.indexOf(a.key) : 1e9) - (o.includes(b.key) ? o.indexOf(b.key) : 1e9) || cmp(a.name,b.name); },
     artist: (a, b) => cmp(a.artist, b.artist) || cmp(a.year, b.year) || cmp(a.name, b.name),
     name: (a, b) => cmp(a.name, b.name), added: (a, b) => (b.addedAt || 0) - (a.addedAt || 0),
     rating: (a, b) => avgRating(b.tracks) - avgRating(a.tracks) || cmp(a.name, b.name),
@@ -3362,13 +3464,17 @@ function renderAlbumGrid() {
     const sub = [a.artist || (a.custom ? 'My album' : 'Unknown artist'), a.tracks.length + ' track' + (a.tracks.length === 1 ? '' : 's'), sumDur(a.tracks) ? fmtTotal(sumDur(a.tracks)) : '', r ? '★ ' + fmtAvg(r) : ''].filter(Boolean).join(' · ');
     const miss = a.tracks.filter(t => t.missing).length, all = miss && miss === a.tracks.length;
     const mb = miss ? `<button class="miss-badge" data-action="album-miss-menu" data-key="${esc(a.key)}" title="${miss} track${miss === 1 ? ' was' : 's were'} not found in the last folder scan. Click for options." aria-label="${all ? 'All tracks missing' : miss + ' missing'}: options">${svg('warn')}${all ? 'All missing' : miss + ' missing'}</button>` : '';
-    return `<div class="card${miss ? ' has-missing' : ''}${all ? ' all-missing' : ''}" data-action="open-album" data-key="${esc(a.key)}" title="${esc(a.name)}${miss ? ' · ' + (all ? 'all tracks missing' : miss + ' missing') : ''}">
+    return `<div class="card${miss ? ' has-missing' : ''}${all ? ' all-missing' : ''}" draggable="true" tabindex="0" aria-label="${esc(a.name)}. Drag edges to reorder, centre to merge. Alt Left or Right to reorder; Alt M to merge." data-action="open-album" data-key="${esc(a.key)}" title="${esc(a.name)}${miss ? ' · ' + (all ? 'all tracks missing' : miss + ' missing') : ''}">
       <div class="cover-wrap">${coverHTML(a.name, a.custom, a.tracks.length)}${mb}${linked ? `<button class="play-fab" data-action="play-album" data-key="${esc(a.key)}" title="Play album">${svg('play')}</button>` : ''}</div>
       <div class="card-title">${esc(a.name)}</div><div class="card-sub">${esc(sub)}</div></div>`;
   };
   let h = '';
+  if (S.albumSort === 'manual') h += `<div class="grid">${[...custom,...auto].sort(sorters.manual).map(card).join('')}</div>`;
+  else {
   if (custom.length) h += `<div class="section-h">My albums</div><div class="grid">${custom.map(card).join('')}</div>`;
   if (auto.length) h += `${custom.length ? '<div class="section-h">From your folder</div>' : ''}<div class="grid">${auto.map(card).join('')}</div>`;
+  }
+  h = '<p class="album-drag-help">Drag card edges to reposition (switches to Manual order). Drop on the centre to review a merge. Keyboard: focus a card, Alt ←/→ to move; Alt M to merge. Search moves visible albums ahead of hidden results.</p>' + h;
   if (!h) h = `<div class="empty"><p>${terms.length ? 'No albums match your search.' : 'No albums yet.'}</p></div>`;
   $('#list').innerHTML = h;
   markAlbums();
@@ -3971,7 +4077,7 @@ function npAlbumKeys(t) {
   if (!t) return [];
   const ks = [autoKeyOf(t)];
   for (const c of S.albums.values()) if (c.trackIds && c.trackIds.includes(t.id)) ks.push(c.id);
-  return ks;
+  return [...new Set(ks.map(albumResolved))];
 }
 function markAlbums() {
   const t = currentTrack(), on = t && (OGGX.pend || audio.src && (!audio.paused || audio.currentTime > 0)), ks = on ? npAlbumKeys(t) : [], want = new Set(ks);
@@ -4171,7 +4277,7 @@ function bindEvents() {
     else if (id === 'detectNextToggle') setDetectCfg({ next: e.target.checked });
     else if (id === 'detectBpmMin' || id === 'detectKeyMin') { const v = clampPct(e.target.value); e.target.value = v; setDetectCfg(id === 'detectBpmMin' ? { bpmMin: v } : { keyMin: v }); }
     else if (id === 'scopeToggle') { Scope.set(e.target.checked); const h = $('#scopeHint'); if (h) h.textContent = Scope.hint(); }
-    else if (id === 'albumSort') { S.albumSort = e.target.value; renderAlbumGrid(); }
+    else if (id === 'albumSort') { S.albumSort = e.target.value; S.meta.albumSortChoice = S.albumSort; saveMeta(); renderAlbumGrid(); }
   });
   document.addEventListener('scroll', e => { if (popEl && !popEl.contains(e.target)) closePopover(); }, true);
   window.addEventListener('resize', closePopover);
@@ -4397,8 +4503,9 @@ const Scope = (() => {
       return;
     }
     const r = t.cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
-    // with a shader effect the 2D frame is uploaded to the GPU every frame: cap it at 1.5x and about 2 megapixels
-    D = t.big && fxShown ? Math.min(d, 1.5, Math.sqrt(2e6 / Math.max(1, r.width * r.height))) : d;
+    // with a shader effect the 2D frame is uploaded to the GPU every frame: caps from Display › Effect max DPR / Effect max size
+    const V = sv();
+    D = t.big && fxShown ? Math.min(d, V.fxdpr, Math.sqrt(V.fxmp * 1e6 / Math.max(1, r.width * r.height))) : d;
     W = Math.max(1, Math.round(r.width * D)); H = Math.max(1, Math.round(r.height * D));
     if (t.cv.width !== W || t.cv.height !== H) { t.cv.width = W; t.cv.height = H; }
   }
@@ -4441,6 +4548,11 @@ const Scope = (() => {
   function bandSync() {                     // tap the filters only while Bands or Overlay is on screen
     xySync();                                // round 35: the XY splitter, only while XY is on screen
     avSync();                                // r53: the 3D Audio spectrum analyser, only while it is on screen
+    haloSync();                              // r58: Halo FFT is a read-only tap only while shown
+    ngSync();                                // r59: Neuro FFT/wave material tap
+    sbSync();                                // r61: Spiky Ball FFT tap (Shadertoy iChannel0)
+    blSync();                                // r63: Blobby Buffer A / Image FFT tap
+    swSync();                                // r64: Swirly Eyes bass analyser tap
     const want = !!src && enabled() && open && (!!curMode().taps || fxTaps()) && !document.hidden;   // (+ an effect that reacts to the bands)   // Bands and Overlay
     if (want === bandsOn) return;
     if (want) {
@@ -5064,6 +5176,742 @@ void main() {
     avInfo.live = true; avPaint(t, V, avS.bins.subarray(0, 512), reduce.matches ? 0 : dt, true);
     if (!reduce.matches) raf = requestAnimationFrame(frame);
   }
+  /* r56: After nikos papadopoulos (4rknova), 2013; reimplemented.
+     CC BY-NC-SA 3.0. Archived original: logs/fx-src-4rknova-wave.glsl.
+     The standard waveform analyser supplies 512 unsigned samples (silence = 128),
+     and the shader reads its first half as in c*.5. abs(y) defines the original
+     negative-base fractional power on both halves; denominators are bounded to
+     avoid NaN/Inf at the centre. Output is premultiplied for canvas compositing.
+     Dark-only alpha defaults to zero at black, preserving the feedback buffer. */
+  const NW_FS = `precision highp float;
+uniform vec2 u_res;
+uniform sampler2D u_wave;
+uniform float u_time, u_thick, u_width, u_amp, u_vel, u_op, u_key;
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_res;
+  float s = texture2D(u_wave, vec2(uv.x * 0.5, 0.5)).r;
+  float y = uv.y * 2.0 - 1.0 + u_amp * s * sin((uv.x * u_width + u_time * u_vel) * 2.5);
+  float exponent = 2.1 * sin(s * 3.14159);
+  float field = max(s * u_thick / max(pow(max(abs(y), 0.00001), exponent), 0.00001), 0.1 / max(abs(y + 0.001), 0.00001));
+  vec3 rgb = clamp(vec3(field * field * s * 0.6, field * s * 0.44, field * field * 0.7), 0.0, 1.0);
+  float light = max(rgb.r, max(rgb.g, rgb.b));
+  float alpha = u_key > 0.5 ? mix(u_op, 1.0, smoothstep(0.0, 0.6, light)) : u_op;
+  gl_FragColor = vec4(rgb * alpha, alpha);
+}`;
+  const nwS = { cv: document.createElement('canvas'), gl: null, failed: false, time: 0, last: 0, samples: new Uint8Array(512), info: { n: 0 } };
+  function nwGL() {
+    if (nwS.gl || nwS.failed) return nwS.gl;
+    try {
+      const g = nwS.cv.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: false, preserveDrawingBuffer: true });
+      if (!g) throw new Error('WebGL unavailable');
+      const compile = (kind, text) => { const s = g.createShader(kind); g.shaderSource(s, text); g.compileShader(s); if (!g.getShaderParameter(s, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(s)); return s; };
+      const program = g.createProgram();
+      g.attachShader(program, compile(g.VERTEX_SHADER, 'attribute vec2 position; void main() { gl_Position = vec4(position, 0.0, 1.0); }'));
+      g.attachShader(program, compile(g.FRAGMENT_SHADER, NW_FS)); g.linkProgram(program);
+      if (!g.getProgramParameter(program, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(program));
+      g.useProgram(program);
+      const buffer = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, buffer); g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), g.STATIC_DRAW);
+      const pos = g.getAttribLocation(program, 'position'); g.enableVertexAttribArray(pos); g.vertexAttribPointer(pos, 2, g.FLOAT, false, 0, 0);
+      nwS.texture = g.createTexture(); g.bindTexture(g.TEXTURE_2D, nwS.texture);
+      for (const key of [g.TEXTURE_WRAP_S, g.TEXTURE_WRAP_T]) g.texParameteri(g.TEXTURE_2D, key, g.CLAMP_TO_EDGE);
+      for (const key of [g.TEXTURE_MIN_FILTER, g.TEXTURE_MAG_FILTER]) g.texParameteri(g.TEXTURE_2D, key, g.LINEAR);
+      g.pixelStorei(g.UNPACK_ALIGNMENT, 1); g.texImage2D(g.TEXTURE_2D, 0, g.LUMINANCE, 512, 1, 0, g.LUMINANCE, g.UNSIGNED_BYTE, nwS.samples);
+      nwS.U = {}; for (const key of ['res','wave','time','thick','width','amp','vel','op','key']) nwS.U[key] = g.getUniformLocation(program, 'u_' + key);
+      g.uniform1i(nwS.U.wave, 0); nwS.gl = g;
+      nwS.cv.addEventListener('webglcontextlost', e => { e.preventDefault(); nwS.gl = null; });
+    } catch (e) { nwS.failed = true; console.warn('4rknova Wave unavailable:', e.message); }
+    return nwS.gl;
+  }
+  function nwPaint(t, data, dt) {
+    const V = sv(), g = t.g, G = nwGL(); g.clearRect(0, 0, W, H);
+    if (!G) return;
+    const w = Math.max(16, Math.round(W * V.nwscale)), h = Math.max(16, Math.round(H * V.nwscale));
+    if (nwS.cv.width !== w || nwS.cv.height !== h) { nwS.cv.width = w; nwS.cv.height = h; }
+    for (let i = 0; i < 512; i++) nwS.samples[i] = Math.round(127.5 * (1 + Math.max(-1, Math.min(1, data ? data[Math.floor(i * data.length / 512)] || 0 : 0))));
+    nwS.time += dt; const U = nwS.U;
+    G.viewport(0, 0, w, h); G.activeTexture(G.TEXTURE0); G.bindTexture(G.TEXTURE_2D, nwS.texture);
+    G.texSubImage2D(G.TEXTURE_2D, 0, 0, 0, 512, 1, G.LUMINANCE, G.UNSIGNED_BYTE, nwS.samples);
+    G.uniform2f(U.res, w, h); G.uniform1f(U.time, nwS.time);
+    for (const [u, id] of [['thick','nwthick'],['width','nwwidth'],['amp','nwamp'],['vel','nwvel'],['op','nwop'],['key','nwkey']]) G.uniform1f(U[u], V[id]);
+    G.drawArrays(G.TRIANGLES, 0, 3); g.save(); g.imageSmoothingEnabled = true; g.drawImage(nwS.cv, 0, 0, W, H); g.restore();
+    nwS.info = { n: nwS.info.n + 1, time: nwS.time, size: [w,h], live: !!data, sample: nwS.samples[0] };
+    if (t.big && V.text) xyLabel(t, V, '4rknova Wave · music in motion');
+  }
+  function nwFlat(t) { size(t); nwS.last = 0; nwPaint(t, null, 0); t.cv.classList.add('idle'); }
+  function nwFrame(t) {
+    let data = null;
+    if (feed) data = feed();
+    else if (an && src && running()) { if (buf.length !== an.fftSize) buf = new Float32Array(an.fftSize); an.getFloatTimeDomainData(buf); data = buf; }
+    if (!data) { nwFlat(t); if (src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); frames++; t.cv.classList.remove('idle');
+    const now = performance.now(), dt = nwS.last ? Math.min(.25, (now - nwS.last) / 1000) : 1 / 60; nwS.last = now;
+    nwPaint(t, data, reduce.matches ? 0 : dt);
+    if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+  /* r57: After Seascape by TDM (Alexander Alekseev), 2014, and wizgrav's
+     Clubber fork https://www.shadertoy.com/view/4lKSzh; reimplemented.
+     CC BY-NC-SA 3.0. Preserve logs/fx-src-seascape-clubber.glsl verbatim:
+     that supplied archive contains a literal omission at line 62. Wave noise,
+     octave summation and lighting below are our reconstruction, not a claim
+     that the incomplete paste compiles or that Clubber's library is bundled.
+     Clubber-style envelope: bass (<250 Hz) -> R, mid (250–4000 Hz) -> G,
+     treble (>4000 Hz) -> B, combined RMS -> A. R/G shift wave octaves,
+     B brightens sky/specular, A raises choppiness from 4 to 32. */
+  const SEA_FS = `precision highp float;
+uniform vec2 u_res;
+uniform vec4 u_music;
+uniform float u_time, u_height, u_freq, u_speed, u_chop, u_drift, u_steps, u_op, u_key;
+float seaRand(vec2 p) { return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+float seaNoise(vec2 p) {
+  vec2 i=floor(p), f=fract(p), t=f*f*(3.0-2.0*f);
+  return mix(mix(seaRand(i),seaRand(i+vec2(1,0)),t.x),mix(seaRand(i+vec2(0,1)),seaRand(i+vec2(1,1)),t.x),t.y)*2.0-1.0;
+}
+float seaCrest(vec2 p, float chop) {
+  p += seaNoise(p + u_music.rg * 4.0);
+  vec2 wave=1.0-abs(sin(p)), roundWave=abs(cos(p));
+  wave=mix(wave,roundWave,wave);
+  return pow(max(0.0,1.0-pow(max(0.0,wave.x*wave.y),0.65)),chop);
+}
+float seaSurface(vec3 p, bool detailed) {
+  vec2 q=p.xz*vec2(0.75,1.0); float frequency=u_freq, amplitude=u_height, crest=mix(u_chop,32.0,u_music.a), height=0.0;
+  float travel=1.0+u_time*u_speed;
+  for(int octave=0;octave<5;octave++) {
+    if(!detailed && octave>=3) break;
+    height += (seaCrest((q+travel)*frequency,crest)+seaCrest((q-travel)*frequency,crest))*amplitude;
+    q=mat2(1.6,1.2,-1.2,1.6)*q; frequency*=1.9; amplitude*=0.22; crest=mix(crest,1.0,0.2);
+  }
+  return p.y-height;
+}
+vec3 seaSky(vec3 ray) {
+  float y=clamp(ray.y,0.0,1.0), horizon=1.0-y;
+  return vec3(horizon*horizon,horizon,0.6+0.4*horizon)*(0.72+0.28*u_music.b);
+}
+vec3 seaNormal(vec3 p,float eps) {
+  float h=seaSurface(p,true);
+  return normalize(vec3(seaSurface(p+vec3(eps,0,0),true)-h,eps,seaSurface(p+vec3(0,0,eps),true)-h));
+}
+vec3 seaTrace(vec3 origin,vec3 direction) {
+  float nearT=0.0,farT=1000.0,nearH=seaSurface(origin,false),farH=seaSurface(origin+direction*farT,false);
+  vec3 p=origin+direction*farT;
+  if(farH>0.0) return p;
+  for(int step=0;step<16;step++) {
+    if(float(step)>=u_steps) break;
+    float t=mix(nearT,farT,clamp(nearH/max(nearH-farH,0.00001),0.0,1.0));
+    p=origin+direction*t; float h=seaSurface(p,false);
+    if(h<0.0){farT=t;farH=h;}else{nearT=t;nearH=h;}
+  }
+  return p;
+}
+mat3 seaCamera(vec3 angle) {
+  vec3 s=sin(angle),c=cos(angle);
+  mat3 yaw=mat3(c.y,0.0,-s.y, 0.0,1.0,0.0, s.y,0.0,c.y);
+  mat3 pitch=mat3(1.0,0.0,0.0, 0.0,c.x,s.x, 0.0,-s.x,c.x);
+  mat3 roll=mat3(c.z,s.z,0.0, -s.z,c.z,0.0, 0.0,0.0,1.0);
+  return yaw*pitch*roll;
+}
+void main() {
+  vec2 screen=(gl_FragCoord.xy/u_res*2.0-1.0); screen.x*=u_res.x/u_res.y;
+  // No mouse dependency: gentle drift plus a bounded bass/mid camera lean.
+  float cameraTime=u_time*0.3*u_drift;
+  vec3 angle=vec3(sin(cameraTime*3.0)*0.1+u_music.r*0.035,sin(cameraTime)*0.2+0.3+u_music.g*0.025,sin(cameraTime*0.7)*0.04);
+  vec3 origin=vec3(0,3.5,cameraTime*5.0), ray=normalize(vec3(screen,-2.0)); ray.z+=length(screen)*0.15;
+  ray=normalize(seaCamera(angle)*normalize(ray));
+  vec3 sky=seaSky(ray), color=sky;
+  if(ray.y<0.01) {
+    vec3 hit=seaTrace(origin,ray), delta=hit-origin;
+    vec3 n=seaNormal(hit,max(0.001,dot(delta,delta)*0.1/u_res.x)), light=normalize(vec3(0,1,0.8));
+    float fresnel=pow(clamp(1.0-dot(n,-ray),0.0,1.0),3.0)*0.65;
+    vec3 water=vec3(0.1,0.19,0.22)+vec3(0.8,0.9,0.6)*pow(max(0.0,dot(n,light)*0.4+0.6),80.0)*0.12;
+    vec3 ocean=mix(water,seaSky(reflect(ray,n)),fresnel);
+    ocean+=vec3(0.8,0.9,0.6)*(hit.y-u_height)*0.18*max(1.0-dot(delta,delta)*0.001,0.0);
+    float shine=pow(max(0.0,dot(reflect(ray,n),light)),60.0)*68.0/(3.1415*8.0);
+    ocean+=shine*mix(0.33,1.0,u_music.b);
+    color=mix(sky,ocean,pow(1.0-smoothstep(-0.05,0.0,ray.y),0.3));
+  }
+  color=clamp(pow(max(color,vec3(0.0)),vec3(0.75)),0.0,1.0);
+  float alpha=u_key>0.5?mix(u_op,1.0,smoothstep(0.25,0.6,dot(color,vec3(0.2126,0.7152,0.0722)))):u_op;
+  gl_FragColor=vec4(color*alpha,alpha);
+}`;
+  const seaS={cv:document.createElement('canvas'),gl:null,failed:false,time:0,last:0,music:[0,0,0,0],raw:[0,0,0,0],test:null,info:{n:0}};
+  function seaGL() {
+    if(seaS.gl||seaS.failed)return seaS.gl;
+    try {
+      const g=seaS.cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,preserveDrawingBuffer:true});if(!g)throw new Error('WebGL unavailable');
+      const shader=(type,text)=>{const s=g.createShader(type);g.shaderSource(s,text);g.compileShader(s);if(!g.getShaderParameter(s,g.COMPILE_STATUS))throw new Error(g.getShaderInfoLog(s));return s;};
+      const p=g.createProgram();g.attachShader(p,shader(g.VERTEX_SHADER,'attribute vec2 p; void main(){gl_Position=vec4(p,0.0,1.0);}'));g.attachShader(p,shader(g.FRAGMENT_SHADER,SEA_FS));g.linkProgram(p);
+      if(!g.getProgramParameter(p,g.LINK_STATUS))throw new Error(g.getProgramInfoLog(p));g.useProgram(p);
+      g.bindBuffer(g.ARRAY_BUFFER,g.createBuffer());g.bufferData(g.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),g.STATIC_DRAW);
+      const a=g.getAttribLocation(p,'p');g.enableVertexAttribArray(a);g.vertexAttribPointer(a,2,g.FLOAT,false,0,0);
+      seaS.U={};for(const name of ['res','music','time','height','freq','speed','chop','drift','steps','op','key'])seaS.U[name]=g.getUniformLocation(p,'u_'+name);
+      seaS.gl=g;seaS.cv.addEventListener('webglcontextlost',e=>{e.preventDefault();seaS.gl=null;});
+    }catch(e){seaS.failed=true;console.warn('Seascape unavailable:',e.message);}return seaS.gl;
+  }
+  function seaEnvelope(dt,V,live) {
+    let values=[0,0,0,0];
+    if(live&&bandsOn&&bandNodes){
+      const rms=bandNodes.map(b=>{b.an.getFloatTimeDomainData(b.buf);let sum=0;for(const v of b.buf)sum+=v*v;return Math.sqrt(sum/b.buf.length);});
+      values=[rms[0]*3,rms[1]*4,rms[2]*7,Math.sqrt(rms.reduce((a,x)=>a+x*x,0)/3)*4];
+    }
+    if(seaS.test)values=seaS.test.slice();
+    seaS.raw=values.map(x=>Math.min(1,Math.max(0,x*V.seadrive)));
+    const follow=V.seasmooth<=0?1:1-Math.exp(-dt/Math.max(.001,V.seasmooth));
+    seaS.music=seaS.music.map((x,i)=>x+(seaS.raw[i]-x)*follow);
+  }
+  function seaPaint(t,dt,live){
+    const V=sv(),G=seaGL(),g=t.g;g.clearRect(0,0,W,H);if(!G)return;
+    seaEnvelope(dt,V,live);seaS.time+=dt;
+    const w=Math.max(16,Math.round(W*V.seascale)),h=Math.max(16,Math.round(H*V.seascale));
+    if(seaS.cv.width!==w||seaS.cv.height!==h){seaS.cv.width=w;seaS.cv.height=h;}
+    const U=seaS.U;G.viewport(0,0,w,h);G.uniform2f(U.res,w,h);G.uniform4fv(U.music,seaS.music);G.uniform1f(U.time,seaS.time);
+    for(const [name,id]of [['height','seaheight'],['freq','seafreq'],['speed','seaspeed'],['chop','seachop'],['drift','seadrift'],['steps','seasteps'],['op','seaop'],['key','seakey']])G.uniform1f(U[name],V[id]);
+    G.drawArrays(G.TRIANGLES,0,3);g.save();g.imageSmoothingEnabled=true;g.drawImage(seaS.cv,0,0,W,H);g.restore();
+    seaS.info={n:seaS.info.n+1,time:seaS.time,size:[w,h],music:seaS.music.slice(),raw:seaS.raw.slice(),live};
+    if(t.big&&V.text)xyLabel(t,V,'Seascape · Clubber-style audio ocean');
+  }
+  function seaFlat(t){size(t);seaS.last=0;seaPaint(t,0,false);t.cv.classList.add('idle');}
+  function seaFrame(t){
+    bandSync();if(!running()||!bandsOn){seaFlat(t);if(src&&!reduce.matches)raf=requestAnimationFrame(frame);return;}
+    size(t);frames++;t.cv.classList.remove('idle');const now=performance.now(),dt=seaS.last?Math.min(.25,(now-seaS.last)/1000):1/60;seaS.last=now;
+    seaPaint(t,reduce.matches?0:dt,true);if(!reduce.matches)raf=requestAnimationFrame(frame);
+  }
+  /* r58: After DuckMonster, https://www.shadertoy.com/view/4tGXzt;
+     reimplemented. Preserve supplied logs/fx-src-duckmonster-halo.glsl.
+     iChannel0: standard 2048-point FFT, lowest 512 spectrum bins, unsigned
+     normalized bytes; a read-only tap only while Halo is visible. The source
+     SPEED only rotates a disabled ray, so this control also scales active hue
+     motion; Ray defaults off, Pulse defaults zero to preserve the source look.
+     Dark-only keying measures the halo above the original navy background,
+     making the empty centre/background transparent, not an opaque black plate. */
+  const HALO_FS=`precision highp float;
+uniform vec2 u_res;
+uniform sampler2D u_fft;
+uniform float u_time,u_radius,u_bright,u_speed,u_range,u_gain,u_pulse,u_low,u_ray,u_op,u_key;
+vec3 haloHSV(float hue,float saturation,float value){
+  vec3 wheel=clamp(abs(mod(hue*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);
+  return mix(vec3(1.0),wheel,saturation)*value;
+}
+float haloFrequency(float x){
+  float at=floor(x*u_range+1.0)/u_range;
+  return min(1.0,texture2D(u_fft,vec2(at,0.5)).r*u_gain)+0.06;
+}
+void main(){
+  vec2 p=(gl_FragCoord.xy/u_res*2.0-1.0)*vec2(u_res.x/u_res.y,1.0);
+  float radius=u_radius*(1.0+0.25*u_pulse*u_low),distance=length(p);
+  float angle=atan(p.x,p.y+0.000001),motion=u_time*u_speed/0.2;
+  float glow=1.0/(abs(distance-radius)+0.005);
+  float intensity=u_bright*(distance<radius?0.6:1.0);
+  vec3 halo=haloHSV((angle+motion*0.25)/6.283,0.6,0.5)*glow*intensity;
+  halo*=max(haloFrequency(abs(angle/3.1415))-0.02,0.0)*0.5;
+  halo*=smoothstep(radius*0.86,radius,distance);
+  if(u_ray>0.5){
+    float turn=u_time*u_speed,c=cos(turn),s=sin(turn);vec2 q=mat2(c,s,-s,c)*p;
+    vec3 ray=haloHSV(q.x*0.23+motion*0.12,1.0,1.0);
+    ray*=u_bright*haloFrequency(abs(q.x*0.5))/max(abs(q.y),0.001);
+    halo+=ray*smoothstep(radius,radius*1.8,abs(q.x));
+  }
+  vec3 base=vec3(0.0134,0.052,0.1),color=base+halo;
+  color+=max(dot(color,vec3(0.299,0.587,0.114))-1.0,0.0);
+  color=clamp(color,0.0,1.0);
+  float energy=max(halo.r,max(halo.g,halo.b));
+  float alpha=u_key>0.5?mix(u_op,1.0,smoothstep(0.0,0.6,energy)):u_op;
+  gl_FragColor=vec4(color*alpha,alpha);
+}`;
+  const haloS={cv:document.createElement('canvas'),gl:null,failed:false,on:false,an:null,bins:new Uint8Array(1024),zero:new Uint8Array(512),time:0,last:0,test:null,info:{n:0}};
+  function haloSync(){
+    const want=!!src&&enabled()&&open&&curMode().id==='halo'&&!document.hidden;
+    if(want===haloS.on)return;
+    if(want){if(!haloS.an){haloS.an=ac.createAnalyser();haloS.an.fftSize=2048;haloS.an.smoothingTimeConstant=.8;haloS.an.minDecibels=-100;haloS.an.maxDecibels=-30;}src.connect(haloS.an);haloS.on=true;}
+    else{if(haloS.an)try{src.disconnect(haloS.an);}catch(e){}haloS.on=false;}
+  }
+  function haloGL(){
+    if(haloS.gl||haloS.failed)return haloS.gl;
+    try{
+      const g=haloS.cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,preserveDrawingBuffer:true});if(!g)throw new Error('WebGL unavailable');
+      const shader=(type,text)=>{const s=g.createShader(type);g.shaderSource(s,text);g.compileShader(s);if(!g.getShaderParameter(s,g.COMPILE_STATUS))throw new Error(g.getShaderInfoLog(s));return s;};
+      const program=g.createProgram();g.attachShader(program,shader(g.VERTEX_SHADER,'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}'));g.attachShader(program,shader(g.FRAGMENT_SHADER,HALO_FS));g.linkProgram(program);
+      if(!g.getProgramParameter(program,g.LINK_STATUS))throw new Error(g.getProgramInfoLog(program));g.useProgram(program);
+      g.bindBuffer(g.ARRAY_BUFFER,g.createBuffer());g.bufferData(g.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),g.STATIC_DRAW);
+      const a=g.getAttribLocation(program,'p');g.enableVertexAttribArray(a);g.vertexAttribPointer(a,2,g.FLOAT,false,0,0);
+      haloS.tx=g.createTexture();g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,haloS.tx);g.pixelStorei(g.UNPACK_ALIGNMENT,1);
+      g.texImage2D(g.TEXTURE_2D,0,g.LUMINANCE,512,1,0,g.LUMINANCE,g.UNSIGNED_BYTE,haloS.zero);
+      for(const k of [g.TEXTURE_MIN_FILTER,g.TEXTURE_MAG_FILTER])g.texParameteri(g.TEXTURE_2D,k,g.NEAREST);
+      for(const k of [g.TEXTURE_WRAP_S,g.TEXTURE_WRAP_T])g.texParameteri(g.TEXTURE_2D,k,g.CLAMP_TO_EDGE);
+      haloS.U={};for(const name of ['res','fft','time','radius','bright','speed','range','gain','pulse','low','ray','op','key'])haloS.U[name]=g.getUniformLocation(program,'u_'+name);
+      g.uniform1i(haloS.U.fft,0);haloS.gl=g;haloS.cv.addEventListener('webglcontextlost',e=>{e.preventDefault();haloS.gl=null;});
+    }catch(e){haloS.failed=true;console.warn('DuckMonster Halo unavailable:',e.message);}return haloS.gl;
+  }
+  function haloPaint(t,B,dt,live){
+    const V=sv(),g=t.g,G=haloGL();g.clearRect(0,0,W,H);if(!G)return;
+    const bins=haloS.test||B||haloS.zero;let low=0,peak=0;for(let i=0;i<512;i++){if(i<32)low+=bins[i]/255;peak=Math.max(peak,bins[i]);}low=Math.min(1,low/32*V.hagain);
+    const w=Math.max(16,Math.round(W*V.hascale)),h=Math.max(16,Math.round(H*V.hascale));if(haloS.cv.width!==w||haloS.cv.height!==h){haloS.cv.width=w;haloS.cv.height=h;}
+    haloS.time+=dt;const U=haloS.U;G.viewport(0,0,w,h);G.activeTexture(G.TEXTURE0);G.bindTexture(G.TEXTURE_2D,haloS.tx);
+    G.texSubImage2D(G.TEXTURE_2D,0,0,0,512,1,G.LUMINANCE,G.UNSIGNED_BYTE,bins.length===512?bins:bins.subarray(0,512));
+    G.uniform2f(U.res,w,h);G.uniform1f(U.time,haloS.time);G.uniform1f(U.low,low);
+    for(const [u,id]of [['radius','haradius'],['bright','habright'],['speed','haspeed'],['range','harange'],['gain','hagain'],['pulse','hapulse'],['ray','haray'],['op','haop'],['key','hakey']])G.uniform1f(U[u],V[id]);
+    G.drawArrays(G.TRIANGLES,0,3);g.save();g.imageSmoothingEnabled=true;g.drawImage(haloS.cv,0,0,W,H);g.restore();
+    haloS.info={n:haloS.info.n+1,time:haloS.time,size:[w,h],peak,low,radius:V.haradius*(1+.25*V.hapulse*low),live};
+    if(t.big&&V.text)xyLabel(t,V,'DuckMonster Halo · colours follow the spectrum');
+  }
+  function haloFlat(t){size(t);haloS.last=0;haloPaint(t,null,0,false);t.cv.classList.add('idle');}
+  function haloFrame(t){
+    bandSync();if(!haloS.on||!running()){haloFlat(t);if(src&&!reduce.matches)raf=requestAnimationFrame(frame);return;}
+    size(t);frames++;t.cv.classList.remove('idle');const now=performance.now(),dt=haloS.last?Math.min(.25,(now-haloS.last)/1000):1/60;haloS.last=now;
+    haloS.an.smoothingTimeConstant=sv().hasmooth;haloS.an.getByteFrequencyData(haloS.bins);
+    haloPaint(t,haloS.bins.subarray(0,512),reduce.matches?0:dt,true);if(!reduce.matches)raf=requestAnimationFrame(frame);
+  }
+  /* r59: After "Abstract Glassy Field" by Chaotnix; reimplemented.
+     Preserve logs/fx-src-neuro-glassy.glsl. iChannel0 is a 64x64 repeating
+     RGB material generated from the track's FFT and waveform, not a missing
+     external image: R/B carry spectrum, G waveform, with a quiet procedural
+     grain so silence still looks like glass. The same sampler feeds field
+     perturbation, tri-planar bump, reflection/refraction and electric phase.
+     A read-only 2048-point analyser is attached only while Neuro is visible. */
+  const NEURO_FS=`precision highp float;
+uniform vec2 u_res;
+uniform sampler2D u_audio;
+uniform float u_time,u_speed,u_fov,u_glow,u_electric,u_bump,u_ior,u_texture,u_steps,u_op,u_key;
+vec3 ngPath(float t){float a=sin(t*0.11),b=cos(t*0.14);return vec3(4.0*a-1.5*b,1.7*b+1.5*a,t);}
+float ngField(vec3 point){
+  point.xy-=ngPath(point.z).xy;
+  vec3 q=cos(point*0.149+sin(point.zxy*0.4375));float sphere=dot(q,q);
+  q=sin(q*3.0+cos(q.yzx*12.0));
+  return (sphere-q.x*q.y*q.z*0.35-0.9)*1.33+0.001*texture2D(u_audio,q.xy).r;
+}
+vec3 ngNormal(vec3 p){
+  vec2 e=vec2(0.002,0.0);
+  return normalize(vec3(ngField(p+e.xyy)-ngField(p-e.xyy),ngField(p+e.yxy)-ngField(p-e.yxy),ngField(p+e.yyx)-ngField(p-e.yyx))+vec3(0.0000001));
+}
+vec3 ngTri(vec3 p,vec3 n){
+  vec3 weight=max(abs(n)-0.2,0.001);weight/=dot(weight,vec3(1.0));
+  vec3 x=texture2D(u_audio,p.zy).rgb,y=texture2D(u_audio,p.xz).rgb,z=texture2D(u_audio,p.xy).rgb;
+  return x*x*weight.x+y*y*weight.y+z*z*weight.z;
+}
+vec3 ngBump(vec3 p,vec3 n,float strength){
+  const float e=0.001;const vec3 grey=vec3(0.299,0.587,0.114);
+  float centre=dot(ngTri(p,n),grey);
+  vec3 gradient=(vec3(dot(ngTri(p-vec3(e,0,0),n),grey),dot(ngTri(p-vec3(0,e,0),n),grey),dot(ngTri(p-vec3(0,0,e),n),grey))-centre)/e;
+  gradient-=n*dot(n,gradient);return normalize(n+gradient*strength);
+}
+float ngOcclusion(vec3 p,vec3 n){
+  float weight=1.0,occ=0.0;for(int i=0;i<5;i++){float offset=0.01+float(i)*0.0875;occ+=(offset-ngField(p+n*offset))*weight;weight*=0.7;}return clamp(1.0-occ,0.3,1.0);
+}
+float ngShadow(vec3 p,vec3 direction,float end){
+  float shade=1.0,distance=0.04;
+  for(int i=0;i<24;i++){float h=ngField(p+direction*distance);shade=min(shade,smoothstep(0.0,1.0,16.0*h/distance));distance+=clamp(h,0.01,0.2);if(abs(h)<0.001||distance>end)break;}
+  return clamp(shade+0.4,0.0,1.0);
+}
+float ngTrace(vec3 origin,vec3 direction,out float accumulation){
+  accumulation=0.0;float distance=0.0;
+  for(int i=0;i<128;i++){
+    if(float(i)>=u_steps)break;
+    float field=ngField(origin+direction*distance);
+    if(abs(field)<0.001*(distance*0.25+1.0)||distance>50.0)break;
+    distance=max(0.0,distance+field);
+    if(abs(field)<0.35)accumulation+=(0.35-abs(field))/24.0;
+  }
+  return min(distance,50.0);
+}
+float ngNoise(vec3 p){
+  vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
+  vec4 h=dot(i,vec3(7,157,113))+vec4(0,157,113,270);
+  vec4 x=mix(fract(sin(h)*43758.5453),fract(sin(h+7.0)*43758.5453),f.x);
+  return mix(mix(x.x,x.y,f.y),mix(x.z,x.w,f.y),f.z);
+}
+void main(){
+  vec2 screen=(gl_FragCoord.xy-u_res*0.5)/u_res.y;float clock=u_time*u_speed;
+  vec3 origin=ngPath(clock),look=ngPath(clock+0.25),lamp=ngPath(clock+2.0)+vec3(0,1,0);
+  vec3 forward=normalize(look-origin),right=normalize(vec3(forward.z,0,-forward.x)),up=cross(forward,right);
+  vec3 ray=forward+1.570795*u_fov*(screen.x*right+screen.y*up);ray=normalize(vec3(ray.xy,ray.z-length(ray.xy)*0.125));
+  float accumulation;float distance=ngTrace(origin,ray,accumulation);vec3 color=vec3(0);
+  if(distance<50.0){
+    vec3 p=origin+ray*distance,normal=ngNormal(p),original=normal;
+    normal=ngBump(p*u_texture/3.0,normal,u_bump/(1.0+distance*0.25/50.0));
+    vec3 light=lamp-p;float lengthLight=max(length(light),0.001);light/=lengthLight;
+    float attenuation=1.0/(1.0+lengthLight*0.05+lengthLight*lengthLight*0.0125),ao=ngOcclusion(p,normal),shadow=ngShadow(p,light,lengthLight);
+    float diffuse=max(dot(light,normal),0.0),specular=pow(max(dot(reflect(ray,normal),light),0.0),64.0),fresnel=clamp(1.0+dot(ray,normal),0.0,1.0);
+    color=vec3(0.05)*(diffuse*0.1+ao*0.25)+vec3(0.5,0.7,1.0)*specular*2.0+vec3(1.0,0.7,0.4)*pow(fresnel,8.0)*0.25;
+    vec3 glassNormal=normalize((original+normal)*0.5);
+    vec3 reflection=texture2D(u_audio,0.2*normalize(reflect(ray,glassNormal)).xy).rgb;
+    vec3 refraction=texture2D(u_audio,0.2*normalize(refract(ray,glassNormal,1.0/u_ior)+vec3(0.0000001)).xy).rgb;
+    reflection*=reflection*0.3;refraction*=refraction*0.4;
+    color+=mix(refraction,reflection,pow(fresnel,5.0))*((diffuse*diffuse*0.25+0.75)+ao*0.25)*1.5;
+    color=mix(color.xzy,color,diffuse*0.85+0.15);
+    vec3 hot=pow(min(vec3(1.5,1.0,1.0)*accumulation,1.0),vec3(1.0,2.5,12.0))*0.5+vec3(1.0,0.3,0.1)*accumulation*0.5;
+    color+=color*hot*12.0*u_glow;
+    float charge=abs(mod(distance+0.02*texture2D(u_audio,p.xy).r,8.0)-4.0)*2.0;
+    vec3 electric=vec3(0.01,0.05,1.0)*color/(0.001+charge*charge*0.2);
+    color+=mix(electric.yxz,electric,ngNoise(p*3.0))*u_electric;
+    color*=ao*shadow*attenuation;
+  }
+  color=mix(color,vec3(0.125,0.04,0.05)*(ray.y*0.5+0.5),smoothstep(0.0,0.95,distance/50.0));
+  vec2 uv=gl_FragCoord.xy/u_res;float vignette=pow(max(0.0,16.0*uv.x*uv.y*(1.0-uv.x)*(1.0-uv.y)),0.125)*0.5+0.5;
+  color=sqrt(clamp(color*vignette,0.0,1.0));
+  float alpha=u_key>0.5?mix(u_op,1.0,smoothstep(0.15,0.55,dot(color,vec3(0.2126,0.7152,0.0722)))):u_op;
+  gl_FragColor=vec4(color*alpha,alpha);
+}`;
+  const ngS={cv:document.createElement('canvas'),gl:null,failed:false,on:false,an:null,bins:new Uint8Array(1024),wave:new Float32Array(2048),pixels:new Uint8Array(64*64*3),time:0,last:0,test:null,info:{n:0}};
+  function ngSync(){
+    const want=!!src&&enabled()&&open&&curMode().id==='neuro'&&!document.hidden;if(want===ngS.on)return;
+    if(want){if(!ngS.an){ngS.an=ac.createAnalyser();ngS.an.fftSize=2048;ngS.an.minDecibels=-100;ngS.an.maxDecibels=-30;ngS.an.smoothingTimeConstant=.8;}src.connect(ngS.an);ngS.on=true;}
+    else{if(ngS.an)try{src.disconnect(ngS.an);}catch(e){}ngS.on=false;}
+  }
+  function ngMaterial(B,wave,drive){
+    let hash=2166136261;
+    for(let y=0;y<64;y++)for(let x=0;x<64;x++){
+      const grain=.5+.25*Math.sin(x*.31+y*.17)+.15*Math.cos(x*.13-y*.41),lo=B?Math.min(1,B[(x*4+y)%512]/255*drive):0,hi=B?Math.min(1,B[(x*3+y*11+73)%512]/255*drive):0;
+      const w=wave?Math.max(-1,Math.min(1,wave[(x*17+y*29)%wave.length]*drive)):0,base=[.12+.46*grain+.36*lo,.12+.32*(1-grain)+.38*(.5+.5*w),.18+.42*grain+.36*hi];
+      for(let c=0;c<3;c++){const value=Math.round(Math.max(0,Math.min(1,base[c]))*255);ngS.pixels[(y*64+x)*3+c]=value;hash=Math.imul(hash^value,16777619)>>>0;}
+    }return hash;
+  }
+  function ngGL(){
+    if(ngS.gl||ngS.failed)return ngS.gl;
+    try{
+      const g=ngS.cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,preserveDrawingBuffer:true});if(!g)throw new Error('WebGL unavailable');
+      const shader=(kind,text)=>{const s=g.createShader(kind);g.shaderSource(s,text);g.compileShader(s);if(!g.getShaderParameter(s,g.COMPILE_STATUS))throw new Error(g.getShaderInfoLog(s));return s;};
+      const p=g.createProgram();g.attachShader(p,shader(g.VERTEX_SHADER,'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}'));g.attachShader(p,shader(g.FRAGMENT_SHADER,NEURO_FS));g.linkProgram(p);if(!g.getProgramParameter(p,g.LINK_STATUS))throw new Error(g.getProgramInfoLog(p));g.useProgram(p);
+      g.bindBuffer(g.ARRAY_BUFFER,g.createBuffer());g.bufferData(g.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),g.STATIC_DRAW);const a=g.getAttribLocation(p,'p');g.enableVertexAttribArray(a);g.vertexAttribPointer(a,2,g.FLOAT,false,0,0);
+      ngS.tx=g.createTexture();g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,ngS.tx);g.pixelStorei(g.UNPACK_ALIGNMENT,1);g.texImage2D(g.TEXTURE_2D,0,g.RGB,64,64,0,g.RGB,g.UNSIGNED_BYTE,ngS.pixels);
+      for(const k of [g.TEXTURE_WRAP_S,g.TEXTURE_WRAP_T])g.texParameteri(g.TEXTURE_2D,k,g.REPEAT);
+      for(const k of [g.TEXTURE_MIN_FILTER,g.TEXTURE_MAG_FILTER])g.texParameteri(g.TEXTURE_2D,k,g.LINEAR);
+      ngS.U={};for(const name of ['res','audio','time','speed','fov','glow','electric','bump','ior','texture','steps','op','key'])ngS.U[name]=g.getUniformLocation(p,'u_'+name);g.uniform1i(ngS.U.audio,0);ngS.gl=g;
+      ngS.cv.addEventListener('webglcontextlost',e=>{e.preventDefault();ngS.gl=null;});
+    }catch(e){ngS.failed=true;console.warn('Neuro unavailable:',e.message);}return ngS.gl;
+  }
+  function ngPaint(t,B,wave,dt,live){
+    const V=sv(),g=t.g,G=ngGL();g.clearRect(0,0,W,H);if(!G)return;
+    if(ngS.test){B=ngS.test.bins;wave=ngS.test.wave;}
+    const hash=ngMaterial(B,wave,V.ngdrive);let peak=0,rms=0;if(B)for(let i=0;i<512;i++)peak=Math.max(peak,B[i]);if(wave){for(const v of wave)rms+=v*v;rms=Math.sqrt(rms/wave.length);}
+    const w=Math.max(16,Math.round(W*V.ngscale)),h=Math.max(16,Math.round(H*V.ngscale));if(ngS.cv.width!==w||ngS.cv.height!==h){ngS.cv.width=w;ngS.cv.height=h;}
+    ngS.time+=dt;const U=ngS.U;G.viewport(0,0,w,h);G.activeTexture(G.TEXTURE0);G.bindTexture(G.TEXTURE_2D,ngS.tx);G.texSubImage2D(G.TEXTURE_2D,0,0,0,64,64,G.RGB,G.UNSIGNED_BYTE,ngS.pixels);
+    G.uniform2f(U.res,w,h);G.uniform1f(U.time,ngS.time);for(const[u,id]of [['speed','ngspeed'],['fov','ngfov'],['glow','ngglow'],['electric','ngelectric'],['bump','ngbump'],['ior','ngior'],['texture','ngtexture'],['steps','ngsteps'],['op','ngop'],['key','ngkey']])G.uniform1f(U[u],V[id]);
+    G.drawArrays(G.TRIANGLES,0,3);g.save();g.imageSmoothingEnabled=true;g.drawImage(ngS.cv,0,0,W,H);g.restore();ngS.info={n:ngS.info.n+1,time:ngS.time,size:[w,h],textureHash:hash,peak,rms,live};
+    if(t.big&&V.text)xyLabel(t,V,'Neuro · audio-lit glassy field');
+  }
+  function ngFlat(t){size(t);ngS.last=0;ngPaint(t,null,null,0,false);t.cv.classList.add('idle');}
+  function ngFrame(t){
+    bandSync();if(!ngS.on||!running()){ngFlat(t);if(src&&!reduce.matches)raf=requestAnimationFrame(frame);return;}
+    size(t);frames++;t.cv.classList.remove('idle');const now=performance.now(),dt=ngS.last?Math.min(.25,(now-ngS.last)/1000):1/60;ngS.last=now;
+    ngS.an.smoothingTimeConstant=sv().ngsmooth;ngS.an.getByteFrequencyData(ngS.bins);ngS.an.getFloatTimeDomainData(ngS.wave);ngPaint(t,ngS.bins.subarray(0,512),ngS.wave,reduce.matches?0:dt,true);if(!reduce.matches)raf=requestAnimationFrame(frame);
+  }
+  /* r61: After Spiky Ball by Flopine; reimplemented.
+     Preserve logs/fx-src-flopine-spikyball.glsl. No license was stated beyond
+     the header thanks (Cookie Collective). iChannel0 is a Shadertoy-style
+     512×2 spectrum/waveform luminance texture so megabass =
+     texture(iChannel0, vec2(0.001,0.25)).x drives needle length. A read-only
+     2048-point analyser is attached only while Spiky Ball is visible. */
+  const SPIKY_FS=`precision highp float;
+uniform vec2 u_res;
+uniform sampler2D u_audio;
+uniform float u_time,u_speed,u_steps,u_drive,u_op,u_key;
+#define PI 3.141592
+float sbHash21(vec2 x){return fract(sin(dot(x,vec2(12.4,14.1)))*1245.4);}
+vec2 sbModa(vec2 p,float per){
+  float a=atan(p.y,p.x),l=length(p);
+  a=mod(a-per/2.,per)-per/2.;
+  return vec2(cos(a),sin(a))*l;
+}
+mat2 sbRot(float a){return mat2(cos(a),sin(a),-sin(a),cos(a));}
+float sbSmin(float a,float b,float k){
+  float res=exp(-k*a)+exp(-k*b);
+  return -log(res)/k;
+}
+float sbSphe(vec3 p,float r){return length(p)-r;}
+float sbCyl(vec2 p,float r){return length(p)-r;}
+float sbNeedles(vec3 p){
+  vec3 pp=p;
+  float megabass=texture2D(u_audio,vec2(0.001,0.25)).x*u_drive;
+  float l_needle=0.8-clamp(megabass,0.,0.75);
+  p.xz=sbModa(p.xz,2.*PI/7.);
+  float n1=sbCyl(p.yz,0.1-p.x*l_needle);
+  p=pp;p.y=abs(p.y);p.y-=0.1;p.xz=sbModa(p.xz,2.*PI/7.);p.xy*=sbRot(PI/4.5);
+  float n2=sbCyl(p.yz,0.1-p.x*l_needle);
+  p=pp;float n3=sbCyl(p.xz,0.1-abs(p.y)*l_needle);
+  return min(n3,min(n2,n1));
+}
+float sbSpiky(vec3 p){
+  float t=u_time*u_speed;
+  p.y-=t;p.xz*=sbRot(t);p.yz*=sbRot(t*0.5);
+  float s=sbSphe(p,.9);
+  return sbSmin(s,sbNeedles(p),5.);
+}
+float sbRoom(vec3 p){
+  p+=sin(p.yzx-cos(p.zxy));
+  p+=sin(p.yzx/1.5+cos(p.zxy)/2.)*.5;
+  return -length(p.xz)+5.;
+}
+float sbSDF(vec3 p){return min(sbSpiky(p),sbRoom(p));}
+void main(){
+  vec2 uv=(2.*gl_FragCoord.xy-u_res.xy)/u_res.y;
+  float dither=sbHash21(uv);
+  float t=u_time*u_speed;
+  vec3 ro=vec3(0.001,0.001+t,-3.);
+  vec3 p=ro;
+  vec3 dir=normalize(vec3(uv,1.));
+  float shad=0.;
+  for(float i=0.;i<128.;i++){
+    if(i>=u_steps)break;
+    float d=sbSDF(p);
+    if(d<0.001){shad=i/max(u_steps,1.);break;}
+    d*=0.9+dither*0.1;
+    p+=d*dir;
+  }
+  vec3 c=vec3(pow(shad,1.5));
+  float alpha=u_key>0.5?mix(u_op,1.0,smoothstep(0.12,0.45,c.r)):u_op;
+  gl_FragColor=vec4(c*alpha,alpha);
+}`;
+  const sbS={cv:document.createElement('canvas'),gl:null,failed:false,on:false,an:null,bins:new Uint8Array(1024),wave:new Float32Array(2048),tex:new Uint8Array(512*2),time:0,last:0,test:null,info:{n:0}};
+  function sbSync(){
+    const want=!!src&&enabled()&&open&&curMode().id==='spikyball'&&!document.hidden;if(want===sbS.on)return;
+    if(want){if(!sbS.an){sbS.an=ac.createAnalyser();sbS.an.fftSize=2048;sbS.an.minDecibels=-100;sbS.an.maxDecibels=-30;sbS.an.smoothingTimeConstant=.8;}src.connect(sbS.an);sbS.on=true;}
+    else{if(sbS.an)try{src.disconnect(sbS.an);}catch(e){}sbS.on=false;}
+  }
+  function sbFill(B,wave){
+    const T=sbS.tex;for(let i=0;i<512;i++){const f=B?Math.max(0,Math.min(255,B[i]|0)):0;T[i]=f;
+      const w=wave?Math.max(-1,Math.min(1,wave[i%wave.length])):0;T[512+i]=Math.round((.5+.5*w)*255);}
+    let bass=0;if(B)for(let i=0;i<8;i++)bass=Math.max(bass,B[i]);return bass;
+  }
+  function sbGL(){
+    if(sbS.gl||sbS.failed)return sbS.gl;
+    try{
+      const g=sbS.cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,preserveDrawingBuffer:true});if(!g)throw new Error('WebGL unavailable');
+      const shader=(kind,text)=>{const s=g.createShader(kind);g.shaderSource(s,text);g.compileShader(s);if(!g.getShaderParameter(s,g.COMPILE_STATUS))throw new Error(g.getShaderInfoLog(s));return s;};
+      const p=g.createProgram();g.attachShader(p,shader(g.VERTEX_SHADER,'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}'));g.attachShader(p,shader(g.FRAGMENT_SHADER,SPIKY_FS));g.linkProgram(p);if(!g.getProgramParameter(p,g.LINK_STATUS))throw new Error(g.getProgramInfoLog(p));g.useProgram(p);
+      g.bindBuffer(g.ARRAY_BUFFER,g.createBuffer());g.bufferData(g.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),g.STATIC_DRAW);const a=g.getAttribLocation(p,'p');g.enableVertexAttribArray(a);g.vertexAttribPointer(a,2,g.FLOAT,false,0,0);
+      sbS.tx=g.createTexture();g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,sbS.tx);g.pixelStorei(g.UNPACK_ALIGNMENT,1);
+      g.texImage2D(g.TEXTURE_2D,0,g.LUMINANCE,512,2,0,g.LUMINANCE,g.UNSIGNED_BYTE,sbS.tex);
+      for(const k of [g.TEXTURE_WRAP_S,g.TEXTURE_WRAP_T])g.texParameteri(g.TEXTURE_2D,k,g.CLAMP_TO_EDGE);
+      for(const k of [g.TEXTURE_MIN_FILTER,g.TEXTURE_MAG_FILTER])g.texParameteri(g.TEXTURE_2D,k,g.LINEAR);
+      sbS.U={};for(const name of ['res','audio','time','speed','steps','drive','op','key'])sbS.U[name]=g.getUniformLocation(p,'u_'+name);g.uniform1i(sbS.U.audio,0);sbS.gl=g;
+      sbS.cv.addEventListener('webglcontextlost',e=>{e.preventDefault();sbS.gl=null;});
+    }catch(e){sbS.failed=true;console.warn('Spiky Ball unavailable:',e.message);}return sbS.gl;
+  }
+  function sbPaint(t,B,wave,dt,live){
+    const V=sv(),g=t.g,G=sbGL();g.clearRect(0,0,W,H);if(!G)return;
+    if(sbS.test){B=sbS.test.bins;wave=sbS.test.wave;}
+    const bass=sbFill(B,wave);let peak=0;if(B)for(let i=0;i<512;i++)peak=Math.max(peak,B[i]);
+    const megabass=(B?Math.min(1,B[0]/255):0)*V.sbdrive;
+    const w=Math.max(16,Math.round(W*V.sbscale)),h=Math.max(16,Math.round(H*V.sbscale));if(sbS.cv.width!==w||sbS.cv.height!==h){sbS.cv.width=w;sbS.cv.height=h;}
+    sbS.time+=dt;const U=sbS.U;G.viewport(0,0,w,h);G.activeTexture(G.TEXTURE0);G.bindTexture(G.TEXTURE_2D,sbS.tx);G.texSubImage2D(G.TEXTURE_2D,0,0,0,512,2,G.LUMINANCE,G.UNSIGNED_BYTE,sbS.tex);
+    G.uniform2f(U.res,w,h);G.uniform1f(U.time,sbS.time);for(const[u,id]of[['speed','sbspeed'],['steps','sbsteps'],['drive','sbdrive'],['op','sbop'],['key','sbkey']])G.uniform1f(U[u],V[id]);
+    G.drawArrays(G.TRIANGLES,0,3);g.save();g.imageSmoothingEnabled=true;g.drawImage(sbS.cv,0,0,W,H);g.restore();
+    sbS.info={n:sbS.info.n+1,time:sbS.time,size:[w,h],peak,bass,megabass,live};
+    if(t.big&&V.text)xyLabel(t,V,'Spiky Ball · Flopine · needles follow bass');
+  }
+  function sbFlat(t){size(t);sbS.last=0;sbPaint(t,null,null,0,false);t.cv.classList.add('idle');}
+  function sbFrame(t){
+    bandSync();if(!sbS.on||!running()){sbFlat(t);if(src&&!reduce.matches)raf=requestAnimationFrame(frame);return;}
+    size(t);frames++;t.cv.classList.remove('idle');const now=performance.now(),dt=sbS.last?Math.min(.25,(now-sbS.last)/1000):1/60;sbS.last=now;
+    sbS.an.smoothingTimeConstant=sv().sbsmooth;sbS.an.getByteFrequencyData(sbS.bins);sbS.an.getFloatTimeDomainData(sbS.wave);sbPaint(t,sbS.bins.subarray(0,512),sbS.wave,reduce.matches?0:dt,true);if(!reduce.matches)raf=requestAnimationFrame(frame);
+  }
+  /* r63: Blobby (Shadertoy, unknown); reimplemented.
+     Preserve logs/fx-src-blobby.glsl. No author/licence in the paste.
+     Buffer A: audio trail into self-feedback (iChannel0) from iChannel1
+     spectrum (max ±5 samples + getVol). Image: kaleidoscope read of Buffer A
+     with vol from iChannel1. Dedicated analyser while shown; Home = mode 19. */
+  const BLOB_A_FS=`precision highp float;
+uniform vec2 u_res;
+uniform sampler2D u_prev,u_fft;
+float blobVol(float samples){
+  float v=0.;
+  for(float i=0.;i<64.;i++){if(i>=samples)break;v+=texture2D(u_fft,vec2((i+.5)/samples,0.05)).x;}
+  return v/max(samples,1.);
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res.xy;
+  vec4 ch0=texture2D(u_prev,uv);
+  float ch1=0.,n=5.,s=0.003;
+  for(float i=-5.;i<=5.;i++){
+    ch1=max(ch1,texture2D(u_fft,vec2(uv.x+s*i,0.25)).x);
+  }
+  float r=mix(ch0.r,ch1,0.4);
+  float g=mix(ch0.g,blobVol(50.),0.02);
+  float a=mix(ch0.a,ch1*(1.+0.55*uv.x),0.4);
+  vec3 col=vec3(r,g,step(uv.y-a+0.1,0.008));
+  gl_FragColor=vec4(col,a);
+}`;
+  const BLOB_FS=`precision highp float;
+uniform vec2 u_res;
+uniform sampler2D u_a,u_fft;
+uniform float u_time,u_speed,u_drive,u_op,u_key;
+#define pi 3.14159
+#define Dir(a) vec2(cos(a),sin(a))
+#define Rot(a) mat2(cos(a),sin(a),-sin(a),cos(a))
+void main(){
+  float t=u_time*u_speed;
+  float vol=texture2D(u_fft,vec2(0.0,0.5)).g*u_drive;
+  vec2 uv=(gl_FragCoord.xy-0.5*u_res.xy)/u_res.y;
+  uv.y+=0.02*cos(t);
+  uv*=1.-0.4*vol;
+  vec2 o=0.05*uv+vec2(0.0,0.015);
+  float d0=exp(mix(.3,.5,vol)-mix(14.,4.,vol)*sqrt(abs(0.25-length(uv))));
+  vec2 uv2=uv;
+  vec3 tx=vec3(0.0);
+  float n=8.;
+  for(float i=0.;i<8.;i++){
+    float io=2.*pi*i/n;
+    uv2*=Rot(-0.01*t+io);
+    vec3 tx2=vec3(texture2D(u_a,uv2-0.15*t-o).r,texture2D(u_a,uv2-0.15*t).r,texture2D(u_a,uv2-0.15*t+o).r);
+    uv2*=Rot(-0.01*t-io);
+    tx2=pow(tx2,vec3(8.0));
+    tx+=d0*tx2;
+    uv2=mix(uv2*1.2-0.5*vol,uv+0.8*Dir(0.1*d0-0.4*t)+vol,vol);
+  }
+  vec3 d=abs(0.04*vol+1.23-(2.0/(1.0+exp(-2.0*clamp(0.5*t,-16.0,16.0)))-1.0)+tx-length(uv));
+  vec3 col1=vec3(1.0,.8,.4);
+  vec3 col2=vec3(0.75,.8,.4+vol);
+  vec3 col=mix(col1,col2,2.5*d)*exp(0.45-3.*sqrt(d));
+  float alpha=u_key>0.5?mix(u_op,1.0,smoothstep(0.12,0.5,dot(col,vec3(0.2126,0.7152,0.0722)))):u_op;
+  gl_FragColor=vec4(col*alpha,alpha);
+}`;
+  const blS={cv:document.createElement('canvas'),gl:null,failed:false,on:false,an:null,bins:new Uint8Array(1024),tex:new Uint8Array(512*2),time:0,last:0,test:null,info:{n:0},cur:0,fbs:null};
+  function blSync(){
+    const want=!!src&&enabled()&&open&&curMode().id==='blobby'&&!document.hidden;if(want===blS.on)return;
+    if(want){if(!blS.an){blS.an=ac.createAnalyser();blS.an.fftSize=2048;blS.an.minDecibels=-100;blS.an.maxDecibels=-30;blS.an.smoothingTimeConstant=.8;}src.connect(blS.an);blS.on=true;}
+    else{if(blS.an)try{src.disconnect(blS.an);}catch(e){}blS.on=false;}
+  }
+  function blFill(B){
+    const T=blS.tex;for(let i=0;i<512;i++){const f=B?Math.max(0,Math.min(255,B[i]|0)):0;T[i]=f;T[512+i]=f;}
+    let peak=0;if(B)for(let i=0;i<512;i++)peak=Math.max(peak,B[i]);return peak;
+  }
+  function blAlloc(G,w,h){
+    if(blS.fbs&&blS.fbs.w===w&&blS.fbs.h===h)return blS.fbs;
+    if(blS.fbs){for(const b of blS.fbs.b){G.deleteFramebuffer(b.f);G.deleteTexture(b.t);}}
+    const mk=()=>{const t=G.createTexture();G.bindTexture(G.TEXTURE_2D,t);G.texImage2D(G.TEXTURE_2D,0,G.RGBA,w,h,0,G.RGBA,G.UNSIGNED_BYTE,null);
+      for(const k of [G.TEXTURE_WRAP_S,G.TEXTURE_WRAP_T])G.texParameteri(G.TEXTURE_2D,k,G.REPEAT);
+      for(const k of [G.TEXTURE_MIN_FILTER,G.TEXTURE_MAG_FILTER])G.texParameteri(G.TEXTURE_2D,k,G.LINEAR);
+      const f=G.createFramebuffer();G.bindFramebuffer(G.FRAMEBUFFER,f);G.framebufferTexture2D(G.FRAMEBUFFER,G.COLOR_ATTACHMENT0,G.TEXTURE_2D,t,0);return{t,f};};
+    blS.fbs={w,h,b:[mk(),mk()]};G.bindFramebuffer(G.FRAMEBUFFER,null);return blS.fbs;
+  }
+  function blGL(){
+    if(blS.gl||blS.failed)return blS.gl;
+    try{
+      const g=blS.cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,preserveDrawingBuffer:true});if(!g)throw new Error('WebGL unavailable');
+      const shader=(kind,text)=>{const s=g.createShader(kind);g.shaderSource(s,text);g.compileShader(s);if(!g.getShaderParameter(s,g.COMPILE_STATUS))throw new Error(g.getShaderInfoLog(s));return s;};
+      const link=(fs)=>{const p=g.createProgram();g.attachShader(p,shader(g.VERTEX_SHADER,'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}'));g.attachShader(p,shader(g.FRAGMENT_SHADER,fs));g.linkProgram(p);if(!g.getProgramParameter(p,g.LINK_STATUS))throw new Error(g.getProgramInfoLog(p));return p;};
+      blS.pa=link(BLOB_A_FS);blS.pi=link(BLOB_FS);
+      g.bindBuffer(g.ARRAY_BUFFER,g.createBuffer());g.bufferData(g.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),g.STATIC_DRAW);
+      for(const p of [blS.pa,blS.pi]){g.useProgram(p);const a=g.getAttribLocation(p,'p');g.enableVertexAttribArray(a);g.vertexAttribPointer(a,2,g.FLOAT,false,0,0);}
+      blS.fft=g.createTexture();g.activeTexture(g.TEXTURE1);g.bindTexture(g.TEXTURE_2D,blS.fft);g.pixelStorei(g.UNPACK_ALIGNMENT,1);
+      g.texImage2D(g.TEXTURE_2D,0,g.LUMINANCE,512,2,0,g.LUMINANCE,g.UNSIGNED_BYTE,blS.tex);
+      for(const k of [g.TEXTURE_WRAP_S,g.TEXTURE_WRAP_T])g.texParameteri(g.TEXTURE_2D,k,g.CLAMP_TO_EDGE);
+      for(const k of [g.TEXTURE_MIN_FILTER,g.TEXTURE_MAG_FILTER])g.texParameteri(g.TEXTURE_2D,k,g.LINEAR);
+      blS.Ua={};for(const name of ['res','prev','fft'])blS.Ua[name]=g.getUniformLocation(blS.pa,'u_'+name);
+      blS.Ui={};for(const name of ['res','a','fft','time','speed','drive','op','key'])blS.Ui[name]=g.getUniformLocation(blS.pi,'u_'+name);
+      g.useProgram(blS.pa);g.uniform1i(blS.Ua.prev,0);g.uniform1i(blS.Ua.fft,1);
+      g.useProgram(blS.pi);g.uniform1i(blS.Ui.a,0);g.uniform1i(blS.Ui.fft,1);
+      blS.gl=g;blS.cv.addEventListener('webglcontextlost',e=>{e.preventDefault();blS.gl=null;blS.fbs=null;});
+    }catch(e){blS.failed=true;console.warn('Blobby unavailable:',e.message);}return blS.gl;
+  }
+  function blPaint(t,B,dt,live){
+    const V=sv(),g=t.g,G=blGL();g.clearRect(0,0,W,H);if(!G)return;
+    if(blS.test)B=blS.test;
+    const peak=blFill(B);const vol=(B?B[0]/255:0)*V.bldrive;
+    const w=Math.max(16,Math.round(W*V.blscale)),h=Math.max(16,Math.round(H*V.blscale));if(blS.cv.width!==w||blS.cv.height!==h){blS.cv.width=w;blS.cv.height=h;blS.fbs=null;}
+    const F=blAlloc(G,w,h);blS.time+=dt;
+    G.activeTexture(G.TEXTURE1);G.bindTexture(G.TEXTURE_2D,blS.fft);G.texSubImage2D(G.TEXTURE_2D,0,0,0,512,2,G.LUMINANCE,G.UNSIGNED_BYTE,blS.tex);
+    // Buffer A
+    const dst=1-blS.cur,srcBuf=blS.cur;
+    G.bindFramebuffer(G.FRAMEBUFFER,F.b[dst].f);G.viewport(0,0,w,h);G.useProgram(blS.pa);
+    G.activeTexture(G.TEXTURE0);G.bindTexture(G.TEXTURE_2D,F.b[srcBuf].t);
+    G.uniform2f(blS.Ua.res,w,h);G.drawArrays(G.TRIANGLES,0,3);blS.cur=dst;
+    // Image → canvas
+    G.bindFramebuffer(G.FRAMEBUFFER,null);G.viewport(0,0,w,h);G.useProgram(blS.pi);
+    G.activeTexture(G.TEXTURE0);G.bindTexture(G.TEXTURE_2D,F.b[blS.cur].t);
+    G.uniform2f(blS.Ui.res,w,h);G.uniform1f(blS.Ui.time,blS.time);
+    for(const[u,id]of[['speed','blspeed'],['drive','bldrive'],['op','blop'],['key','blkey']])G.uniform1f(blS.Ui[u],V[id]);
+    G.drawArrays(G.TRIANGLES,0,3);
+    g.save();g.imageSmoothingEnabled=true;g.drawImage(blS.cv,0,0,W,H);g.restore();
+    blS.info={n:blS.info.n+1,time:blS.time,size:[w,h],peak,vol,live};
+    if(t.big&&V.text)xyLabel(t,V,'Blobby · audio kaleidoscope');
+  }
+  function blFlat(t){size(t);blS.last=0;blPaint(t,null,0,false);t.cv.classList.add('idle');}
+  function blFrame(t){
+    bandSync();if(!blS.on||!running()){blFlat(t);if(src&&!reduce.matches)raf=requestAnimationFrame(frame);return;}
+    size(t);frames++;t.cv.classList.remove('idle');const now=performance.now(),dt=blS.last?Math.min(.25,(now-blS.last)/1000):1/60;blS.last=now;
+    blS.an.smoothingTimeConstant=sv().blsmooth;blS.an.getByteFrequencyData(blS.bins);blPaint(t,blS.bins.subarray(0,512),reduce.matches?0:dt,true);if(!reduce.matches)raf=requestAnimationFrame(frame);
+  }
+  /* r64: Swirly Eyes by philip.bertani@gmail.com; reimplemented.
+     Preserve logs/fx-src-swirly-eyes.glsl. Single-pass FBM swirl.
+     Source bass = 1.8 + .8*sin(iTime) "used to be connected to
+     audioContext.analyser" — reconnect: mix(sin(iTime), audioBass, drive).
+     Drive 0 restores the archived sin animation. Backslash = mode 20. */
+  const SW_FS=`precision highp float;
+uniform vec2 u_res;
+uniform float u_time,u_speed,u_drive,u_bass,u_oct,u_op,u_key;
+float swRandom(vec2 p){return fract(sin(dot(p,vec2(12.,90.)))*5e5);}
+mat2 swRot2(float an){float cc=cos(an),ss=sin(an);return mat2(cc,-ss,ss,cc);}
+float swNoise(vec3 p){
+  vec2 i=floor(p.yz),f=fract(p.yz);
+  float a=swRandom(i),b=swRandom(i+vec2(1.,0.)),c=swRandom(i+vec2(0.,1.)),d=swRandom(i+vec2(1.,1.));
+  vec2 u=f*f*(3.-2.*f);
+  return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);
+}
+float swFbm(vec3 p,float focus,float focus2){
+  float v=0.,a=.5;vec3 shift=vec3(focus-focus2);
+  float angle=3.14159265/1.3+.03*focus;
+  for(float i=0.;i<8.;i++){
+    if(i>=u_oct)break;
+    v+=a*swNoise(p);
+    p.xz=swRot2(-angle)*p.xz;
+    p=2.*p+shift;
+    a*=.22*(1.+focus+focus2);
+  }
+  return v;
+}
+void main(){
+  float t=u_time*u_speed;
+  vec2 uv=(2.*gl_FragCoord.xy-u_res.xy)/u_res.y*2.5;
+  float aspectRatio=u_res.x/u_res.y;
+  vec3 rd=normalize(vec3(uv,-1.2));
+  float delta=t/1.3;
+  rd.yz*=swRot2(-delta);rd.xz*=swRot2(delta*3.);
+  vec3 p=rd;
+  float bass=1.8+.8*mix(sin(t),u_bass,clamp(u_drive,0.,1.));
+  vec2 nudge=vec2(aspectRatio,0.);
+  float focus=length(uv+nudge);focus=1.8/(1.+focus)*bass;
+  float focus2=length(uv-nudge);focus2=4.5/(1.+focus2*focus2)/bass;
+  vec3 q=vec3(swFbm(p,focus,focus2),swFbm(p.yzx,focus,focus2),swFbm(p.zxy,focus,focus2));
+  float f=swFbm(p+q,focus,focus2);
+  vec3 cc=q;cc*=20.*f;cc.r+=4.5*focus;cc.g+=2.*focus;cc.b+=7.*focus2;cc.r-=3.5*focus2;cc/=20.;
+  float alpha=u_key>0.5?mix(u_op,1.0,smoothstep(0.1,0.45,dot(clamp(cc,0.,1.),vec3(0.2126,0.7152,0.0722)))):u_op;
+  gl_FragColor=vec4(clamp(cc,0.,1.)*alpha,alpha);
+}`;
+  const swS={cv:document.createElement('canvas'),gl:null,failed:false,on:false,an:null,bins:new Uint8Array(1024),time:0,last:0,test:null,bass:0,info:{n:0}};
+  function swSync(){
+    const want=!!src&&enabled()&&open&&curMode().id==='swirlyeyes'&&!document.hidden;if(want===swS.on)return;
+    if(want){if(!swS.an){swS.an=ac.createAnalyser();swS.an.fftSize=2048;swS.an.minDecibels=-100;swS.an.maxDecibels=-30;swS.an.smoothingTimeConstant=.8;}src.connect(swS.an);swS.on=true;}
+    else{if(swS.an)try{src.disconnect(swS.an);}catch(e){}swS.on=false;}
+  }
+  function swGL(){
+    if(swS.gl||swS.failed)return swS.gl;
+    try{
+      const g=swS.cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,preserveDrawingBuffer:true});if(!g)throw new Error('WebGL unavailable');
+      const shader=(kind,text)=>{const s=g.createShader(kind);g.shaderSource(s,text);g.compileShader(s);if(!g.getShaderParameter(s,g.COMPILE_STATUS))throw new Error(g.getShaderInfoLog(s));return s;};
+      const p=g.createProgram();g.attachShader(p,shader(g.VERTEX_SHADER,'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}'));g.attachShader(p,shader(g.FRAGMENT_SHADER,SW_FS));g.linkProgram(p);if(!g.getProgramParameter(p,g.LINK_STATUS))throw new Error(g.getProgramInfoLog(p));g.useProgram(p);
+      g.bindBuffer(g.ARRAY_BUFFER,g.createBuffer());g.bufferData(g.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),g.STATIC_DRAW);const a=g.getAttribLocation(p,'p');g.enableVertexAttribArray(a);g.vertexAttribPointer(a,2,g.FLOAT,false,0,0);
+      swS.U={};for(const name of ['res','time','speed','drive','bass','oct','op','key'])swS.U[name]=g.getUniformLocation(p,'u_'+name);
+      swS.gl=g;swS.cv.addEventListener('webglcontextlost',e=>{e.preventDefault();swS.gl=null;});
+    }catch(e){swS.failed=true;console.warn('Swirly Eyes unavailable:',e.message);}return swS.gl;
+  }
+  function swPaint(t,B,dt,live){
+    const V=sv(),g=t.g,G=swGL();g.clearRect(0,0,W,H);if(!G)return;
+    if(swS.test!=null)B=swS.test;
+    let raw=0,peak=0;if(B){for(let i=0;i<32;i++){raw+=B[i]/255;peak=Math.max(peak,B[i]);}raw=Math.min(1,raw/16);}
+    const follow=V.swsmooth<=0?1:1-Math.exp(-dt/Math.max(.001,V.swsmooth));
+    swS.bass=swS.bass+(raw-swS.bass)*follow;
+    const w=Math.max(16,Math.round(W*V.swscale)),h=Math.max(16,Math.round(H*V.swscale));if(swS.cv.width!==w||swS.cv.height!==h){swS.cv.width=w;swS.cv.height=h;}
+    swS.time+=dt;const U=swS.U;G.viewport(0,0,w,h);G.uniform2f(U.res,w,h);G.uniform1f(U.time,swS.time);G.uniform1f(U.bass,swS.bass);
+    for(const[u,id]of[['speed','swspeed'],['drive','swdrive'],['oct','swoct'],['op','swop'],['key','swkey']])G.uniform1f(U[u],V[id]);
+    G.drawArrays(G.TRIANGLES,0,3);g.save();g.imageSmoothingEnabled=true;g.drawImage(swS.cv,0,0,W,H);g.restore();
+    swS.info={n:swS.info.n+1,time:swS.time,size:[w,h],peak,bass:swS.bass,live};
+    if(t.big&&V.text)xyLabel(t,V,'Swirly Eyes · philip.bertani');
+  }
+  function swFlat(t){size(t);swS.last=0;swPaint(t,null,0,false);t.cv.classList.add('idle');}
+  function swFrame(t){
+    bandSync();if(!swS.on||!running()){swFlat(t);if(src&&!reduce.matches)raf=requestAnimationFrame(frame);return;}
+    size(t);frames++;t.cv.classList.remove('idle');const now=performance.now(),dt=swS.last?Math.min(.25,(now-swS.last)/1000):1/60;swS.last=now;
+    swS.an.smoothingTimeConstant=.8;swS.an.getByteFrequencyData(swS.bins);swPaint(t,swS.bins.subarray(0,512),reduce.matches?0:dt,true);if(!reduce.matches)raf=requestAnimationFrame(frame);
+  }
   /* ---- full-screen visual modes: add an entry here to add a mode (the small scope always shows mode 1) ---- */
   const MODES = [
     { id: 'wave', name: 'Waveform', draw: waveFrame, idle: waveFlat },
@@ -5078,7 +5926,14 @@ void main() {
     { id: 'mirror', name: 'Mirror Zoom', draw: mirFrame, idle: mirFlat, taps: true },
     { id: 'pleiades', name: 'Pleiades', draw: pleFrame, idle: pleFlat, taps: true },
     { id: 'spiral', name: 'Spiral', draw: spiFrame, idle: spiFlat, taps: true },
-    { id: 'audio3d', name: '3D Audio', draw: avFrame, idle: avFlat }
+    { id: 'audio3d', name: '3D Audio', draw: avFrame, idle: avFlat },
+    { id: 'novawave', name: '4rknova Wave', draw: nwFrame, idle: nwFlat },
+    { id: 'seascape', name: 'Seascape', draw: seaFrame, idle: seaFlat, taps: true },
+    { id: 'halo', name: 'DuckMonster Halo', draw: haloFrame, idle: haloFlat },
+    { id: 'neuro', name: 'Neuro', draw: ngFrame, idle: ngFlat },
+    { id: 'spikyball', name: 'Spiky Ball', draw: sbFrame, idle: sbFlat },
+    { id: 'blobby', name: 'Blobby', draw: blFrame, idle: blFlat },
+    { id: 'swirlyeyes', name: 'Swirly Eyes', draw: swFrame, idle: swFlat }
   ];
   function modeIx() { const i = MODES.findIndex(m => m.id === S.meta.scopeMode); return i < 0 ? 0 : i; }
   const curMode = () => MODES[modeIx()];
@@ -6627,6 +7482,8 @@ void main() {
     { id: 'gap', group: 'Tiling', label: 'Spacing', min: 0, max: .4, step: .01, def: 0, fmt: x => Math.round(x * 100) + '%', title: 'Space around each tile (also shrinks a single scope)' },
     { id: 'grid', group: 'Display', label: 'Grid', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, title: 'Background grid and guide lines (G)' },
     { id: 'text', group: 'Display', label: 'Text', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, title: 'Text on the picture: band names / legend, track name, key hints (T). Mode and effect names still flash briefly when changed' },
+    { id: 'fxdpr', group: 'Display', label: 'Effect max DPR', short: 'Max DPR', min: 1, max: 3, step: .1, def: 1.5, fmt: x => x.toFixed(1) + '×', title: 'When a feedback effect is on, how high the live scope canvas may go above CSS pixels (capped further by Effect max size). Higher is sharper; lower is faster. Only applies while an effect is active.' },
+    { id: 'fxmp', group: 'Display', label: 'Effect max size', short: 'Max size', min: .5, max: 8, step: .25, def: 2, fmt: x => x.toFixed(2).replace(/\.?0+$/, '') + ' MP', title: 'When a feedback effect is on, approximate megapixel budget for the live scope canvas uploaded to the GPU each frame. Higher is sharper; lower is faster. Only applies while an effect is active.' },
     { id: 'bspeed', group: 'Bounce', label: 'Bounce speed', min: 0, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['bounce'], title: 'How fast the Bounce lines drift (0 holds them still)' },
     { id: 'cspeed', group: 'Curves', label: 'Curve speed', min: 0, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['curves'], title: 'How fast the Curves points drift (0 holds them still)' },
     { id: 'tspeed', group: 'Triangle', label: 'Triangle speed', min: 0, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['triangle'], title: 'How fast the Triangle corners drift, bend, spin and the lights travel (0 holds it still)' },
@@ -6699,7 +7556,69 @@ void main() {
     { id: 'aspeed', group: '3D Audio', label: 'Colour speed', short: 'Colour', min: 0, max: 4, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', modes: ['audio3d'], title: 'How fast the lamp colours cycle (1× as in the original; 0 holds them)' },
     { id: 'aop', group: '3D Audio', label: 'Opacity', short: 'Opacity', min: 0, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', modes: ['audio3d'], title: 'How solid the picture is: below 100% the active effect’s trails show through it' },
     { id: 'akey', group: '3D Audio', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Sky only'], min: 0, max: 1, step: 1, def: 0, modes: ['audio3d'], title: 'Whole picture: Opacity applies everywhere. Sky only: only the dark parts turn see-through' },
-    { id: 'ascale', group: '3D Audio', label: 'Internal resolution', short: 'Resolution', min: .25, max: 1, step: .05, def: .5, fmt: x => Math.round(x * 100) + '%', modes: ['audio3d'], title: 'Resolution the scene is ray-marched at, then scaled up: lower is faster on slow GPUs' }
+    { id: 'ascale', group: '3D Audio', label: 'Internal resolution', short: 'Resolution', min: .25, max: 1, step: .05, def: .5, fmt: x => Math.round(x * 100) + '%', modes: ['audio3d'], title: 'Resolution the scene is ray-marched at, then scaled up: lower is faster on slow GPUs' },
+    { id: 'nwthick', group: '4rknova Wave', label: 'Thickness', min: 0.001, max: 0.15, step: 0.001, def: 0.03, modes: ['novawave'], info: 'After nikos papadopoulos (4rknova); reimplemented', lic: 'CC BY-NC-SA 3.0', fmt: x => x.toFixed(3), title: 'Thickness of the wave; original look at the default.' },
+    { id: 'nwwidth', group: '4rknova Wave', label: 'Width', min: 0.1, max: 10, step: 0.1, def: 2, modes: ['novawave'], fmt: x => x.toFixed(1), title: 'Width of the wave; original look at the default.' },
+    { id: 'nwamp', group: '4rknova Wave', label: 'Amplitude', min: 0, max: 0.5, step: 0.01, def: 0.09, modes: ['novawave'], fmt: x => x.toFixed(2), title: 'Amplitude of the wave; original look at the default.' },
+    { id: 'nwvel', group: '4rknova Wave', label: 'Velocity', min: -4, max: 4, step: 0.05, def: 1, modes: ['novawave'], fmt: x => x.toFixed(2) + '×', title: 'Velocity of the wave; original look at the default.' },
+    { id: 'nwop', group: '4rknova Wave', label: 'Opacity', min: 0, max: 1, step: 0.01, def: 0, modes: ['novawave'], fmt: x => Math.round(x * 100) + '%', title: 'Dark-pixel opacity when See-through is Dark only; 0 clears black and reveals feedback trails. Whole picture applies opacity everywhere.' },
+    { id: 'nwkey', group: '4rknova Wave', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 1, modes: ['novawave'], title: 'Dark only preserves bright wave highlights while making black transparent at Opacity 0% (default)' },
+    { id: 'nwscale', group: '4rknova Wave', label: 'Internal resolution', min: 0.25, max: 1, step: 0.05, def: 0.5, modes: ['novawave'], fmt: x => Math.round(x * 100) + '%', title: 'Internal rendering resolution; lower is faster.' },
+    { id: 'seadrive', group: 'Seascape', label: 'Audio drive', min: 0, max: 3, step: 0.05, def: 1, modes: ['seascape'], info: 'After Seascape by TDM (Alexander Alekseev) and the wizgrav Clubber fork; reimplemented', href: 'https://www.shadertoy.com/view/4lKSzh', lic: 'CC BY-NC-SA 3.0', fmt: x => x.toFixed(2)+'×', title: 'Clubber-style RMS energy: R bass, G mid, B treble, A combined. Not the Clubber library. 0 gives the unmodulated ocean.' },
+    { id: 'seasmooth', group: 'Seascape', label: 'Smoothing', min: 0, max: 1, step: 0.01, def: 0.25, modes: ['seascape'], fmt: x => x.toFixed(2)+' s', title: 'Envelope response time: lower reacts quickly, higher glides.' },
+    { id: 'seaheight', group: 'Seascape', label: 'Wave height', min: 0.1, max: 1.5, step: 0.05, def: 0.6, modes: ['seascape'], fmt: x => x.toFixed(2), title: 'Wave height; original 0.6.' },
+    { id: 'seafreq', group: 'Seascape', label: 'Wave frequency', min: 0.05, max: 0.6, step: 0.01, def: 0.2, modes: ['seascape'], fmt: x => x.toFixed(2), title: 'Wave density; original 0.2.' },
+    { id: 'seaspeed', group: 'Seascape', label: 'Sea speed', min: 0, max: 3, step: 0.05, def: 0.8, modes: ['seascape'], fmt: x => x.toFixed(2)+'×', title: 'Sea travel speed; original 0.8.' },
+    { id: 'seachop', group: 'Seascape', label: 'Choppiness', min: 1, max: 8, step: 0.25, def: 4, modes: ['seascape'], fmt: x => x.toFixed(2), title: 'Calm choppiness, original 4; Clubber A raises it toward 32.' },
+    { id: 'seadrift', group: 'Seascape', label: 'Camera drift', min: 0, max: 2, step: 0.05, def: 1, modes: ['seascape'], fmt: x => x.toFixed(2)+'×', title: 'Gentle automatic camera travel instead of mouse; bass/mid add a bounded lean. 0 holds automatic travel.' },
+    { id: 'seasteps', group: 'Seascape', label: 'Trace steps', min: 4, max: 16, step: 1, def: 8, modes: ['seascape'], fmt: x => String(x), title: 'Height-map trace iterations; original 8. More is finer but slower.' },
+    { id: 'seaop', group: 'Seascape', label: 'Opacity', min: 0, max: 1, step: 0.01, def: 1, modes: ['seascape'], fmt: x => Math.round(x*100)+'%', title: 'Below 100% reveals active feedback effects behind the ocean.' },
+    { id: 'seakey', group: 'Seascape', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, modes: ['seascape'], title: 'Whole picture fades the complete scene; Dark only keeps bright sky and highlights solid while revealing feedback in dark water' },
+    { id: 'seascale', group: 'Seascape', label: 'Internal resolution', min: 0.2, max: 1, step: 0.05, def: 0.35, modes: ['seascape'], fmt: x => Math.round(x*100)+'%', title: 'Internal rendering resolution; default 35% balances detail and speed.' },
+    { id: 'haradius', group: 'DuckMonster Halo', label: 'Radius', min: 0.1, max: 1.2, step: 0.01, def: 0.6, modes: ['halo'], info: 'After DuckMonster; reimplemented', href: 'https://www.shadertoy.com/view/4tGXzt', fmt: x => x.toFixed(2), title: 'Halo radius; original 0.6.' },
+    { id: 'habright', group: 'DuckMonster Halo', label: 'Brightness', min: 0.01, max: 1, step: 0.01, def: 0.2, modes: ['halo'], fmt: x => x.toFixed(2), title: 'Glow brightness; original 0.2.' },
+    { id: 'haspeed', group: 'DuckMonster Halo', label: 'Speed', min: -1, max: 2, step: 0.01, def: 0.2, modes: ['halo'], fmt: x => x.toFixed(2)+'×', title: 'Scales colour animation and optional ray rotation; 0 holds motion. Original 0.2; the source speed only affected its disabled ray.' },
+    { id: 'harange', group: 'DuckMonster Halo', label: 'Frequency range', min: 8, max: 256, step: 1, def: 64, modes: ['halo'], fmt: x => String(x), title: 'Number of angular spectrum steps; original 64. Reads the FFT with the original one-step offset.' },
+    { id: 'hagain', group: 'DuckMonster Halo', label: 'Audio gain', min: 0, max: 3, step: 0.05, def: 1, modes: ['halo'], fmt: x => x.toFixed(2)+'×', title: 'Multiplies the FFT spectrum; the original +0.06 floor preserves a faint halo even in silence.' },
+    { id: 'hasmooth', group: 'DuckMonster Halo', label: 'Smoothing', min: 0, max: 0.95, step: 0.01, def: 0.8, modes: ['halo'], fmt: x => x.toFixed(2), title: 'FFT analyser smoothing; 0 reacts quickly, higher glides.' },
+    { id: 'hapulse', group: 'DuckMonster Halo', label: 'Beat pulse', min: 0, max: 1, step: 0.05, def: 0, modes: ['halo'], fmt: x => Math.round(x*100)+'%', title: 'Optional radius movement from the lowest 32 FFT bins. Off matches the archived fixed-radius ring.' },
+    { id: 'haray', group: 'DuckMonster Halo', label: 'Ray', type: 'toggle', min: 0, max: 1, step: 1, def: 0, fmt: onOff, modes: ['halo'], title: 'Optional rotating rainbow ray from the archived commented-out line; off by default' },
+    { id: 'haop', group: 'DuckMonster Halo', label: 'Opacity', min: 0, max: 1, step: 0.01, def: 0, modes: ['halo'], fmt: x => Math.round(x*100)+'%', title: 'Dark-pixel opacity in Dark only mode: default 0 clears the navy centre/background for feedback. Whole picture applies opacity everywhere.' },
+    { id: 'hakey', group: 'DuckMonster Halo', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 1, modes: ['halo'], title: 'Dark only keys the glow above the original navy background; highlights stay solid, empty areas become transparent at Opacity 0%' },
+    { id: 'hascale', group: 'DuckMonster Halo', label: 'Internal resolution', min: 0.25, max: 1, step: 0.05, def: 0.5, modes: ['halo'], fmt: x => Math.round(x*100)+'%', title: 'Internal rendering resolution; lower is faster.' },
+    { id: 'ngspeed', group: 'Neuro', label: 'Speed', min: 0, max: 8, step: 0.05, def: 3, modes: ['neuro'], info: 'After Abstract Glassy Field by Chaotnix; reimplemented', fmt: x => x.toFixed(2)+'×', title: 'Camera travel speed; source 3. 0 freezes travel for a static glassy field.' },
+    { id: 'ngfov', group: 'Neuro', label: 'Field of view', min: 0.5, max: 2, step: 0.05, def: 1, modes: ['neuro'], fmt: x => x.toFixed(2)+'×', title: 'Lens width relative to the source pi/2 field of view; larger is wider.' },
+    { id: 'ngglow', group: 'Neuro', label: 'Glow', min: 0, max: 3, step: 0.05, def: 1, modes: ['neuro'], fmt: x => Math.round(x*100)+'%', title: 'Accumulated hot-glass glow; 100% matches the source formula.' },
+    { id: 'ngelectric', group: 'Neuro', label: 'Electric charge', min: 0, max: 3, step: 0.05, def: 1, modes: ['neuro'], fmt: x => Math.round(x*100)+'%', title: 'Purple/blue electric highlights, modulated by the audio material.' },
+    { id: 'ngbump', group: 'Neuro', label: 'Bump strength', min: 0, max: 0.3, step: 0.01, def: 0.1, modes: ['neuro'], fmt: x => x.toFixed(2), title: 'Tri-planar RGB audio texture bump strength; source 0.1.' },
+    { id: 'ngior', group: 'Neuro', label: 'Refraction', min: 1, max: 2, step: 0.01, def: 1.31, modes: ['neuro'], fmt: x => x.toFixed(2), title: 'Faked refractive index; source 1.31.' },
+    { id: 'ngtexture', group: 'Neuro', label: 'Texture scale', min: 0.25, max: 3, step: 0.05, def: 1, modes: ['neuro'], fmt: x => x.toFixed(2)+'×', title: 'Scale of the repeating tri-planar audio material, relative to source 1/3.' },
+    { id: 'ngsteps', group: 'Neuro', label: 'Trace steps', min: 32, max: 128, step: 8, def: 128, modes: ['neuro'], fmt: x => String(x), title: 'Maximum field-march steps; source 128. Lower is faster, with less detail.' },
+    { id: 'ngdrive', group: 'Neuro', label: 'Audio drive', min: 0, max: 3, step: 0.05, def: 1, modes: ['neuro'], fmt: x => x.toFixed(2)+'×', title: 'Audio texture: spectrum in R/B and waveform in G; 0 leaves a quiet, static procedural material.' },
+    { id: 'ngsmooth', group: 'Neuro', label: 'Smoothing', min: 0, max: 0.95, step: 0.01, def: 0.8, modes: ['neuro'], fmt: x => x.toFixed(2), title: 'Spectrum smoothing; waveform remains responsive.' },
+    { id: 'ngop', group: 'Neuro', label: 'Opacity', min: 0, max: 1, step: 0.01, def: 1, modes: ['neuro'], fmt: x => Math.round(x*100)+'%', title: 'Below 100% reveals active feedback behind the glassy field.' },
+    { id: 'ngkey', group: 'Neuro', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, modes: ['neuro'], title: 'Whole picture fades the complete scene. Dark only preserves bright electric/glass highlights and reveals feedback through dark areas' },
+    { id: 'ngscale', group: 'Neuro', label: 'Internal resolution', min: 0.2, max: 1, step: 0.05, def: 0.35, modes: ['neuro'], fmt: x => Math.round(x*100)+'%', title: 'Internal raymarch resolution; 35% balances detail and speed.' },
+    { id: 'sbspeed', group: 'Spiky Ball', label: 'Speed', min: 0, max: 3, step: 0.05, def: 1, modes: ['spikyball'], info: 'After Spiky Ball by Flopine; reimplemented', fmt: x => x.toFixed(2)+'×', title: 'Camera travel and ball spin relative to the source iTime; 1× matches the archive. 0 freezes motion.' },
+    { id: 'sbsteps', group: 'Spiky Ball', label: 'Trace steps', min: 16, max: 128, step: 8, def: 64, modes: ['spikyball'], fmt: x => String(x), title: 'Raymarch iterations; source ITER 64. Lower is faster, with softer silhouette.' },
+    { id: 'sbdrive', group: 'Spiky Ball', label: 'Audio drive', min: 0, max: 3, step: 0.05, def: 1, modes: ['spikyball'], fmt: x => x.toFixed(2)+'×', title: 'Scales megabass from iChannel0; bass shortens the needles (source clamp 0–0.75). 0 restores the quiet long-needle ball.' },
+    { id: 'sbsmooth', group: 'Spiky Ball', label: 'Smoothing', min: 0, max: 0.95, step: 0.01, def: 0.8, modes: ['spikyball'], fmt: x => x.toFixed(2), title: 'FFT analyser smoothing; lower reacts quickly, higher glides.' },
+    { id: 'sbop', group: 'Spiky Ball', label: 'Opacity', min: 0, max: 1, step: 0.01, def: 1, modes: ['spikyball'], fmt: x => Math.round(x*100)+'%', title: 'Below 100% reveals active feedback behind the grayscale field.' },
+    { id: 'sbkey', group: 'Spiky Ball', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, modes: ['spikyball'], title: 'Whole picture fades the complete scene. Dark only keeps bright silhouette edges solid and reveals feedback through dark room/background' },
+    { id: 'sbscale', group: 'Spiky Ball', label: 'Internal resolution', min: 0.2, max: 1, step: 0.05, def: 0.4, modes: ['spikyball'], fmt: x => Math.round(x*100)+'%', title: 'Internal raymarch resolution; 40% balances detail and speed for the 64-step march.' },
+    { id: 'blspeed', group: 'Blobby', label: 'Speed', min: 0, max: 3, step: 0.05, def: 1, modes: ['blobby'], info: 'After Blobby (Shadertoy); reimplemented', fmt: x => x.toFixed(2)+'×', title: 'Image-pass time scale; 1× matches source iTime.' },
+    { id: 'bldrive', group: 'Blobby', label: 'Audio drive', min: 0, max: 3, step: 0.05, def: 1, modes: ['blobby'], fmt: x => x.toFixed(2)+'×', title: 'Scales iChannel1 spectrum into Buffer A trails and Image vol; 0 freezes audio modulation.' },
+    { id: 'blsmooth', group: 'Blobby', label: 'Smoothing', min: 0, max: 0.95, step: 0.01, def: 0.8, modes: ['blobby'], fmt: x => x.toFixed(2), title: 'FFT analyser smoothing.' },
+    { id: 'blop', group: 'Blobby', label: 'Opacity', min: 0, max: 1, step: 0.01, def: 1, modes: ['blobby'], fmt: x => Math.round(x*100)+'%', title: 'Below 100% reveals active feedback behind Blobby.' },
+    { id: 'blkey', group: 'Blobby', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, modes: ['blobby'], title: 'Whole picture fades the complete scene. Dark only keeps bright blobs solid and reveals feedback through dark areas' },
+    { id: 'blscale', group: 'Blobby', label: 'Internal resolution', min: 0.2, max: 1, step: 0.05, def: 0.5, modes: ['blobby'], fmt: x => Math.round(x*100)+'%', title: 'Internal Buffer A / Image resolution; 50% balances detail and speed.' },
+    { id: 'swspeed', group: 'Swirly Eyes', label: 'Speed', min: 0, max: 3, step: 0.05, def: 1, modes: ['swirlyeyes'], info: 'After Swirly Eyes by philip.bertani@gmail.com; reimplemented', fmt: x => x.toFixed(2)+'×', title: 'Camera travel relative to source iTime/1.3; 1× matches the archive.' },
+    { id: 'swdrive', group: 'Swirly Eyes', label: 'Audio drive', min: 0, max: 3, step: 0.05, def: 1, modes: ['swirlyeyes'], fmt: x => x.toFixed(2)+'×', title: 'Mixes analyser bass over the archived sin(iTime) eye pulse. 0 restores pure source animation.' },
+    { id: 'swsmooth', group: 'Swirly Eyes', label: 'Audio response', min: 0, max: 1, step: 0.01, def: 0.2, modes: ['swirlyeyes'], fmt: x => x.toFixed(2)+' s', title: 'Bass envelope follow time; 0 is immediate.' },
+    { id: 'swoct', group: 'Swirly Eyes', label: 'Octaves', min: 1, max: 8, step: 1, def: 5, modes: ['swirlyeyes'], fmt: x => String(x), title: 'FBM octaves; source numOct 5.' },
+    { id: 'swop', group: 'Swirly Eyes', label: 'Opacity', min: 0, max: 1, step: 0.01, def: 1, modes: ['swirlyeyes'], fmt: x => Math.round(x*100)+'%', title: 'Below 100% reveals active feedback behind the swirl.' },
+    { id: 'swkey', group: 'Swirly Eyes', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, modes: ['swirlyeyes'], title: 'Whole picture fades the complete scene. Dark only keeps bright eye cores solid' },
+    { id: 'swscale', group: 'Swirly Eyes', label: 'Internal resolution', min: 0.2, max: 1, step: 0.05, def: 0.45, modes: ['swirlyeyes'], fmt: x => Math.round(x*100)+'%', title: 'Internal FBM resolution; 45% balances detail and speed.' }
   ];
   SCOPE_PARAMS.forEach(p => { if (p.type === 'choice') p.fmt = x => p.opts[x] || ''; });
   const SV0 = (() => { const o = {}; SCOPE_PARAMS.forEach(p => o[p.id] = p.def); o.xf = false; return o; })();
@@ -7235,21 +8154,25 @@ void main() {
      buffer is advected along that turbulence (an angle from the field) plus a radial attraction wave sin(d·Ring frequency + t);
      the border keeps spawning random cells. The scope's picture is the extra seed: lit pixels are set alive (Ink). The Image pass
      tints both channels, lights the turbulence field as embossed relief (diffuse, specular sheen, shadow), masks by it, and turns
-     it into the source's blue-tinted black & white (Colour brings the hidden tints back). Values: b stored halved. ---- */
+     it into the source's blue-tinted black & white (Colour brings the hidden tints back). Values: b stored halved.
+     r65: Beat capped at 0.15× (was 2× / def .5); Transparency + See-through fade the cream so the live scope shows through.
+     r69: Beat remapped — bass stretches the cream plane horizontally about centre, treble stretches it vertically, midrange
+     boosts Ink; Beat (0–0.15×) scales all three. Old energy→speed/time and kick→attraction modulation removed. ---- */
   const PC_LIB = `
     vec2 hash23(vec3 p3) { p3 = fract(p3 * vec3(.1031, .1030, .0973)); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.xx + p3.yz) * p3.zy); }
     float gyroid(vec3 s) { return dot(sin(s), cos(s.yzx)); }
     float fbm3(vec3 s) { float r = 0.0, a = 0.5; for (int i = 0; i < 3; i++) { s += r / 2.0; r += gyroid(s / a) * a; a /= 2.0; } return r; }`;
   const PC_A_FS = PC_LIB + `
     uniform sampler2D u_a, u_src; uniform vec2 u_fres; uniform float u_frame, u_dt, u_seed;
-    uniform float u_t, u_speed, u_turb, u_attr, u_ring, u_thr, u_rate, u_ink, u_corner;
+    uniform float u_t, u_speed, u_turb, u_attr, u_ring, u_thr, u_rate, u_ink, u_corner, u_sx, u_sy;
     void main() {
       vec2 R = u_fres, fc = v * R;
       if (u_seed > 0.5) { gl_FragColor = vec4(hash23(vec3(fc, 0.0)), 0.0, 1.0); return; }
       vec2 p = (fc - (u_corner > 0.5 ? R : 0.5 * R)) / R.y;
       float d = length(p), n = sqrt(abs(fbm3(vec3(p * 3.0, d - u_t * 0.1 * u_speed)))), an = n * 6.2831853;
       vec2 off = u_turb * vec2(cos(an), sin(an)) + u_attr * (d > 0.0 ? p / d : vec2(0.0)) * sin(d * u_ring + u_t);
-      vec4 fr = texture2D(u_a, v + 40.0 * u_dt * off * u_speed / R);
+      vec2 uv = 0.5 + (v - 0.5) / max(vec2(u_sx, u_sy), vec2(1e-3));   // r69: bass/treble stretch about screen centre
+      vec4 fr = texture2D(u_a, uv + 40.0 * u_dt * off * u_speed / R);
       if (fc.x < 1.0 || fc.x > R.x - 1.0 || fc.y < 1.0 || fc.y > R.y - 1.0) fr = vec4(step(0.5, hash23(vec3(fc, u_frame)).x), 0.0, 0.0, 0.0);
       vec2 nb = vec2(0.0);
       for (int i = 0; i < 9; i++) { if (i == 4) continue; nb += texture2D(u_a, v + vec2(float(i - 3 * (i / 3) - 1), float(i / 3 - 1)) / R).rg; }
@@ -7259,7 +8182,7 @@ void main() {
       gl_FragColor = vec4(clamp(fr.rg, 0.0, 1.0), 0.5 * n, 1.0);
     }`;
   const PC_FS = `
-    uniform sampler2D u_a, u_src; uniform vec3 u_bg; uniform vec2 u_res; uniform float u_keep, u_relief, u_height, u_spec, u_blue, u_color;
+    uniform sampler2D u_a, u_src; uniform vec3 u_bg; uniform vec2 u_res; uniform float u_keep, u_relief, u_height, u_spec, u_blue, u_color, u_trans, u_transkey;
     float T(vec2 q) { return 2.0 * abs(texture2D(u_a, q).b); }
     void main() {
       vec4 fr = texture2D(u_a, v); float b = 2.0 * abs(fr.b), l = length(v - 0.5);
@@ -7274,7 +8197,10 @@ void main() {
       bw = mix(bw, blue, 0.14 * u_blue) + blue * 0.75 * u_blue;
       vec3 pic = clamp(mix(bw, c + blue * 0.75 * u_blue, u_color), 0.0, 1.0);
       vec4 sr = texture2D(u_src, v);
-      gl_FragColor = vec4(clamp(mix(u_bg * (1.0 - sr.a) + sr.rgb, pic, u_keep), 0.0, 1.0), 1.0);
+      float luma = dot(pic, vec3(0.2126, 0.7152, 0.0722));
+      float tw = u_transkey > 0.5 ? (1.0 - u_trans * (1.0 - smoothstep(0.0, 0.35, luma))) : (1.0 - u_trans);
+      float w = u_keep * tw;   // r65: Transparency / See-through — weight of the cream over the live scope
+      gl_FragColor = vec4(clamp(mix(u_bg * (1.0 - sr.a) + sr.rgb, pic, w), 0.0, 1.0), 1.0);
     }`;
   /* ---- r48: "Melting Threads" (after "Melting Threads" (Shadertoy); reimplemented). Buffer A, one value x in -1..1 (stored as
      .5 + .5x so it also works on RGBA8): each step it re-reads itself zoomed in about a slowly orbiting centre, nudged by its own
@@ -7533,6 +8459,137 @@ void main() {
       vec4 sr = texture2D(u_src, v);
       gl_FragColor = vec4(clamp(mix(u_bg * (1.0 - sr.a) + sr.rgb, c, u_keep), 0.0, 1.0), 1.0);
     }`;
+  /* r60: Liquid Metal, after FractalFantasy, CC0; reimplemented.
+     Original archived unchanged in logs/fx-src-liquid-metal.glsl.
+     The source is a procedural plate, not itself feedback. Buffer A computes
+     its warped 5/7/3-octave surface and fake lighting; alpha encodes height.
+     Buffer B carries premultiplied scope ink through the height gradient.
+     Image overlays full-resolution live scope and the trails on the plate.
+     Auto-gained bass/mid/treble phases replace mouse X/Y; no pointer input.
+     tanh is expanded for WebGL 1; negative fractional diffuse powers are
+     defined as zero. Source alpha 2 is replaced with valid opaque output. */
+  const LM_A_FS=`
+    uniform vec2 u_fres,u_audio;uniform float u_t,u_scale,u_warp,u_height,u_round,u_detail,u_gloss,u_contrast;
+    float lmTanh(float x){return 2.0/(1.0+exp(-2.0*clamp(x,-16.0,16.0)))-1.0;}
+    vec2 lmRotate(vec2 p,float angle){float c=cos(angle),s=sin(angle);return vec2(c*p.x+s*p.y,-s*p.x+c*p.y);}
+    float lmHash(vec2 p){return fract(sin(dot(p,vec2(12.9898,58.233)))*13758.5453);}
+    float lmValue(vec2 p){
+      vec2 cell=floor(p),f=fract(p),q=f*f*f*(f*(f*6.0-15.0)+10.0);
+      return mix(mix(lmHash(cell),lmHash(cell+vec2(1,0)),q.x),mix(lmHash(cell+vec2(0,1)),lmHash(cell+vec2(1,1)),q.x),q.y);
+    }
+    float lmOctave(vec2 p){
+      vec2 s=sin(p*0.5);float blend=0.5+0.5*sin(6.283185308*lmTanh(s.x*s.y+s.x+s.y));return mix(s.x,s.y,blend);
+    }
+    float lmFractal(vec2 p,float layers){
+      vec2 original=p;float value=0.0,weight=1.0,total=0.0,limit=clamp(layers+2.0*(u_detail-1.0),1.0,8.0);
+      for(int i=0;i<8;i++){if(float(i)>=limit)break;value+=weight*lmOctave(p);total+=weight;weight*=0.45;p=lmRotate((p-vec2(1.23,1.5))*2.03,1.2);}
+      value/=total;return mix(value,-0.5*value,pow(max(0.0,lmValue(original*0.9)),0.25));
+    }
+    float lmWarp(vec2 p){
+      vec2 a=vec2(lmFractal(p,5.0),lmFractal(p+vec2(0.5),5.0));a=lmRotate(a,1.0+u_t*1.1+u_audio.x);
+      vec2 b=vec2(lmFractal(p+3.7*a,7.0),lmFractal(p-2.7*a.yx+vec2(0.7),7.0));b=lmRotate(b,-1.0+u_t*1.21315+u_audio.y);
+      return lmFractal(p+u_warp*b,3.0);
+    }
+    float lmHeight(vec2 p){
+      float drift=0.005*u_t;p=(p+5.0*vec2(cos(drift),sin(drift)))*u_scale+13.0;
+      return u_height*lmTanh(u_round*lmWarp(p))/u_round;
+    }
+    vec3 lmNormal(vec2 p){
+      vec2 e=vec2(-2.0/u_fres.y,0.0);return normalize(vec3(lmHeight(p+e.xy)-lmHeight(p-e.xy),2.0*e.x,lmHeight(p+e.yx)-lmHeight(p-e.yx)));
+    }
+    void main(){
+      vec2 p=(v*2.0-1.0)*vec2(u_fres.x/u_fres.y,1.0);float height=lmHeight(p);
+      vec3 point=vec3(p.x,height,p.y),normal=lmNormal(p),light1=normalize(vec3(0.9,-0.5,0.8)-point),light2=normalize(vec3(-0.9,-1.5,0.9)-point);
+      float diffuse1=max(dot(light1,normal),0.0),diffuse2=max(dot(light2,normal),0.0),reach=length(vec2(0.9,0.8)-p);
+      float other=lmHeight(p+reach*0.05*normalize(light1.xz+vec2(0.0000001)));
+      vec3 base=vec3(0.8,0.8,1.0),shadow=base*(smoothstep(0.0,0.125,height)-smoothstep(0.0,0.125,other));
+      vec3 color=base*pow(diffuse1,u_gloss)+0.1*base*pow(diffuse1,0.1)+0.165*base.zyx*diffuse2*diffuse2+shadow*0.5;
+      color=pow(clamp(color,0.0,1.0),vec3(0.85));color=mix(color,color*0.6+0.4*color*color*(3.0-2.0*color),u_contrast);
+      color=2.0*color-vec3(dot(color,vec3(0.1)));
+      gl_FragColor=vec4(clamp(color,0.0,1.0),0.5+0.45*height/(u_height/u_round));
+    }`;
+  const LM_B_FS=`
+    uniform sampler2D u_a,u_b,u_src;uniform vec2 u_fres;uniform float u_seed,u_dt,u_decay,u_keep,u_flow,u_height,u_round,u_ink;
+    void main(){
+      vec2 pixel=1.0/u_fres;
+      vec2 gradient=vec2(texture2D(u_a,v+vec2(pixel.x,0)).a-texture2D(u_a,v-vec2(pixel.x,0)).a,texture2D(u_a,v+vec2(0,pixel.y)).a-texture2D(u_a,v-vec2(0,pixel.y)).a);
+      gradient*=u_fres.y*u_height/(1.8*u_round);gradient=clamp(gradient,-3.0,3.0);gradient.x*=u_fres.y/u_fres.x;
+      vec2 at=v-gradient*(u_flow*0.1*u_dt);float inside=step(0.0,at.x)*step(at.x,1.0)*step(0.0,at.y)*step(at.y,1.0);
+      // Sub-byte loss prevents immortal low-alpha ghosts on RGBA8 fallback.
+      vec4 old=max(vec4(0.0),texture2D(u_b,at)*inside*u_decay*u_keep-vec4(u_decay<0.99995?u_dt*60.0/255.0:0.0));if(u_seed>0.5)old=vec4(0.0);
+      vec4 ink=texture2D(u_src,v)*u_ink;gl_FragColor=clamp(ink+old*(1.0-ink.a),0.0,1.0);
+    }`;
+  const LM_FS=`
+    uniform sampler2D u_a,u_b,u_src;uniform vec3 u_bg;uniform float u_surface,u_ink,u_keep;
+    void main(){
+      vec3 plate=mix(u_bg,texture2D(u_a,v).rgb,u_surface);vec4 history=texture2D(u_b,v),live=texture2D(u_src,v);
+      vec3 color=plate*(1.0-history.a)+history.rgb;color=color*(1.0-live.a*u_ink)+live.rgb*u_ink;
+      vec3 plain=u_bg*(1.0-live.a)+live.rgb;gl_FragColor=vec4(clamp(mix(plain,color,u_keep),0.0,1.0),1.0);
+    }`;
+  /* r62: Fractal Feedback (Shadertoy, unknown author); reimplemented.
+     Preserve logs/fx-src-fractal-feedback.glsl. No author/licence in the paste.
+     Buffer A: kaleidoscopic fractal; k from iChannel1 audio at x=.6 via
+     smoothstep(.3,.7)*4; mixes fractal over previous buffer/scope (iChannel0)
+     at .3; outputs vec4(col,k). AA loops aa=3. Image: radial streak/glow from
+     Buffer A alpha, tinted vec4(1.2,1,.8,1)*.17. Wired through mbRender.
+     Shader consts use FRF_* to avoid clashing with Feedback Fractal's FF_FS. */
+  const FRF_A_FS=`
+    uniform sampler2D u_a,u_src;uniform vec2 u_fres;uniform float u_t,u_k,u_aa,u_mix,u_ink,u_seed,u_step;
+    mat2 frfRot(float a){a=radians(a);float s=sin(a),c=cos(a);return mat2(c,s,-s,c);}
+    vec3 frfFractal(vec2 p,float k){
+      p+=vec2(sin(u_t),cos(u_t))*.15;
+      p/=dot(p,p);
+      float d=length(p)*.005*k;
+      p*=frfRot(sin(u_t)*45.);
+      p*=sin(u_t*.2);
+      p+=u_t*.5;
+      float ml=100.,m=100.;vec2 mc=vec2(100.);
+      for(int i=0;i<7;i++){
+        p=abs(5.-mod(p*2.,10.))-1.;
+        p*=frfRot(u_t*2.);
+        ml=min(ml,min(abs(p.x),abs(p.y)));
+        mc=min(mc,abs(p));
+        m=min(m,abs(p.x-1.));
+      }
+      float l=smoothstep(.0,.5,abs(.5-fract(m*2.+u_t)));
+      ml=exp(-10.*ml);m=exp(-20.*m);mc=exp(-10.*mc);
+      return vec3(mc.x,ml*.6,mc.y*1.5)*ml*l*l+m+d*(1.+k);
+    }
+    void main(){
+      if(u_seed>0.5){gl_FragColor=vec4(0.0);return;}
+      vec2 uv=(v-0.5)*vec2(u_fres.x/u_fres.y,1.0);
+      float aa=clamp(u_aa,1.0,5.0);
+      vec2 pix=1.0/u_fres/float(aa*2.0);
+      vec3 col=vec3(0.0);
+      for(int i=-5;i<=5;i++){
+        if(float(i)<-aa||float(i)>aa)continue;
+        for(int j=-5;j<=5;j++){
+          if(float(j)<-aa||float(j)>aa)continue;
+          col+=frfFractal(uv+vec2(float(i),float(j))*pix,u_k);
+        }
+      }
+      col/=float(aa*aa*4.0);
+      col=mix(vec3(length(col)),col,.7);
+      vec3 hist=texture2D(u_a,v).rgb;
+      col=mix(hist,col,u_mix);
+      if(u_step<0.5){vec4 sc=texture2D(u_src,v);col=mix(col,sc.rgb,sc.a*u_ink);}
+      gl_FragColor=vec4(clamp(col,0.0,1.0),u_k);
+    }`;
+  const FRF_FS=`
+    uniform sampler2D u_a,u_src;uniform vec3 u_bg;uniform vec2 u_res,u_ares;uniform float u_keep,u_tint;
+    void main(){
+      vec2 uv=v;
+      vec4 col=texture2D(u_a,uv);
+      vec2 pix=vec2(0.0,1.0)*smoothstep(0.0,1.3,length(uv-0.5))*col.a*0.01;
+      col+=texture2D(u_a,uv+pix.xy);
+      col+=texture2D(u_a,uv-pix.xy);
+      col+=texture2D(u_a,uv+pix.yx);
+      col+=texture2D(u_a,uv-pix.yx);
+      col*=vec4(1.2,1.0,0.8,1.0)*0.17*u_tint;
+      vec3 c=clamp(col.rgb,0.0,1.0);
+      vec4 sr=texture2D(u_src,v);
+      gl_FragColor=vec4(clamp(mix(u_bg*(1.0-sr.a)+sr.rgb,c,u_keep),0.0,1.0),1.0);
+    }`;
   const FX = [
     { id: 'none', name: 'None' },
     { id: 'feedback', name: 'Feedback', frag: FEEDBACK_FS,
@@ -7782,13 +8839,24 @@ void main() {
         { id: 'color', label: 'Colour', min: 0, max: 1, step: .01, def: 0, fmt: pct, title: 'Bring back the hidden rainbow tints of the two cell channels (0 = black & white, as the source)' },
         { id: 'res', label: 'Internal resolution', min: 120, max: 1080, step: 20, def: 540, fmt: x => x + ' lines', title: 'Height the cells are simulated at, then scaled up: lower is faster and makes bigger cells' },
         { id: 'ink', label: 'Ink', min: 0, max: 1, step: .01, def: .5, fmt: pct, title: 'How strongly the scope\'s live picture seeds living cells each frame' },
-        { id: 'beat', label: 'Beat', min: 0, max: 2, step: .05, def: .5, fmt: times, title: 'How much the music drives it: the level speeds the flow, bass kicks swell the attraction rings' }
+        { id: 'beat', label: 'Beat', min: 0, max: .15, step: .005, def: .15, fmt: x => (+x.toFixed(3)) + '×', title: 'How much the music drives it (0–0.15×): bass stretches the cream left/right, treble stretches it up/down, mids boost Ink (0 = off)' },
+        { id: 'trans', label: 'Transparency', min: 0, max: 1, step: .01, def: 0, fmt: pct, title: 'How much of the live scope picture shows through the cream (0 = solid cream as before; 100% = cream gone)' },
+        { id: 'transkey', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, fmt: x => ['Whole picture', 'Dark only'][x] || '', title: 'Whole picture: Transparency fades the cream everywhere. Dark only: bright cream relief stays solid while dark/navy areas reveal the scope' }
       ],
       uniforms(dt, P, st) {
         const b = beatOf(st, dt); st.kick = b.kick;
-        st.t = ((st.t || 0) + dt * (1 + P.beat * b.energy)) % 1e5;
-        return { u_t: st.t, u_speed: P.speed * (1 + P.beat * b.energy), u_turb: P.turb, u_attr: P.attr * (1 + 2 * P.beat * b.kick), u_ring: P.ring, u_corner: P.centre ? 0 : 1,
-          u_thr: P.thr, u_rate: P.rate, u_relief: P.relief, u_height: P.height, u_spec: P.spec, u_blue: P.blue, u_color: P.color, u_ink: P.ink, res: P.res };
+        // r69: smooth band follow (~80 ms) for stable stretch / ink; Beat scales all three; Beat 0 / silence → neutral
+        const follow = 1 - Math.exp(-dt / .08);
+        st.pcBass = (st.pcBass || 0) + (b.n[0] - (st.pcBass || 0)) * follow;
+        st.pcMid  = (st.pcMid  || 0) + (b.n[1] - (st.pcMid  || 0)) * follow;
+        st.pcTre  = (st.pcTre  || 0) + (b.n[2] - (st.pcTre  || 0)) * follow;
+        const w = P.beat;   // 0..0.15
+        const sx = 1 + 3 * w * st.pcBass, sy = 1 + 3 * w * st.pcTre;
+        const ink = Math.min(1, P.ink * (1 + 4 * w * st.pcMid));
+        st.t = ((st.t || 0) + dt) % 1e5;   // wall-clock time (no energy acceleration)
+        return { u_t: st.t, u_speed: P.speed, u_turb: P.turb, u_attr: P.attr, u_ring: P.ring, u_corner: P.centre ? 0 : 1,
+          u_thr: P.thr, u_rate: P.rate, u_relief: P.relief, u_height: P.height, u_spec: P.spec, u_blue: P.blue, u_color: P.color,
+          u_ink: ink, u_sx: sx, u_sy: sy, u_trans: P.trans, u_transkey: P.transkey, res: P.res };
       } },
     { id: 'meltingthreads', name: 'Melting Threads', frag: MT_FS, bufFrags: [MT_A_FS], taps: true,
       credit: { text: 'After "Melting Threads" (Shadertoy); reimplemented', href: 'https://www.shadertoy.com/results?query=Melting+Threads' },
@@ -7922,6 +8990,67 @@ void main() {
         st.k = Math.max(b.kick, (st.k || 0) * Math.pow(.85, dt * 60));
         return { iters: Math.max(1, Math.min(4, Math.round(dt * 60))), u_t: st.t, u_rot: P.rot * e, u_off: P.off * e, u_split: P.split, u_nsize: P.nsize,
           u_gain: P.gain, u_fade: P.fade, u_dot: P.dot, u_dotb: P.dotb * (1 + 3 * P.beat * st.k), u_sharp: P.sharp, u_ink: P.ink, res: P.res };
+      } },
+    { id: 'liquidmetal', name: 'Liquid Metal', frag: LM_FS, bufFrags: [LM_A_FS, LM_B_FS], taps: true,
+      credit: { text: 'After Liquid Metal by FractalFantasy; reimplemented (CC0)', href: 'https://creativecommons.org/publicdomain/zero/1.0/' },
+      params: [
+        { id: 'speed', label: 'Time speed', min: 0, max: 4, step: 0.05, def: 1, fmt: times, title: 'Speed of the original surface animation and slow drift; 1 matches source time.' },
+        { id: 'scale', label: 'Scale', min: 0.5, max: 5, step: 0.05, def: 2, fmt: times, title: 'Surface coordinate scale; original 2.' },
+        { id: 'warp', label: 'Warp', min: 0, max: 10, step: 0.1, def: 5.4, fmt: x => x.toFixed(1), title: 'Final warped-FBM displacement; source bump 5.4.' },
+        { id: 'height', label: 'Height', min: 0.1, max: 0.7, step: 0.01, def: 0.35, fmt: x => x.toFixed(2), title: 'Surface height strength; source 0.35.' },
+        { id: 'round', label: 'Roundness', min: 1, max: 8, step: 0.1, def: 3, fmt: x => x.toFixed(1), title: 'Height saturation through tanh; source 3.' },
+        { id: 'detail', label: 'Detail', type: 'choice', opts: ['Fast', 'Original', 'Fine'], min: 0, max: 2, step: 1, def: 1, fmt: x => ['Fast', 'Original', 'Fine'][x] || '', title: 'Fast / Original (5, 7, 3 octaves) / Fine; more costs more GPU work.' },
+        { id: 'gloss', label: 'Gloss', min: 2, max: 16, step: 1, def: 9, fmt: x => String(x), title: 'Power of the primary fake highlight; source 9.' },
+        { id: 'contrast', label: 'Contrast', min: 0, max: 2, step: 0.05, def: 1, fmt: times, title: 'Source post-process contrast at 1.' },
+        { id: 'beat', label: 'Audio drive', min: 0, max: 3, step: 0.05, def: 1, fmt: times, title: 'Replaces mouse X with smoothed bass/mid and mouse Y with treble/mid phase offsets. 0 gives unsteered source animation.' },
+        { id: 'response', label: 'Audio response', min: 0, max: 1, step: 0.01, def: 0.25, fmt: x => x.toFixed(2)+' s', title: 'Envelope follow time for the two audio steering phases; 0 is immediate.' },
+        { id: 'trails', label: 'Trails', min: 0.5, max: 1, step: 0.01, def: 0.96, fmt: pct, title: 'Fraction of scope history kept per 1/60 s; higher leaves longer feedback trails.' },
+        { id: 'flow', label: 'Flow', min: 0, max: 4, step: 0.05, def: 1, fmt: times, title: 'How strongly the height gradient carries old scope ink. 0 keeps history in place.' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: 0.01, def: 0.8, fmt: pct, title: 'How much live scope and feedback ink is laid over the metal; 0 shows the surface alone after the history fades.' },
+        { id: 'surface', label: 'Metal surface', min: 0, max: 1, step: 0.01, def: 1, fmt: pct, title: 'Strength of the original metallic plate under the feedback. 0 leaves flowing scope trails over the theme background.' },
+        { id: 'res', label: 'Internal resolution', min: 120, max: 1080, step: 20, def: 240, fmt: x => x+' lines', title: 'Height of the surface/history buffers; higher is sharper but the nested FBM is expensive. Live scope stays full resolution.' }
+      ],
+      uniforms(dt,P,st){
+        const b=beatOf(st,dt);st.kick=b.kick;
+        const follow=P.response<=0?1:1-Math.exp(-dt/Math.max(.001,P.response));
+        st.lmBass=(st.lmBass||0)+(b.n[0]-(st.lmBass||0))*follow;st.lmMid=(st.lmMid||0)+(b.n[1]-(st.lmMid||0))*follow;st.lmTreble=(st.lmTreble||0)+(b.n[2]-(st.lmTreble||0))*follow;
+        st.t=((st.t||0)+dt*P.speed*(1+.1*P.beat*b.energy))%1e4;
+        return { iters:1,u_t:st.t,u_audio:[P.beat*(1.8*st.lmBass+.4*st.lmMid),P.beat*(1.8*st.lmTreble+.4*st.lmMid)],u_scale:P.scale,u_warp:P.warp,u_height:P.height,u_round:P.round,u_detail:P.detail,
+          u_gloss:P.gloss,u_contrast:P.contrast,u_decay:Math.pow(P.trails,dt*60),u_flow:P.flow,u_ink:P.ink,u_surface:P.surface,res:P.res };
+      } },
+    { id: 'fractalfeedback', name: 'Fractal Feedback', frag: FRF_FS, bufFrags: [FRF_A_FS], taps: true,
+      credit: { text: 'After Fractal Feedback (Shadertoy); reimplemented', href: 'https://www.shadertoy.com/' },
+      params: [
+        { id: 'speed', label: 'Time speed', min: 0, max: 4, step: 0.05, def: 1, fmt: times, title: 'Speed of the fractal animation; 1 matches source iTime.' },
+        { id: 'aa', label: 'Anti-alias', min: 1, max: 5, step: 1, def: 3, fmt: x => String(x), title: 'Source aa=3: samples (±aa)² of the fractal. Lower is faster.' },
+        { id: 'mix', label: 'Fractal mix', min: 0, max: 1, step: 0.01, def: 0.3, fmt: pct, title: 'How strongly the fractal overwrites the previous buffer each frame; source 0.3.' },
+        { id: 'beat', label: 'Audio drive', min: 0, max: 3, step: 0.05, def: 1, fmt: times, title: 'Scales k from iChannel1 at x=.6 (smoothstep .3–.7 × 4). 0 freezes audio modulation.' },
+        { id: 'response', label: 'Audio response', min: 0, max: 1, step: 0.01, def: 0.15, fmt: x => x.toFixed(2)+' s', title: 'Envelope follow time for the spectrum sample; 0 is immediate.' },
+        { id: 'ink', label: 'Ink', min: 0, max: 1, step: 0.01, def: 0.35, fmt: pct, title: 'How strongly the live scope is written into Buffer A each frame.' },
+        { id: 'tint', label: 'Glow tint', min: 0, max: 3, step: 0.05, def: 1, fmt: times, title: 'Image-pass tint strength; 1 matches source vec4(1.2,1,.8,1)*.17.' },
+        { id: 'res', label: 'Internal resolution', min: 120, max: 1080, step: 20, def: 360, fmt: x => x+' lines', title: 'Height of Buffer A; AA fractal is costly. Image composites at full resolution.' }
+      ],
+      uniforms(dt,P,st){
+        const b=beatOf(st,dt);st.kick=b.kick;
+        let raw=0;
+        if(st.ffTest!=null) raw=Math.max(0,Math.min(1,+st.ffTest||0));
+        else{
+          const band=Math.min(1,(b.n[1]*1.5+b.n[2]*2.5));
+          let fft=0;
+          if(an&&src){
+            if(!st.ffBuf||st.ffBuf.length!==an.frequencyBinCount)st.ffBuf=new Uint8Array(an.frequencyBinCount);
+            an.getByteFrequencyData(st.ffBuf);
+            const n=Math.min(512,st.ffBuf.length),i=Math.min(n-1,Math.floor(.6*n));
+            fft=st.ffBuf[i]/255;
+          }
+          raw=Math.max(fft,band);
+        }
+        const follow=P.response<=0?1:1-Math.exp(-dt/Math.max(.001,P.response));
+        st.ffRaw=(st.ffRaw||0)+(raw-(st.ffRaw||0))*follow;
+        const t=Math.max(0,Math.min(1,(st.ffRaw-.3)/.4)),sm=t*t*(3-2*t);
+        const k=sm*4*P.beat;
+        st.t=((st.t||0)+dt*P.speed*(1+.2*P.beat*b.energy))%1e4;
+        return { iters:1,u_t:st.t,u_k:k,u_aa:P.aa,u_mix:P.mix,u_ink:P.ink,u_tint:P.tint,res:P.res };
       } }
   ];
   const fxCv = $('#scopeFx'), sfFx = $('#sfFx'), SETTLE = 45;        // frames the trails take to fade out after a pause
@@ -7934,8 +9063,32 @@ void main() {
     for (const p of f.params || []) { const x = sv[p.id]; o[p.id] = typeof x === 'number' && Number.isFinite(x) ? Math.min(p.max, Math.max(p.min, x)) : p.def; }
     return o;
   }
+  /* r67: global vignette (Liquid Metal's Buffer A look) as a final blit after every feedback effect.
+     Persisted in S.meta.scopeFxVig; Amount 0 is a pixel-identical copy. One-time migrate of a saved
+     liquidmetal.vig into scopeFxVig so old presets don't double-apply once LM no longer owns it. */
+  const VIG_PARAMS = [
+    { id: 'vig', label: 'Amount', min: 0, max: 2, step: .05, def: 0, fmt: x => x.toFixed(2) + '×', title: 'Corner darkening / centre brightening after every feedback effect (Liquid Metal’s vignette, now global). 0 = off; 1 = source strength; above 1 strengthens it.' }
+  ];
+  let vigMigrated = false;
+  function migrateVig() {
+    if (vigMigrated) return; vigMigrated = true;
+    const all = S.meta.scopeFxParams; if (!all || !all.liquidmetal || typeof all.liquidmetal.vig !== 'number') return;
+    const v = all.liquidmetal.vig; delete all.liquidmetal.vig;
+    if (!Object.keys(all.liquidmetal).length) delete all.liquidmetal;
+    if (!S.meta.scopeFxVig || typeof S.meta.scopeFxVig.vig !== 'number') {
+      const p = VIG_PARAMS[0], x = Math.min(p.max, Math.max(p.min, v));
+      if (Math.abs(x - p.def) >= 1e-9) S.meta.scopeFxVig = { vig: x }; else delete S.meta.scopeFxVig;
+    }
+  }
+  function vigParams() {
+    migrateVig();
+    const sv = S.meta.scopeFxVig || {}, o = {};
+    for (const p of VIG_PARAMS) { const x = sv[p.id]; o[p.id] = typeof x === 'number' && Number.isFinite(x) ? Math.min(p.max, Math.max(p.min, x)) : p.def; }
+    return o;
+  }
   const VS = 'attribute vec2 a; varying vec2 v; void main() { v = a * 0.5 + 0.5; gl_Position = vec4(a, 0.0, 1.0); }';
-  const COPY_FS = 'uniform sampler2D u_tex; void main() { gl_FragColor = vec4(texture2D(u_tex, v).rgb, 1.0); }';
+  // r67: final screen blit; u_vig===0 is algebraically identical to the old plain COPY_FS
+  const COPY_FS = 'uniform sampler2D u_tex; uniform float u_vig; void main() { vec3 c = texture2D(u_tex, v).rgb; float vignette = 0.5+0.5*pow(max(0.0,100.0*v.x*v.y*(1.0-v.x)*(1.0-v.y)),0.7); c *= mix(1.0, vignette, u_vig); gl_FragColor = vec4(clamp(c,0.0,1.0), 1.0); }';
   function glInit() {                        // lazily, the first time an effect is shown; false when WebGL is unavailable
     if (gl) return !lost;
     if (glFailed) return false;
@@ -7967,6 +9120,11 @@ void main() {
       gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
       srcTex = tex(); fbs = null; return true;
     } catch (e) { console.warn('Scope effects unavailable:', e.message); return false; }
+  }
+  function fxBlit(tex) {                     // r67: final copy to the screen with the global vignette
+    const P = progs.copy; gl.useProgram(P.pr); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(P.u('u_tex'), 0); gl.uniform1f(P.u('u_vig'), vigParams().vig);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
   function fbAlloc(w, h) {                   // two colour targets, cleared to the theme background
     fxFree();
@@ -8029,8 +9187,7 @@ void main() {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     cur = 1 - cur;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
-    gl.useProgram(progs.copy.pr); gl.bindTexture(gl.TEXTURE_2D, dst.t); gl.uniform1i(progs.copy.u('u_tex'), 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    fxBlit(dst.t);
     fxFrames++;
   }
   /* Diffusion Warp's field: its own ping-pong pair at half size, kept on fbs (so it is freed and re-made with it). Half-float
@@ -8091,8 +9248,7 @@ void main() {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); cur = 1 - cur;
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, null); gl.activeTexture(gl.TEXTURE0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
-    gl.useProgram(progs.copy.pr); gl.bindTexture(gl.TEXTURE_2D, dst.t); gl.uniform1i(progs.copy.u('u_tex'), 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    fxBlit(dst.t);
     fxFrames++;
   }
   /* r45: Fractal Echo's buffers A (ping-pong) and B at the internal resolution, kept on fbs (freed with it); cleared to black */
@@ -8133,8 +9289,7 @@ void main() {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); cur = 1 - cur;
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, null); gl.activeTexture(gl.TEXTURE0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
-    gl.useProgram(progs.copy.pr); gl.bindTexture(gl.TEXTURE_2D, dst.t); gl.uniform1i(progs.copy.u('u_tex'), 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    fxBlit(dst.t);
     fxFrames++;
   }
   /* r47: generic multi-buffer effects (f.bufFrags = [A] or [A, B], then f.frag as the Image pass), like a Shadertoy with Buffer A/B.
@@ -8198,8 +9353,7 @@ void main() {
     if (nb > 2) { gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, null); }
     gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, null); gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, null); gl.activeTexture(gl.TEXTURE0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
-    gl.useProgram(progs.copy.pr); gl.bindTexture(gl.TEXTURE_2D, dst.t); gl.uniform1i(progs.copy.u('u_tex'), 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    fxBlit(dst.t);
     fxFrames++;
   }
   function fxStep() { if (!fxShown) return; settle = 0; if (settleRaf) { cancelAnimationFrame(settleRaf); settleRaf = 0; } fxRender(1); }
@@ -8215,23 +9369,24 @@ void main() {
     sfFx.textContent = text; sfFx.classList.add('show');
     clearTimeout(fxLabelT); fxLabelT = setTimeout(() => sfFx.classList.remove('show'), ms);
   }
-  /* ---- settings panel (Enter, or ⚙), one panel with two separate parts: "Scope" (always; SCOPE_PARAMS, S.meta.scopeView) and
-     the effect's own settings below it (only for an effect that has params; FX[i].params, S.meta.scopeFxParams). Each part is
+  /* ---- settings panel (Enter, or ⚙): "Scope" (always; SCOPE_PARAMS, S.meta.scopeView), "Vignette" (r67; when an effect is
+     chosen; VIG_PARAMS, S.meta.scopeFxVig), and the effect's own settings (FX[i].params, S.meta.scopeFxParams). Each part is
      built from its schema and has its own Reset all; values apply live and are saved per browser. ---- */
-  const panel = $('#sfPanel'), gear = $('#sfGear'), prows = $('#sfpRows'), srows = $('#sfpScopeRows'), fxSec = $('#sfpFx');
+  const panel = $('#sfPanel'), gear = $('#sfGear'), prows = $('#sfpRows'), srows = $('#sfpScopeRows'), vrows = $('#sfpVigRows'), fxSec = $('#sfpFx'), vigSec = $('#sfpVig');
   const SEC = { scope: { rows: srows, pre: 'sfs-', schema: () => SCOPE_PARAMS, vals: () => sv(), set: (id, x) => setView(id, x) },
+    vig: { rows: vrows, pre: 'sfv-', schema: () => VIG_PARAMS, vals: () => vigParams(), set: (id, x) => setVig(id, x) },
     fx: { rows: prows, pre: 'sfp-', schema: () => FX[fxIx()].params || [], vals: () => fxParams(), set: (id, x) => setParam(id, x) } };
-  /* Round 37: every heading in the panel folds: the two sections (Scope, the effect: keys 'scope' / 'fx') and each group in them
+  /* Round 37 / r67: every heading in the panel folds: sections (Scope, Vignette, the effect: keys 'scope' / 'vig' / 'fx') and each group in them
      ('scope:Size', 'fx:…'). Folded rows are hidden (so also out of the Tab order); the state is kept per browser in localStorage
      (mp3lib.scopeFold, only folded keys; none = all open, the old panel). */
   const FOLD_K = 'mp3lib.scopeFold';
   let fold = (() => { try { const o = JSON.parse(localStorage.getItem(FOLD_K)); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } })();
   const foldSave = () => { try { if (Object.keys(fold).length) localStorage.setItem(FOLD_K, JSON.stringify(fold)); else localStorage.removeItem(FOLD_K); } catch (e) { } };
   const grpHTML = g => `<button type="button" class="sfp-grp" data-g="${esc(g)}" aria-expanded="true">${esc(g)}</button>`;
-  const secEl = sec => $(sec === 'scope' ? '#sfpScope' : '#sfpFx');
+  const secEl = sec => $(sec === 'scope' ? '#sfpScope' : sec === 'vig' ? '#sfpVig' : '#sfpFx');
   function foldApply() {                      // reflect fold in the panel (after every build and toggle)
     let open_ = false, shut = false;
-    for (const sec of ['scope', 'fx']) {
+    for (const sec of ['scope', 'vig', 'fx']) {
       const el = secEl(sec), off = !!fold[sec]; el.classList.toggle('sfp-shut', off); el.querySelector('.sfp-st').setAttribute('aria-expanded', String(!off));
       let on = true;
       for (const c of SEC[sec].rows.children) {
@@ -8244,9 +9399,9 @@ void main() {
     b.textContent = all ? 'Expand all' : 'Collapse all'; b.setAttribute('aria-label', all ? 'Expand all settings headings' : 'Collapse all settings headings');
   }
   function foldSet(k, off) { if (off) fold[k] = 1; else delete fold[k]; foldSave(); foldApply(); }
-  function foldAll() {                        // Collapse all: every group heading (the two sections stay open, so the headings show); Expand all: everything
+  function foldAll() {                        // Collapse all: every group heading (the sections stay open, so the headings show); Expand all: everything
     if (panel.querySelector('.sfp-fold').textContent === 'Expand all') fold = {};
-    else { fold = {}; for (const sec of ['scope', 'fx']) for (const c of SEC[sec].rows.querySelectorAll('.sfp-grp')) fold[sec + ':' + c.dataset.g] = 1;
+    else { fold = {}; for (const sec of ['scope', 'vig', 'fx']) for (const c of SEC[sec].rows.querySelectorAll('.sfp-grp')) fold[sec + ':' + c.dataset.g] = 1;
       for (const g of new Set(SCOPE_PARAMS.map(p => p.group).filter(Boolean))) fold['scope:' + g] = 1; }
     foldSave(); foldApply();
   }
@@ -8267,8 +9422,11 @@ void main() {
   const themeRow = () => `${grpHTML('Theme')}<div class="sfp-row" data-p="theme" data-x="theme"><label for="sfs-theme" title="Colour theme of the whole app (same as Settings › Theme)">Theme</label><select id="sfs-theme" title="Colour theme of the whole app (same as Settings › Theme)">${THEMES.map(t => `<option value="${t.id}"${t.id === (S.meta.theme || 'dark') ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>`;
   window.addEventListener('mp3lib-theme', e => { const c = $('#sfs-theme'); if (c && c.value !== e.detail) c.value = e.detail; preSync(); });
   function panelBuild() {
+    migrateVig();
     srows.innerHTML = themeRow() + rowsHTML(SCOPE_PARAMS, sv(), 'sfs-'); preSync();
-    const f = FX[fxIx()], has = hasParams(f);
+    const f = FX[fxIx()], has = hasParams(f), vigOn = fxIx() > 0;
+    vigSec.hidden = !vigOn;
+    if (vigOn) vrows.innerHTML = rowsHTML(VIG_PARAMS, vigParams(), 'sfv-'); else vrows.innerHTML = '';
     fxSec.hidden = !has;
     if (has) { $('#sfpTitle').textContent = f.name; prows.innerHTML = rowsHTML(f.params, fxParams(f), 'sfp-'); const st = fxSt[f.id]; if (st && st.keep != null) effSync(f, st.keep); }
     else prows.innerHTML = '';
@@ -8304,6 +9462,17 @@ void main() {
     clearTimeout(paramT); paramT = setTimeout(saveMeta, 250);      // a drag fires many inputs: save once it settles
     if (fxShown && !raf) { settle = 0; fxIdle(); }                 // paused: show the new look while the trails settle again
   }
+  function setVig(id, x) {                   // r67: global vignette Amount (S.meta.scopeFxVig)
+    migrateVig();
+    const p = VIG_PARAMS.find(q => q.id === id); if (!p) return;
+    x = Number.isFinite(+x) ? Math.min(p.max, Math.max(p.min, +x)) : p.def;
+    const o = S.meta.scopeFxVig = S.meta.scopeFxVig || {};
+    if (Math.abs(x - p.def) < 1e-9) delete o[id]; else o[id] = x;
+    if (!Object.keys(o).length) delete S.meta.scopeFxVig;
+    panelRow(p, x, 'vig'); preSync();
+    clearTimeout(paramT); paramT = setTimeout(saveMeta, 250);
+    if (fxShown && !raf) { settle = 0; fxIdle(); }
+  }
   /* Round 39: presets. A preset is a snapshot of every scope setting (all SCOPE_PARAMS values, the Theme), the mode, the effect
      and that effect's settings; not the panel's place or folds. S saves the current settings as a new one, Shift+← → step through
      them (wrapping), the Preset list at the top of the panel picks one. Kept in S.meta.scopePresets (IndexedDB) and written to
@@ -8315,15 +9484,20 @@ void main() {
   const preNum = (x, p) => { let v = typeof x === 'number' && Number.isFinite(x) ? Math.min(p.max, Math.max(p.min, x)) : p.def; if (p.step >= 1) v = Math.round(v); return v; };
   function preSnap() {
     const v = sv(), params = {}, f = FX[fxIx()]; SCOPE_PARAMS.forEach(p => params[p.id] = v[p.id]);
-    return { mode: MODES[modeIx()].id, effect: f.id, params, fxParams: hasParams(f) ? { ...fxParams(f) } : {}, theme: S.meta.theme || 'dark' };
+    return { mode: MODES[modeIx()].id, effect: f.id, params, fxParams: hasParams(f) ? { ...fxParams(f) } : {}, vigParams: { ...vigParams() }, theme: S.meta.theme || 'dark' };
   }
   function preNorm(pr) {                         // a preset's full values (clamped, defaults for the missing ones)
     const P = pr && pr.params && typeof pr.params === 'object' ? pr.params : {}, params = {};
     SCOPE_PARAMS.forEach(p => params[p.id] = preNum(P[p.id], p));
-    const mi = MODES.findIndex(m => m.id === pr.mode), fi = FX.findIndex(f => f.id === pr.effect), fxp = {};
+    const mi = MODES.findIndex(m => m.id === pr.mode), fi = FX.findIndex(f => f.id === pr.effect), fxp = {}, vigp = {};
     const FP = pr.fxParams && typeof pr.fxParams === 'object' ? pr.fxParams : {};
     if (fi >= 0) (FX[fi].params || []).forEach(p => fxp[p.id] = preNum(FP[p.id], p));
-    return { mi, fi, params, fxp, theme: THEMES.some(t => t.id === pr.theme) ? pr.theme : null };
+    // r67: vigParams; also lift a legacy liquidmetal.fxParams.vig into Amount when vigParams was missing
+    const VP = pr.vigParams && typeof pr.vigParams === 'object' ? pr.vigParams : {};
+    const vigSrc = (typeof VP.vig === 'number') ? VP
+      : (pr.effect === 'liquidmetal' && typeof FP.vig === 'number') ? { vig: FP.vig } : VP;
+    VIG_PARAMS.forEach(p => vigp[p.id] = preNum(vigSrc[p.id], p));
+    return { mi, fi, params, fxp, vigp, theme: THEMES.some(t => t.id === pr.theme) ? pr.theme : null };
   }
   function preMatch(pr) {                        // do the current settings equal this preset?
     const n = preNorm(pr), v = sv(), eq = (a, b) => Math.abs(a - b) < 1e-9;
@@ -8332,6 +9506,7 @@ void main() {
     if (n.theme && n.theme !== (S.meta.theme || 'dark')) return false;
     if (!SCOPE_PARAMS.every(p => eq(v[p.id], n.params[p.id]))) return false;
     if (n.fi >= 0) { const c = fxParams(FX[n.fi]); if (!(FX[n.fi].params || []).every(p => eq(c[p.id], n.fxp[p.id]))) return false; }
+    const cv = vigParams(); if (!VIG_PARAMS.every(p => eq(cv[p.id], n.vigp[p.id]))) return false;
     return true;
   }
   const preCur = () => { const L = preList(); if (preAt >= 0 && preAt < L.length && preMatch(L[preAt])) return preAt; return L.findIndex(preMatch); };
@@ -8350,6 +9525,8 @@ void main() {
       const was = fxIx(); S.meta.scopeFx = f.id;
       if (!fxApply() && n.fi > 0) S.meta.scopeFx = FX[was].id === f.id ? 'none' : FX[was].id;
     }
+    { const q = {}; VIG_PARAMS.forEach(p => { if (Math.abs(n.vigp[p.id] - p.def) >= 1e-9) q[p.id] = n.vigp[p.id]; });
+      if (Object.keys(q).length) S.meta.scopeFxVig = q; else delete S.meta.scopeFxVig; }
     preAt = i; clearTimeout(paramT); paramT = 0;
     setMode(n.mi >= 0 ? n.mi : modeIx(), false);   // redraws, retunes the filters and rebuilds the panel
     gearSync(); saveMeta();
@@ -8402,7 +9579,7 @@ void main() {
     if (t >= 0) panel.querySelectorAll('.sfp-pb:not([data-pa=save])').forEach(b => b.title = ({ update: 'Overwrite “%” with the current settings', rename: 'Rename “%”', delete: 'Delete “%”' })[b.dataset.pa].replace('%', L[t].name));
   }
   function presetsOut() {                        // for the library file
-    return { version: PRESET_V, presets: preList().map(p => ({ id: p.id, name: p.name, created: p.created, ...(p.updated ? { updated: p.updated } : {}), mode: p.mode, effect: p.effect, theme: p.theme, params: { ...p.params }, fxParams: { ...(p.fxParams || {}) } })) };
+    return { version: PRESET_V, presets: preList().map(p => ({ id: p.id, name: p.name, created: p.created, ...(p.updated ? { updated: p.updated } : {}), mode: p.mode, effect: p.effect, theme: p.theme, params: { ...p.params }, fxParams: { ...(p.fxParams || {}) }, vigParams: { ...(p.vigParams || {}) } })) };
   }
   function presetsIn(sec) {                      // from a library file: same id (or else same name) = replaced, others added
     const A = Array.isArray(sec) ? sec : sec && Array.isArray(sec.presets) ? sec.presets : null; if (!A) return 0;
@@ -8412,7 +9589,7 @@ void main() {
       if (!x || typeof x !== 'object' || !(typeof x.name === 'string' && x.name.trim() || typeof x.id === 'string' && x.id)) continue;
       const str = v => typeof v === 'string' ? v : undefined;
       const pr = { id: str(x.id) || preId(), name: (str(x.name) || '').trim().slice(0, 80) || 'Preset', created: str(x.created) || new Date().toISOString(), ...(str(x.updated) ? { updated: x.updated } : {}),
-        mode: str(x.mode), effect: str(x.effect), theme: str(x.theme), params: nums(x.params), fxParams: nums(x.fxParams) };
+        mode: str(x.mode), effect: str(x.effect), theme: str(x.theme), params: nums(x.params), fxParams: nums(x.fxParams), vigParams: nums(x.vigParams) };
       let j = L.findIndex(p => p.id === pr.id); if (j < 0) j = L.findIndex(p => p.name === pr.name);
       if (j >= 0) { pr.id = L[j].id; L[j] = pr; } else L.push(pr);
       n++;
@@ -8547,7 +9724,7 @@ void main() {
     open = true; fs.hidden = false; meta(); svC = null; dispSync();
     if (an) { an.fftSize = 8192; buf = new Float32Array(an.fftSize); }
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
-    $('#scopeFull .sf-n').textContent = MODES.length > 12 ? '9, 0, -, =, ⌫' : MODES.length > 11 ? '9, 0, -, =' : MODES.length > 10 ? '9, 0, -' : MODES.length > 9 ? '9, 0' : MODES.length;   // r41: key 0 is mode 10; r42: - is mode 11
+    $('#scopeFull .sf-n').textContent = MODES.length > 19 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home, \\' : MODES.length > 18 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home' : MODES.length > 17 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn' : MODES.length > 16 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp' : MODES.length > 15 ? '9, 0, -, =, ⌫, ⌦, End, Ins' : MODES.length > 14 ? '9, 0, -, =, ⌫, ⌦, End' : MODES.length > 13 ? '9, 0, -, =, ⌫, ⌦' : MODES.length > 12 ? '9, 0, -, =, ⌫' : MODES.length > 11 ? '9, 0, -, =' : MODES.length > 10 ? '9, 0, -' : MODES.length > 9 ? '9, 0' : MODES.length;   // r41: key 0 is mode 10; r42: - is mode 11
     bandSync();
     if (!fxApply() && fxIx() > 0 && !reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} isn’t available here (no WebGL) · None`, 2600);   // the choice is kept for next time
     else if (fxIx() > 0 && reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} · off while reduced motion is on`, 2200);
@@ -8615,6 +9792,13 @@ void main() {
     if (e.key === '-' && n >= 11) { e.preventDefault(); e.stopImmediatePropagation(); setMode(10); return; }   // r42: - = mode 11
     if (e.key === '=' && n >= 12) { e.preventDefault(); e.stopImmediatePropagation(); setMode(11); return; }   // r44: = = mode 12
     if (e.key === 'Backspace' && n >= 13) { e.preventDefault(); e.stopImmediatePropagation(); setMode(12); return; }   // r53: ⌫ (after =) = mode 13
+    if (e.key === 'Delete' && n >= 14) { e.preventDefault(); e.stopImmediatePropagation(); setMode(13); return; } // r56: ⌦ = mode 14
+    if (e.key === 'End' && n >= 15) { e.preventDefault(); e.stopImmediatePropagation(); setMode(14); return; } // r57: End = Seascape
+    if (e.key === 'Insert' && n >= 16) { e.preventDefault(); e.stopImmediatePropagation(); setMode(15); return; } // r58: Insert = Halo
+    if (e.key === 'PageUp' && n >= 17) { e.preventDefault(); e.stopImmediatePropagation(); setMode(16); return; } // r59: PageUp = Neuro
+    if (e.key === 'PageDown' && n >= 18) { e.preventDefault(); e.stopImmediatePropagation(); setMode(17); return; } // r61: PageDown = Spiky Ball
+    if (e.key === 'Home' && n >= 19 && !(e.target && e.target.classList && e.target.classList.contains('sfp-grip'))) { e.preventDefault(); e.stopImmediatePropagation(); setMode(18); return; } // r63: Home = Blobby
+    if (e.key === '\\' && n >= 20) { e.preventDefault(); e.stopImmediatePropagation(); setMode(19); return; } // r64: \\ = Swirly Eyes
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); e.stopImmediatePropagation(); setFxAndSync(fxIx() + (e.key === 'ArrowUp' ? 1 : -1)); return; }
     const k = (e.key || '').toLowerCase();
     if (k === 'g' || k === 't') { e.preventDefault(); e.stopImmediatePropagation(); const id = k === 'g' ? 'grid' : 'text', on = !sv()[id]; setView(id, on ? 1 : 0); modeToast((k === 'g' ? 'Grid' : 'Text') + ': ' + (on ? 'On' : 'Off')); }
@@ -8671,6 +9855,7 @@ void main() {
   return { enabled, set, sync, hint, expand, collapse, modes: () => MODES.map(m => m.id), mode: () => curMode().id,
     effects: () => FX.map(f => f.id), effect: () => FX[fxIx()].id, fxStats,
     fxParams: () => ({ ...fxParams() }), fxSchema: () => (FX[fxIx()].params || []).map(({ fmt, ...p }) => p), setParam,
+    vigParams: () => ({ ...vigParams() }), vigSchema: () => VIG_PARAMS.map(({ fmt, ...p }) => p), setVig,
     view: () => { const { xf, ...v } = sv(); return { ...v, composited: xf }; }, viewSchema: () => SCOPE_PARAMS.map(({ fmt, ...p }) => p), setView,
     layout: () => sv().xf && lay ? { ...lay, tile: [tileT.cv.width, tileT.cv.height] } : null, tileCanvas: () => tileT.cv,
     tiles: () => lay ? tiles(sv(), lay).map(t => ({ ...t, poly: t.poly === TRI ? 'tri' : t.poly === HEX ? 'hex' : null })) : [],
@@ -8697,6 +9882,16 @@ void main() {
     brushInfo: () => ({ ...brInfo }), brushSprite: (b, c, px) => brSprite(c, px, b), presetsOut, presetsIn, presets: () => preList().map(p => ({ ...p })), presetCur: () => preCur(), presetSave: () => preSave(), presetApply: i => preApply(i), presetStep: d => preStep(d), brushGlyphs: () => [...brGly.keys()], brushText: () => brTxt.join(''),   // (tests) brush b's sprite in colour c, px across
     linePal: () => { const p = linePal(sv()); return { line: p.line, base: p.base, bands: [...p.bands], theme: p === col }; },
     spiral: { info: () => ({ ...spiInfo }), canvas: () => spiS.cv, failed: () => spiS.failed, fs: SPI_FS },
+    liquidmetal: { a: LM_A_FS, b: LM_B_FS, fs: LM_FS },
+    plasticcream: { a: PC_A_FS, fs: PC_FS },   // r65: expose shaders for Transparency / Beat checks
+    fractalfeedback: { a: FRF_A_FS, fs: FRF_FS },
+    swirlyeyes: { info: () => ({ ...swS.info }), canvas: () => swS.cv, failed: () => swS.failed, fs: SW_FS, tapped: () => swS.on, analyser: () => swS.an && { fft: swS.an.fftSize, smooth: swS.an.smoothingTimeConstant, min: swS.an.minDecibels, max: swS.an.maxDecibels }, spectrum: () => Array.from(swS.bins.subarray(0,512)), bass: () => swS.bass, reset() { swS.time=0; swS.last=0; swS.bass=0; }, testAudio(bins) { swS.test=bins?Uint8Array.from({length:512},(_,i)=>Math.max(0,Math.min(255,+bins[i]||0))):null; } },
+    blobby: { info: () => ({ ...blS.info }), canvas: () => blS.cv, failed: () => blS.failed, fsA: BLOB_A_FS, fs: BLOB_FS, tapped: () => blS.on, analyser: () => blS.an && { fft: blS.an.fftSize, smooth: blS.an.smoothingTimeConstant, min: blS.an.minDecibels, max: blS.an.maxDecibels }, spectrum: () => Array.from(blS.bins.subarray(0,512)), reset() { blS.time=0; blS.last=0; blS.cur=0; if(blS.fbs)blS.fbs=null; }, testAudio(bins) { blS.test=bins?Uint8Array.from({length:512},(_,i)=>Math.max(0,Math.min(255,+bins[i]||0))):null; } },
+    spikyball: { info: () => ({ ...sbS.info }), canvas: () => sbS.cv, failed: () => sbS.failed, fs: SPIKY_FS, tapped: () => sbS.on, analyser: () => sbS.an && { fft: sbS.an.fftSize, smooth: sbS.an.smoothingTimeConstant, min: sbS.an.minDecibels, max: sbS.an.maxDecibels }, spectrum: () => Array.from(sbS.bins.subarray(0,512)), texture: () => Array.from(sbS.tex), textureInfo: () => ({ size:[512,2], channels:1, wrap: 'clamp' }), megabass: () => sbS.info.megabass, reset() { sbS.time=0; sbS.last=0; }, testAudio(bins,wave) { sbS.test=bins?{bins:Uint8Array.from({length:512},(_,i)=>Math.max(0,Math.min(255,+bins[i]||0))),wave:Float32Array.from({length:512},(_,i)=>Math.max(-1,Math.min(1,+(wave||[])[i]||0)))}:null; } },
+    neuro: { info: () => ({ ...ngS.info }), canvas: () => ngS.cv, failed: () => ngS.failed, fs: NEURO_FS, tapped: () => ngS.on, analyser: () => ngS.an && { fft: ngS.an.fftSize, smooth: ngS.an.smoothingTimeConstant, min: ngS.an.minDecibels, max: ngS.an.maxDecibels }, spectrum: () => Array.from(ngS.bins.subarray(0,512)), pixels: () => Array.from(ngS.pixels), textureInfo: () => ({ size:[64,64], channels:3, repeat: !!ngS.gl && ngS.gl.getTexParameter(ngS.gl.TEXTURE_2D,ngS.gl.TEXTURE_WRAP_S) === ngS.gl.REPEAT }), reset() { ngS.time=0; ngS.last=0; }, testAudio(bins,wave) { ngS.test=bins?{bins:Uint8Array.from({length:512},(_,i)=>Math.max(0,Math.min(255,+bins[i]||0))),wave:Float32Array.from({length:512},(_,i)=>Math.max(-1,Math.min(1,+(wave||[])[i]||0)))}:null; } },
+    halo: { info: () => ({ ...haloS.info }), canvas: () => haloS.cv, failed: () => haloS.failed, fs: HALO_FS, tapped: () => haloS.on, spectrum: () => Array.from(haloS.bins.subarray(0,512)), analyser: () => haloS.an && { fft: haloS.an.fftSize, smooth: haloS.an.smoothingTimeConstant, min: haloS.an.minDecibels, max: haloS.an.maxDecibels }, reset() { haloS.time=0; haloS.last=0; }, testSpectrum(v) { haloS.test=v?Uint8Array.from({length:512},(_,i)=>Math.min(255,Math.max(0,+v[i]||0))):null; } },
+    seascape: { info: () => ({ ...seaS.info }), canvas: () => seaS.cv, failed: () => seaS.failed, fs: SEA_FS, reset() { seaS.time=0; seaS.last=0; seaS.music=[0,0,0,0]; }, testMusic(v) { seaS.test=v?v.map(x=>Math.min(1,Math.max(0,+x||0))):null; } },
+    novawave: { info: () => ({ ...nwS.info }), canvas: () => nwS.cv, failed: () => nwS.failed, fs: NW_FS, reset() { nwS.time = 0; nwS.last = 0; } },
     audio3d: { info: () => ({ ...avInfo }), canvas: () => avS.cv, failed: () => avS.failed, fs: AV_FS, tapped: () => avS.on, analyser: () => avS.an && { fft: avS.an.fftSize, smooth: avS.an.smoothingTimeConstant, min: avS.an.minDecibels, max: avS.an.maxDecibels }, reset() { avS.t = 0; avS.ct = 0; } },
     pleiades: { info: () => ({ ...pleInfo }), canvas: () => pleS.cv, failed: () => pleS.failed, fs: PLE_FS },
     mirror: { info: () => ({ ...mirInfo }), canvas: () => mirS.cv, failed: () => mirS.failed, fs: MIR_FS },
