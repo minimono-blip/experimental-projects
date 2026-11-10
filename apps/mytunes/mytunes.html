@@ -105,6 +105,14 @@ svg{width:18px;height:18px;fill:currentColor;flex:none}
 .nav.active{background:var(--nav-active);color:var(--nav-active-text)}
 .nav .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav .cnt{font-size:12px;color:var(--dim)}
+.nav.nav-sub{padding-left:28px;font-size:13px}
+.nav.nav-sub .lbl{font-weight:500}
+.dup-group{margin:10px 0 18px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--panel)}
+.dup-h{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--hover);font-size:13px;color:var(--muted);border-bottom:1px solid var(--border)}
+.dup-h b{color:var(--text);font-weight:600}
+.dup-h .dup-meta{margin-left:auto;font-size:12px;color:var(--dim)}
+.dup-group .rows{padding:4px 6px 8px}
+.t-path{font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
 .side-stats{margin:16px 10px 0;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--dim)}
 .main{flex:1;overflow-y:auto;padding:22px 26px calc(var(--player-h) + 30px);min-width:0}
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
@@ -531,6 +539,19 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
 .scope-full .sfp-sec.sfp-shut>:not(.sfp-sh){display:none}
 .scope-full .sf-panel .sfp-fold{padding:3px 7px;font-size:11px;color:var(--text);border-color:var(--pop-line)}
 .scope-full .sfp-row select{grid-column:2/4;width:100%;min-width:0;height:22px;padding:0 4px;border:1px solid var(--pop-line);border-radius:6px;background:var(--pop-bg);color:var(--text);font:inherit;cursor:pointer}
+.scope-full .sfp-palpick{grid-column:2/4;display:flex;align-items:center;gap:8px;width:100%;min-width:0;height:26px;padding:2px 8px 2px 4px;border:1px solid var(--pop-line);border-radius:6px;background:var(--pop-bg);color:var(--text);font:inherit;cursor:pointer;text-align:left;box-sizing:border-box}
+.scope-full .sfp-palpick:hover{background:var(--pop-hover)}
+.scope-full .sfp-palpick[aria-expanded=true]{outline:2px solid var(--accent2);outline-offset:1px}
+.scope-full .sfp-pal-swatch{flex:0 0 52px;height:14px;border-radius:3px;border:1px solid color-mix(in srgb,var(--pop-line) 70%,transparent);background-size:100% 100%}
+.scope-full .sfp-pal-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.scope-full .sfp-pal-caret{flex:0 0 auto;color:var(--muted);font-size:10px;line-height:1}
+.scope-full .sfp-pal-list{position:fixed;z-index:40;min-width:220px;max-width:min(320px,calc(100vw - 24px));max-height:min(280px,45vh);overflow:auto;overscroll-behavior:contain;padding:4px;border-radius:10px;border:1px solid var(--pop-line);background:color-mix(in srgb,var(--pop-bg) 96%,transparent);box-shadow:0 10px 32px rgba(var(--shadow-rgb),.45);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-sizing:border-box}
+.scope-full .sfp-pal-opt{display:flex;align-items:center;gap:8px;width:100%;padding:5px 8px;border:0;border-radius:6px;background:transparent;color:var(--text);font:inherit;font-size:12px;text-align:left;cursor:pointer}
+.scope-full .sfp-pal-opt:hover,.scope-full .sfp-pal-opt:focus{background:var(--pop-hover);outline:none}
+.scope-full .sfp-pal-opt[aria-selected=true]{background:color-mix(in srgb,var(--accent2) 22%,transparent)}
+.scope-full .sfp-pal-opt .sfp-pal-swatch{flex:0 0 64px;height:12px}
+.scope-full .sfp-pal-opt .sfp-pal-name{flex:1}
+@media (max-width:700px){.scope-full .sfp-palpick{height:32px}.scope-full .sfp-pal-list{max-height:min(40vh,260px)}}
 .scope-full .sfp-row input[type=checkbox]{width:16px;height:16px;justify-self:start;accent-color:var(--accent2);-webkit-appearance:auto;appearance:auto}
 .scope-full .sfp-eff{grid-column:2/-1;margin:-3px 0 2px;font-size:11px;color:var(--text);opacity:.85}
 .scope-full .sfp-eff[hidden]{display:none}
@@ -538,9 +559,12 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
 .scope-full .sfp-foot span{color:var(--text);font-size:11px}
 .scope-full .sf-panel :focus{outline:none}
 .scope-full .sf-panel :focus-visible,.scope-full .sf-panel input:focus{outline:2px solid var(--accent2);outline-offset:2px;border-radius:4px}
-.scope-full .sf-gear{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));width:36px;height:36px;padding:0;border-radius:50%;border:1px solid var(--pop-line);background:color-mix(in srgb,var(--pop-bg) 75%,transparent);color:var(--text);font-size:18px;line-height:34px;text-align:center;opacity:.6;cursor:pointer;z-index:2}
+.scope-full .sf-gear{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));width:36px;height:36px;padding:0;border-radius:50%;border:1px solid var(--pop-line);background:color-mix(in srgb,var(--pop-bg) 75%,transparent);color:var(--text);font-size:18px;line-height:34px;text-align:center;opacity:.6;cursor:pointer;z-index:2;transition:opacity .3s ease}
 .scope-full .sf-gear:hover,.scope-full .sf-gear[aria-expanded=true]{opacity:1}
 .scope-full .sf-gear:focus-visible{outline:2px solid var(--focus);outline-offset:2px;opacity:1}
+.scope-full .sf-gear.sf-idle-hide{opacity:0;pointer-events:none;visibility:hidden}
+.scope-full.sf-idle,.scope-full.sf-idle *{cursor:none!important}
+@media (prefers-reduced-motion: reduce){.scope-full .sf-gear{transition:none}}
 @media (max-width:700px){.scope-full .sfp-row select{height:30px}.scope-full .sfp-row input[type=checkbox]{width:20px;height:20px}.scope-full .sf-panel{top:auto;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));width:auto;max-width:none;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 46px);max-height:min(56vh,calc(100% - 150px))}.scope-full .sfp-row{min-height:34px}.scope-full .sfp-row input{height:28px}.scope-full .sf-meta{max-width:calc(100% - 90px)}}
 .scope-full canvas[hidden]{display:none}
 .scope-full canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -593,7 +617,7 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
     </div>
   </footer>
 </div>
-<div class="scope-full" id="scopeFull" hidden role="dialog" aria-modal="true" aria-label="Oscilloscope, full screen" tabindex="-1"><canvas id="scopeFullCv" class="idle" aria-hidden="true"></canvas><canvas id="scopeFx" hidden aria-hidden="true"></canvas><div class="sf-meta" id="sfMeta"></div><div class="sf-mode" id="sfMode" aria-live="polite"></div><div class="sf-fx" id="sfFx" aria-live="polite"></div><div class="sf-panel" id="sfPanel" hidden role="group" aria-labelledby="sfpHead"><div class="sfp-head" title="Drag to move the panel · double-click to put it back"><button type="button" class="sfp-grip" aria-label="Move settings panel" title="Drag to move the panel; when focused, arrow keys move it (Shift: further), Home puts it back">⠿</button><b id="sfpHead">Settings</b><button type="button" class="sfp-home" hidden aria-label="Reset panel position" title="Put the panel back in its place (or double-click the header)">Reset position</button><button type="button" class="sfp-fold" title="Collapse or expand every heading in this panel">Collapse all</button><button type="button" class="sfp-x" aria-label="Close settings" title="Close settings (Enter or Esc)">✕</button></div><div class="sfp-pre" id="sfpPre" role="group" aria-label="Presets" title="Presets: S saves the current settings as a new one, Shift+← → step through them"><label for="sfpPreset">Preset</label><select id="sfpPreset" aria-describedby="sfpPreHint"></select><button type="button" class="sfp-pb" data-pa="save" title="Save the current settings as a new preset (S)">Save new</button><button type="button" class="sfp-pb" data-pa="update" title="Overwrite the preset with the current settings">Update</button><button type="button" class="sfp-pb" data-pa="rename" title="Rename the preset">Rename</button><button type="button" class="sfp-pb" data-pa="delete" title="Delete the preset">Delete</button><span id="sfpPreHint" hidden>S saves a new preset; Shift+Left and Shift+Right step through them</span></div><section class="sfp-sec" id="sfpScope" data-sec="scope" aria-labelledby="sfpScopeT"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpScopeT" aria-expanded="true" aria-controls="sfpScopeRows">Scope</button><button type="button" class="sfp-all" aria-label="Reset all scope settings">Reset all</button></div><div id="sfpScopeRows"></div></section><section class="sfp-sec" id="sfpVig" data-sec="vig" hidden aria-labelledby="sfpVigT"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpVigT" aria-expanded="true" aria-controls="sfpVigRows">Vignette</button><button type="button" class="sfp-all" aria-label="Reset all vignette settings">Reset all</button></div><div id="sfpVigRows"></div></section><section class="sfp-sec" id="sfpFx" data-sec="fx" hidden aria-labelledby="sfpTitle"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpTitle" aria-expanded="true" aria-controls="sfpRows">Feedback</button><button type="button" class="sfp-all" aria-label="Reset all effect settings">Reset all</button></div><div class="sfp-credit" id="sfpCredit" hidden></div><div class="sfp-note" id="sfpNote" hidden></div><div id="sfpRows"></div></section><div class="sfp-foot"><span>Double-click a slider to reset it</span></div></div><button type="button" class="sf-gear" id="sfGear" hidden aria-label="Scope settings" aria-expanded="false" aria-controls="sfPanel" title="Settings (Enter)">⚙</button><div class="sf-close"><span class="sf-fine">← → or 1–<span class="sf-n">5</span> mode · ↑ ↓ effect · G grid · T text<span class="sf-enter"> · Enter settings</span> · Click or Esc to close</span><span class="sf-touch">Swipe ↔ mode · ↕ effect · ⚙ settings · Tap to close</span></div></div>
+<div class="scope-full" id="scopeFull" hidden role="dialog" aria-modal="true" aria-label="Oscilloscope, full screen" tabindex="-1"><canvas id="scopeFullCv" class="idle" aria-hidden="true"></canvas><canvas id="scopeFx" hidden aria-hidden="true"></canvas><div class="sf-meta" id="sfMeta"></div><div class="sf-mode" id="sfMode" aria-live="polite"></div><div class="sf-fx" id="sfFx" aria-live="polite"></div><div class="sf-panel" id="sfPanel" hidden role="group" aria-labelledby="sfpHead"><div class="sfp-head" title="Drag to move the panel · double-click to put it back"><button type="button" class="sfp-grip" aria-label="Move settings panel" title="Drag to move the panel; when focused, arrow keys move it (Shift: further), Home puts it back">⠿</button><b id="sfpHead">Settings</b><button type="button" class="sfp-home" hidden aria-label="Reset panel position" title="Put the panel back in its place (or double-click the header)">Reset position</button><button type="button" class="sfp-fold" title="Collapse or expand every heading in this panel">Collapse all</button><button type="button" class="sfp-x" aria-label="Close settings" title="Close settings (Enter or Esc)">✕</button></div><div class="sfp-pre" id="sfpPre" role="group" aria-label="Presets" title="Presets: S saves the current settings as a new one, Shift+← → step through them"><label for="sfpPreset">Preset</label><select id="sfpPreset" aria-describedby="sfpPreHint"></select><button type="button" class="sfp-pb" data-pa="save" title="Save the current settings as a new preset (S)">Save new</button><button type="button" class="sfp-pb" data-pa="update" title="Overwrite the preset with the current settings">Update</button><button type="button" class="sfp-pb" data-pa="rename" title="Rename the preset">Rename</button><button type="button" class="sfp-pb" data-pa="delete" title="Delete the preset">Delete</button><span id="sfpPreHint" hidden>S saves a new preset; Shift+Left and Shift+Right step through them</span></div><section class="sfp-sec" id="sfpScope" data-sec="scope" aria-labelledby="sfpScopeT"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpScopeT" aria-expanded="true" aria-controls="sfpScopeRows">Scope</button><button type="button" class="sfp-all" aria-label="Reset all scope settings">Reset all</button></div><div id="sfpScopeRows"></div></section><section class="sfp-sec" id="sfpVig" data-sec="vig" hidden aria-labelledby="sfpVigT"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpVigT" aria-expanded="true" aria-controls="sfpVigRows">Vignette</button><button type="button" class="sfp-all" aria-label="Reset all vignette settings">Reset all</button></div><div id="sfpVigRows"></div></section><section class="sfp-sec" id="sfpPal" data-sec="pal" hidden aria-labelledby="sfpPalT"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpPalT" aria-expanded="true" aria-controls="sfpPalRows">Palette</button><button type="button" class="sfp-all" aria-label="Reset all palette settings">Reset all</button></div><div id="sfpPalRows"></div></section><section class="sfp-sec" id="sfpFx" data-sec="fx" hidden aria-labelledby="sfpTitle"><div class="sfp-sh"><button type="button" class="sfp-st" id="sfpTitle" aria-expanded="true" aria-controls="sfpRows">Feedback</button><button type="button" class="sfp-all" aria-label="Reset all effect settings">Reset all</button></div><div class="sfp-credit" id="sfpCredit" hidden></div><div class="sfp-note" id="sfpNote" hidden></div><div id="sfpRows"></div></section><div class="sfp-foot"><span>Double-click a slider to reset it</span></div></div><button type="button" class="sf-gear" id="sfGear" hidden aria-label="Scope settings" aria-expanded="false" aria-controls="sfPanel" title="Settings (Enter)">⚙</button><div class="sf-close"><span class="sf-fine">← → or 1–<span class="sf-n">5</span> mode · ↑ ↓ effect · G grid · T text<span class="sf-enter"> · Enter settings</span> · Click or Esc to close</span><span class="sf-touch">Swipe ↔ mode · ↕ effect · ⚙ settings · Tap to close</span></div></div>
 <div id="toasts" aria-live="polite"></div>
 <div id="selPanel" class="sel-panel hidden" role="toolbar" aria-label="Actions for the selected tracks"></div>
 <dialog id="dlg">
@@ -2118,6 +2142,7 @@ async function handleFolder(fileList, viaHandle) {
   if (S.importing) return;
   const all = Array.from(fileList || []);
   if (!all.length) return;
+  if (typeof Dup !== 'undefined') Dup.cancel();
   S.importing = true;
   try {
     const rel = f => f.webkitRelativePath || f.name;
@@ -2176,6 +2201,14 @@ async function handleFolder(fileList, viaHandle) {
     computeAuto(); renderAll();
     toast(`Linked ${mp3s.length} track${mp3s.length === 1 ? '' : 's'} from “${root}”: ${added} new, ${parsed} scanned` + (backfilled ? `, ${backfilled} track length${backfilled === 1 ? '' : 's'} added` : '') + (missing ? `, ${missing} missing` : '') + '.', missing ? 'warn' : 'ok', 6000);
     if (auto) toast(auto.rated ? `Autorated ${auto.rated} track${auto.rated === 1 ? '' : 's'} from file names.` : 'Autorate: no new unrated tracks with * or _ markers in their file names.', auto.rated ? 'ok' : 'info', 6000);
+    try {
+      Dup.prune();
+      await Dup.run({ label: root });
+      const dg = Dup.list().length, dt = Dup.countTracks();
+      if (dg) toast(`Found ${dg} duplicate group${dg === 1 ? '' : 's'} (${dt} tracks).`, 'info', 5000);
+      renderSidebar();
+      if (S.view.name === 'duplicates') renderMain();
+    } catch (e) { console.warn('dup scan', e); }
   } finally {
     S.importing = false; hideProgress(); renderBanner();
   }
@@ -2954,6 +2987,317 @@ const Detect = (() => {
   const whole = (file, mp3, fmt) => file.size > BIG && !mp3 && !/^(wav|wave|flac)$/.test(fmt || '');
   return { run, whole, busy: () => busy, workers: () => idle.length + busy, OPTS, SR, EX };
 })();
+
+/* ---------- r74: duplicate detection (exact audio payload; tags skipped) ----------
+   Tiered: group by audio length → partial hash (head/mid/tail of payload) → full SHA-1.
+   FLAC: prefer STREAMINFO MD5 when non-zero. Cache keyed by path+size+lastModified in S.meta.dupCache.
+   Non-blocking, limited concurrency; progress via showProgress. No file delete/move/rename. */
+const Dup = (() => {
+  const CONCUR = 4, PART = 65536, MID = 3;
+  let gen = 0, running = false, groups = [];
+  const hex = b => [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  const fnv1a = buf => {
+    let h = 0x811c9dc5 >>> 0;
+    for (let i = 0; i < buf.length; i++) { h ^= buf[i]; h = Math.imul(h, 0x01000193) >>> 0; }
+    return ('00000000' + h.toString(16)).slice(-8);
+  };
+  async function sha1(bufs) {
+    const total = bufs.reduce((n, b) => n + b.length, 0);
+    const u = new Uint8Array(total); let o = 0;
+    for (const b of bufs) { u.set(b, o); o += b.length; }
+    if (crypto && crypto.subtle) {
+      const dig = new Uint8Array(await crypto.subtle.digest('SHA-1', u));
+      return hex(dig);
+    }
+    let h = '';
+    for (let i = 0; i < u.length; i += 65536) h += fnv1a(u.subarray(i, Math.min(u.length, i + 65536)));
+    return 'fnv:' + h;
+  }
+  function cache() { return S.meta.dupCache && typeof S.meta.dupCache === 'object' ? S.meta.dupCache : (S.meta.dupCache = {}); }
+  function hit(id, f) {
+    const c = cache()[id];
+    return c && c.sz === f.size && c.lm === f.lastModified && c.alen >= 0 && (c.full || c.flacMd5 || c.part);
+  }
+  async function mp3Range(file) {
+    const head = new Uint8Array(await file.slice(0, Math.min(file.size, 10)).arrayBuffer());
+    let start = 0;
+    if (head.length >= 10 && head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33) {
+      const size = ((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f);
+      const footer = (head[3] === 4 && (head[5] & 0x10)) ? 10 : 0;
+      start = Math.min(file.size, 10 + size + footer);
+    }
+    let end = file.size;
+    if (end - start >= 128) {
+      const tail = new Uint8Array(await file.slice(end - 128).arrayBuffer());
+      if (tail[0] === 0x54 && tail[1] === 0x41 && tail[2] === 0x47) end -= 128;
+    }
+    if (end - start >= 32) {
+      const ape = new Uint8Array(await file.slice(end - 32, end).arrayBuffer());
+      if (String.fromCharCode(...ape.subarray(0, 8)) === 'APETAGEX') {
+        const apeSize = ape[12] | (ape[13] << 8) | (ape[14] << 16) | (ape[15] << 24);
+        if (apeSize > 0 && apeSize < end - start) end -= apeSize;
+      }
+    }
+    return { start, end: Math.max(start, end) };
+  }
+  async function flacRange(file) {
+    const headN = Math.min(file.size, 256 * 1024);
+    let buf = new Uint8Array(await file.slice(0, headN).arrayBuffer());
+    let off = 0;
+    if (buf.length >= 10 && buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) {
+      const size = ((buf[6] & 0x7f) << 21) | ((buf[7] & 0x7f) << 14) | ((buf[8] & 0x7f) << 7) | (buf[9] & 0x7f);
+      const footer = (buf[3] === 4 && (buf[5] & 0x10)) ? 10 : 0;
+      off = 10 + size + footer;
+      if (off + 4 > buf.length && off + 4 <= file.size) buf = new Uint8Array(await file.slice(0, Math.min(file.size, off + 64 * 1024)).arrayBuffer());
+    }
+    if (off + 4 > buf.length || String.fromCharCode(buf[off], buf[off + 1], buf[off + 2], buf[off + 3]) !== 'fLaC') {
+      return { start: 0, end: file.size };
+    }
+    let pos = off + 4, flacMd5 = '', n = 0;
+    while (n++ < 1024 && pos + 4 <= file.size) {
+      const need = pos + 4 <= buf.length ? buf.subarray(pos, pos + 4) : new Uint8Array(await file.slice(pos, pos + 4).arrayBuffer());
+      if (need.length < 4) break;
+      const last = need[0] & 0x80, type = need[0] & 0x7f, len = (need[1] << 16) | (need[2] << 8) | need[3], body = pos + 4;
+      if (type === 0 && len >= 34 && !flacMd5) {
+        const si = body + 34 <= buf.length ? buf.subarray(body, body + 34) : new Uint8Array(await file.slice(body, body + 34).arrayBuffer());
+        if (si.length >= 34) {
+          const md = si.subarray(18, 34);
+          if (md.some(x => x !== 0)) flacMd5 = hex(md);
+        }
+      }
+      pos = body + len;
+      if (last) break;
+    }
+    return { start: pos, end: file.size, flacMd5 };
+  }
+  async function wavRange(file) {
+    const head = new Uint8Array(await file.slice(0, Math.min(file.size, 12)).arrayBuffer());
+    if (head.length < 12) return { start: 0, end: file.size };
+    const mag = String.fromCharCode(...head.subarray(0, 4));
+    if (!((mag === 'RIFF' || mag === 'RF64' || mag === 'BW64') && String.fromCharCode(...head.subarray(8, 12)) === 'WAVE')) return { start: 0, end: file.size };
+    let pos = 12, n = 0, ds64 = null;
+    while (n++ < 1024 && pos + 8 <= file.size) {
+      const h = new Uint8Array(await file.slice(pos, pos + 8).arrayBuffer()); if (h.length < 8) break;
+      const id = String.fromCharCode(...h.subarray(0, 4));
+      let size = h[4] | (h[5] << 8) | (h[6] << 16) | (h[7] << 24); size = size >>> 0;
+      const body = pos + 8;
+      if (id === 'ds64' && size >= 24) {
+        const x = new Uint8Array(await file.slice(body, body + 24).arrayBuffer());
+        // data size is u64 at offset 8; use low 32 for typical files
+        ds64 = (x[8] | (x[9] << 8) | (x[10] << 16) | (x[11] << 24)) >>> 0;
+      } else if (id === 'data') {
+        if (size === 0xffffffff && ds64 != null) size = ds64;
+        const avail = Math.max(0, file.size - body);
+        const open = size === 0xffffffff || (size === 0 && avail > 0);
+        const nsize = open ? avail : Math.min(size, avail);
+        return { start: body, end: body + nsize };
+      }
+      pos = body + size + (size & 1);
+    }
+    return { start: 0, end: file.size };
+  }
+  async function oggRange(file) {
+    const head = new Uint8Array(await file.slice(0, Math.min(file.size, 512 * 1024)).arrayBuffer());
+    let i = 0, packets = 0, serial = null;
+    while (i + 27 <= head.length && packets < 2) {
+      if (!(head[i] === 0x4f && head[i + 1] === 0x67 && head[i + 2] === 0x67 && head[i + 3] === 0x53)) { i++; continue; }
+      const ns = head[i + 26]; if (i + 27 + ns > head.length) break;
+      let len = 27 + ns; for (let k = 0; k < ns; k++) len += head[i + 27 + k];
+      if (i + len > head.length) break;
+      const ser = head[i + 14] | (head[i + 15] << 8) | (head[i + 16] << 16) | (head[i + 17] << 24);
+      if (serial == null) serial = ser;
+      if (ser === serial) {
+        for (let k = 0; k < ns; k++) if (head[i + 27 + k] < 255) packets++;
+      }
+      i += len;
+    }
+    return { start: Math.min(i, file.size), end: file.size };
+  }
+  async function audioRange(file, fmt) {
+    const f = (fmt || '').toLowerCase();
+    if (f === 'flac') return flacRange(file);
+    if (f === 'wav' || f === 'wave') return wavRange(file);
+    if (f === 'ogg' || f === 'oga' || f === 'opus') return oggRange(file);
+    return mp3Range(file);
+  }
+  async function readSlice(file, start, end, max) {
+    const a = Math.max(0, start), b = Math.min(file.size, end);
+    if (b <= a) return new Uint8Array(0);
+    const n = Math.min(max, b - a);
+    return new Uint8Array(await file.slice(a, a + n).arrayBuffer());
+  }
+  async function partialOf(file, start, end) {
+    const len = Math.max(0, end - start);
+    const parts = [];
+    parts.push(await readSlice(file, start, end, PART));
+    if (len > PART * 2) parts.push(await readSlice(file, end - Math.min(PART, len), end, PART));
+    if (len > PART * 4) {
+      for (let m = 1; m <= MID; m++) {
+        const mid = start + Math.floor(len * m / (MID + 1));
+        parts.push(await readSlice(file, mid, end, Math.min(PART, 16384)));
+      }
+    }
+    let h = String(len);
+    for (const p of parts) h += ':' + p.length + ':' + fnv1a(p);
+    return h;
+  }
+  async function fullOf(file, start, end) {
+    const len = end - start;
+    if (len <= 0) return 'empty';
+    const CAP = 32 * 1024 * 1024;
+    if (len <= CAP) {
+      const buf = new Uint8Array(await file.slice(start, end).arrayBuffer());
+      return sha1([buf]);
+    }
+    const pieces = [];
+    for (let a = start; a < end; a += CAP) {
+      const buf = new Uint8Array(await file.slice(a, Math.min(end, a + CAP)).arrayBuffer());
+      pieces.push(new TextEncoder().encode(await sha1([buf])));
+    }
+    return 'multi:' + await sha1(pieces);
+  }
+  async function fingerprint(id, file, fmt, myGen) {
+    if (myGen !== gen) return null;
+    if (hit(id, file) && cache()[id].part) return cache()[id];
+    const range = await audioRange(file, fmt || fileFormat(id));
+    if (myGen !== gen) return null;
+    const alen = Math.max(0, range.end - range.start);
+    const rec = { sz: file.size, lm: file.lastModified, alen, start: range.start, end: range.end };
+    if (range.flacMd5) { rec.flacMd5 = range.flacMd5; rec.full = 'flacmd5:' + range.flacMd5; rec.part = rec.full; }
+    else {
+      rec.part = await partialOf(file, range.start, range.end);
+      if (myGen !== gen) return null;
+    }
+    cache()[id] = rec;
+    return rec;
+  }
+  async function ensureFull(id, file, myGen) {
+    const c = cache()[id]; if (!c) return null;
+    if (c.full) return c.full;
+    if (myGen !== gen) return null;
+    c.full = await fullOf(file, c.start, c.end);
+    return c.full;
+  }
+  async function mapLimit(items, limit, fn) {
+    const ret = new Array(items.length); let i = 0;
+    const workers = Array.from({ length: Math.min(limit, items.length || 1) }, async () => {
+      while (i < items.length) {
+        const j = i++;
+        ret[j] = await fn(items[j], j);
+      }
+    });
+    await Promise.all(workers);
+    return ret;
+  }
+  function rebuildGroups() {
+    const byKey = new Map();
+    for (const [id, c] of Object.entries(cache())) {
+      if (!S.tracks.has(id) || !S.files.has(id)) continue;
+      const t = S.tracks.get(id); if (t && t.missing) continue;
+      if (!c || !c.full) continue;
+      const k = c.full;
+      if (!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k).push(id);
+    }
+    groups = [...byKey.entries()].filter(([, ids]) => ids.length > 1)
+      .map(([key, ids]) => {
+        ids.sort(cmp);
+        const t0 = S.tracks.get(ids[0]);
+        return { key, ids, alen: (cache()[ids[0]] || {}).alen || 0, size: t0 && t0.size || 0, duration: t0 && t0.duration || 0 };
+      })
+      .sort((a, b) => b.ids.length - a.ids.length || cmp(a.ids[0], b.ids[0]));
+    S.meta.dupGroups = groups.map(g => ({ key: g.key, ids: g.ids.slice(), alen: g.alen }));
+    return groups;
+  }
+  async function run(opts = {}) {
+    if (!S.linked || !S.files.size) { groups = []; S.meta.dupGroups = []; return groups; }
+    const myGen = ++gen; running = true;
+    const t0 = performance.now();
+    let hashed = 0, cached = 0, fullN = 0;
+    try {
+      const ids = [...S.files.keys()].filter(id => S.tracks.has(id) && !(S.tracks.get(id) || {}).missing);
+      const total = ids.length;
+      let done = 0;
+      const label = opts.label || S.meta.rootFolder || 'library';
+      if (typeof showProgress === 'function') showProgress(0, Math.max(1, total), 'Duplicates · ' + label);
+      await mapLimit(ids, CONCUR, async id => {
+        if (myGen !== gen) return;
+        const f = S.files.get(id); if (!f) return;
+        const was = hit(id, f) && cache()[id] && cache()[id].part;
+        try {
+          await fingerprint(id, f, (S.tracks.get(id) || {}).format, myGen);
+          if (was) cached++; else hashed++;
+        } catch (e) { console.warn('dup fingerprint', id, e); }
+        done++;
+        if (done % 8 === 0 || done === total) {
+          if (typeof showProgress === 'function') showProgress(done, total, 'Duplicates · ' + label);
+          await sleep0();
+        }
+      });
+      if (myGen !== gen) return groups;
+      const byLen = new Map();
+      for (const id of ids) {
+        const c = cache()[id]; if (!c) continue;
+        const k = c.alen;
+        if (!byLen.has(k)) byLen.set(k, []);
+        byLen.get(k).push(id);
+      }
+      const needFull = [];
+      for (const [, bucket] of byLen) {
+        if (bucket.length < 2) continue;
+        const byPart = new Map();
+        for (const id of bucket) {
+          const c = cache()[id]; if (!c || !c.part) continue;
+          if (!byPart.has(c.part)) byPart.set(c.part, []);
+          byPart.get(c.part).push(id);
+        }
+        for (const [, ids2] of byPart) if (ids2.length > 1) needFull.push(...ids2);
+      }
+      const uniq = [...new Set(needFull)];
+      let fdone = 0;
+      await mapLimit(uniq, CONCUR, async id => {
+        if (myGen !== gen) return;
+        const f = S.files.get(id); if (!f) return;
+        const had = !!(cache()[id] && cache()[id].full);
+        try { await ensureFull(id, f, myGen); if (!had) fullN++; }
+        catch (e) { console.warn('dup full', id, e); }
+        fdone++;
+        if (fdone % 4 === 0 || fdone === uniq.length) {
+          if (typeof showProgress === 'function') showProgress(fdone, Math.max(1, uniq.length), 'Duplicates confirm · ' + label);
+          await sleep0();
+        }
+      });
+      if (myGen !== gen) return groups;
+      rebuildGroups();
+      S.meta.dupStats = { ms: Math.round(performance.now() - t0), tracks: total, hashed, cached, full: fullN, groups: groups.length, at: Date.now() };
+      saveMeta();
+      return groups;
+    } finally {
+      if (myGen === gen) running = false;
+      if (typeof hideProgress === 'function' && !S.importing) hideProgress();
+    }
+  }
+  function cancel() { gen++; running = false; }
+  function list() {
+    if (Array.isArray(S.meta.dupGroups) && S.meta.dupGroups.length && !groups.length) {
+      groups = S.meta.dupGroups.map(g => ({ key: g.key, ids: (g.ids || []).filter(id => S.tracks.has(id) && !(S.tracks.get(id) || {}).missing), alen: g.alen || 0 }))
+        .filter(g => g.ids.length > 1);
+    }
+    return groups;
+  }
+  function countTracks() { return list().reduce((n, g) => n + g.ids.length, 0); }
+  function prune() {
+    const c = cache();
+    for (const id of Object.keys(c)) if (!S.tracks.has(id) || (S.tracks.get(id) || {}).missing) delete c[id];
+    // drop files no longer present after a scan (S.files empty when unlinked — keep cache)
+    if (S.linked && S.files.size) {
+      for (const id of Object.keys(c)) if (!S.files.has(id)) delete c[id];
+    }
+    rebuildGroups(); saveMeta();
+  }
+  return { run, cancel, list, countTracks, prune, running: () => running, cache, fingerprint, audioRange, rebuildGroups, ensureFull, _fnv1a: fnv1a, _sha1: sha1, _stats: () => S.meta.dupStats || null };
+})();
+
 const r3 = v => Math.round(v * 1000) / 1000, detWait = ms => new Promise(r => setTimeout(r, ms));
 function detectRecord(r) {
   let bpm = Math.round(r.bpm * 10) / 10; if (Math.abs(bpm - Math.round(bpm)) < 0.2) bpm = Math.round(bpm);
@@ -3407,6 +3751,7 @@ function renderSidebar() {
   let h = '<div class="side-h">Library</div>' +
     nav('albums', 'album', 'Albums', S.autoAlbums.length + S.albums.size, v.name === 'albums' || (v.name === 'album' && !v.key.startsWith('c:'))) +
     nav('tracks', 'list', 'All tracks', S.tracks.size, v.name === 'tracks') +
+    `<button class="nav nav-sub${v.name === 'duplicates' ? ' active' : ''}" data-action="go" data-view="duplicates" title="Exact audio duplicates (tags ignored)">${svg('copy')}<span class="lbl">Duplicates</span><span class="cnt">${typeof Dup !== 'undefined' ? Dup.countTracks() : 0}</span></button>` +
     `<div class="side-h">My albums <button data-action="new-album" title="New album">${svg('plus')}</button></div>`;
   const albums = [...S.albums.values()].filter(a => !albumLayout().redirects[a.id]).sort((a, b) => cmp(a.name, b.name));
   h += albums.length ? albums.map(a => `<button class="nav${v.name === 'album' && v.key === a.id ? ' active' : ''}" data-action="open-album" data-key="${esc(a.id)}">${svg('star')}<span class="lbl">${esc(a.name)}</span><span class="cnt">${a.trackIds.length}</span></button>`).join('')
@@ -3427,6 +3772,7 @@ function renderMain() {
     return;
   }
   if (S.view.name === 'tracks') return renderTracksView();
+  if (S.view.name === 'duplicates') return renderDuplicatesView();
   if (S.view.name === 'album') { const a = getAlbum(S.view.key); if (a) return renderAlbumView(a); S.view = { name: 'albums' }; }
   renderAlbumsView();
 }
@@ -3622,7 +3968,7 @@ function trackRow(t, i, o = {}) {
     ${reorder ? `<span class="handle" title="Drag to reorder (or Alt+↑/↓)">${svg('grip')}</span>` : ''}
     <span class="num">${num}</span>
     <button class="icon-btn sm" data-action="play-row" data-i="${i}" title="${!linked ? 'Reconnect folder to play' : canPlay(t) ? 'Play' : esc(formatLabel(t)) + ': this browser can’t play it'}">${svg('play')}</button>
-    <div class="ti" title="${esc(t.id)}"><div class="t-title">${esc(t.title)}${fmtTag(t)}${status}</div><div class="t-sub">${esc(t.artist || 'Unknown artist')}${o.showAlbum ? '<span class="sm-album"> · ' + esc(t.album) + '</span>' : ''}${tagSub(t)}</div></div>
+    <div class="ti" title="${esc(t.id)}"><div class="t-title">${esc(t.title)}${fmtTag(t)}${status}</div><div class="t-sub">${esc(t.artist || 'Unknown artist')}${o.showAlbum ? '<span class="sm-album"> · ' + esc(t.album) + '</span>' : ''}${tagSub(t)}</div>${o.showPath ? `<div class="t-path">${esc(t.id)}</div>` : ''}</div>
     ${o.showAlbum ? `<div class="t-album">${esc(t.album)}</div>` : ''}
     ${dateCell(t)}
     <span class="dur" data-dur="${esc(t.id)}" title="Length">${t.duration > 0 ? fmtTime(t.duration) : '–'}</span>
@@ -3808,6 +4154,42 @@ function renderTracksView() {
     </div>${sortBarHTML('tracks', false)}<div class="count" id="trackCount"></div><div class="list-head" id="listHead" hidden style="margin-top:6px"></div><div class="rows" id="list" style="margin-top:4px"></div>`;
   renderTrackList();
 }
+function fmtDupBytes(n) {
+  n = Math.max(0, +n || 0);
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(n < 10 * 1024 ? 1 : 0) + ' KB';
+  return (n / 1048576).toFixed(n < 10 * 1048576 ? 2 : 1) + ' MB';
+}
+function renderDuplicatesView() {
+  const gs = typeof Dup !== 'undefined' ? Dup.list() : [];
+  const n = gs.reduce((a, g) => a + g.ids.length, 0);
+  const stats = typeof Dup !== 'undefined' && Dup._stats ? Dup._stats() : null;
+  let body;
+  if (!gs.length) {
+    S.lastList = [];
+    body = `<div class="empty"><div class="big">⧉</div><h2>No duplicates</h2>
+      <p>Exact audio matches (same payload with tags ignored) will show up here after a folder scan. Different encodes or acoustic look-alikes are not grouped.</p></div>`;
+  } else {
+    const all = [];
+    body = gs.map((g, gi) => {
+      const tracks = g.ids.map(id => S.tracks.get(id)).filter(Boolean);
+      const base = all.length;
+      tracks.forEach(t => all.push(t.id));
+      const alen = g.alen || (typeof Dup !== 'undefined' && Dup.cache()[g.ids[0]] || {}).alen || 0;
+      const dur = tracks[0] && tracks[0].duration > 0 ? fmtTime(tracks[0].duration) : '';
+      const meta = [fmtDupBytes(alen) + ' audio', dur, tracks.length + ' copies'].filter(Boolean).join(' · ');
+      // data-i must be the index in S.lastList (global across groups), not per-group 0..n — playRowAt uses it
+      const rows = tracks.map((t, j) => trackRow(t, base + j, { showAlbum: true, showPath: true })).join('');
+      return `<div class="dup-group" data-key="${esc(g.key)}"><div class="dup-h"><b>Group ${gi + 1}</b><span>${tracks.length} duplicate${tracks.length === 1 ? '' : 's'}</span><span class="dup-meta">${esc(meta)}</span></div><div class="rows">${rows}</div></div>`;
+    }).join('');
+    S.lastList = all;
+  }
+  $('#main').innerHTML = `<div class="toolbar"><h1>Duplicates</h1>
+    <div class="count" id="trackCount">${n ? n.toLocaleString() + ' track' + (n === 1 ? '' : 's') + ' in ' + gs.length + ' group' + (gs.length === 1 ? '' : 's') : 'No duplicates'}${stats && stats.ms != null ? ' · last scan ' + stats.ms + ' ms' : ''}</div>
+    </div><div class="list-head" id="listHead" hidden style="margin-top:6px"></div><div id="list" style="margin-top:4px">${body}</div>`;
+  syncSel();
+  markPlaying();
+}
 function renderTrackList() {
   const arr = filteredTracks();
   S.lastList = arr.map(t => t.id);
@@ -3953,15 +4335,19 @@ function queueTracks(ids) {
   toast(`Queued ${plural(add.length, 'track')}${skip ? ` (${skip} already in the queue)` : ''}.`, 'ok', 3000);
 }
 /* the player's track title: show the playing track in the list (navigate to where it was started from if needed) */
-function viewSrc() { return S.view.name === 'tracks' ? { name: 'tracks' } : S.view.name === 'album' ? { name: 'album', key: S.view.key } : null; }
+function viewSrc() { return S.view.name === 'tracks' || S.view.name === 'duplicates' ? { name: S.view.name } : S.view.name === 'album' ? { name: 'album', key: S.view.key } : null; }
 function showPlaying() {
   const t = currentTrack(); if (!t || !isLoaded()) return;
-  const here = (S.view.name === 'tracks' || S.view.name === 'album') && S.lastList.includes(t.id);
+  const here = (S.view.name === 'tracks' || S.view.name === 'duplicates' || S.view.name === 'album') && S.lastList.includes(t.id);
   if (!here) {
     let src = S.queueSrc;
     if (src && src.name === 'album') { const a = getAlbum(src.key); if (!a || !a.tracks.some(x => x.id === t.id)) src = null; }
+    if (src && src.name === 'duplicates') {
+      const inDup = (typeof Dup !== 'undefined' ? Dup.list() : []).some(g => g.ids.includes(t.id));
+      if (!inDup) src = null;
+    }
     if (!src) { const fa = S.autoAlbums.find(a => a.tracks.some(x => x.id === t.id)); src = fa ? { name: 'album', key: fa.key } : { name: 'tracks' }; }
-    if (!(S.view.name === src.name && (src.name === 'tracks' || S.view.key === src.key))) go(src);
+    if (!(S.view.name === src.name && (src.name === 'tracks' || src.name === 'duplicates' || S.view.key === src.key))) go(src);
     if (!S.lastList.includes(t.id)) {   // hidden by the search / rating filter: clear it
       if (src.name === 'album') { S.albumTrackSearch = ''; S.meta.albumRatingFilter = 'all'; saveMeta(); } else { S.search = ''; S.ratingFilter = 'all'; S.limit = 400; }
       renderMain(); toast('Cleared the search and filter to show the playing track.', 'info', 3000);
@@ -9067,7 +9453,7 @@ void main(){
      Persisted in S.meta.scopeFxVig; Amount 0 is a pixel-identical copy. One-time migrate of a saved
      liquidmetal.vig into scopeFxVig so old presets don't double-apply once LM no longer owns it. */
   const VIG_PARAMS = [
-    { id: 'vig', label: 'Amount', min: 0, max: 2, step: .05, def: 0, fmt: x => x.toFixed(2) + '×', title: 'Corner darkening / centre brightening after every feedback effect (Liquid Metal’s vignette, now global). 0 = off; 1 = source strength; above 1 strengthens it.' }
+    { id: 'vig', label: 'Amount', min: 0, max: 2, step: .05, def: 0, fmt: x => x.toFixed(2) + '×', title: 'Corner darkening / centre brightening after every feedback effect (Liquid Metal’s vignette, now global). Centre lift above 1× is halved for a subtler mid glow; corners still darken fully. 0 = off (identical); 1 = source strength with softer centre; above 1 strengthens it.' }
   ];
   let vigMigrated = false;
   function migrateVig() {
@@ -9086,9 +9472,123 @@ void main(){
     for (const p of VIG_PARAMS) { const x = sv[p.id]; o[p.id] = typeof x === 'number' && Number.isFinite(x) ? Math.min(p.max, Math.max(p.min, x)) : p.def; }
     return o;
   }
+  /* r71/r73: global IQ cosine palette remap as a final blit (with vignette). col = a + b·cos(2π(c·t+d)),
+     from Inigo Quilez, https://iquilezles.org/articles/palettes/ (CC BY-NC-SA 3.0 as Shadertoy default /
+     article credit). Persisted in S.meta.scopeFxPal. Amount 0 leaves colours unchanged (then vignette).
+     r73: t from Hue (default) or Brightness; Hue mode soft-mixes to Brightness on low saturation so greys
+     do not flicker. Palette colour is scaled by luminance so black stays black. Order: palette then vignette. */
+  const PAL_NAMES = ['Rainbow', 'Cyan–magenta', 'Blue–green', 'Warm ember', 'Soft pastel', 'Green–gold', 'Pink–teal', 'Earth',
+    'Sunset blaze', 'Ocean deep', 'Forest canopy', 'Neon vapor', 'Mono steel', 'Lavender mist', 'Candy pop', 'Amber glow',
+    'Arctic ice', 'Magenta pulse', 'Tropical lagoon', 'Copper rust', 'Violet storm', 'Chartreuse', 'Rose gold', 'Midnight indigo',
+    'Peach cream', 'Electric lime', 'Berry crush', 'Sahara dune', 'Aurora bands', 'Ink wash', 'Fire opal', 'Coral bloom'];
+  // a,b,c,d — first 8 unchanged (saved indices / presets); +24 distinct IQ cosines (mostly in 0..1)
+  const PAL_ABCD = [
+    [[.5,.5,.5],[.5,.5,.5],[1,1,1],[0,.33,.67]],          // 0 Rainbow (article default)
+    [[.5,.5,.5],[.5,.5,.5],[1,1,1],[0,.10,.20]],          // 1 Cyan–magenta
+    [[.5,.5,.5],[.5,.5,.5],[1,1,1],[.30,.20,.20]],        // 2 Blue–green
+    [[.5,.5,.5],[.5,.5,.5],[1,1,.5],[.80,.90,.30]],       // 3 Warm ember
+    [[.5,.5,.5],[.5,.5,.5],[1,.7,.4],[0,.15,.20]],        // 4 Soft pastel
+    [[.5,.5,.5],[.5,.5,.5],[2,1,0],[.50,.20,.25]],        // 5 Green–gold
+    [[.8,.5,.4],[.2,.4,.2],[2,1,1],[0,.25,.25]],          // 6 Pink–teal (article)
+    [[.5,.5,.5],[.5,.5,.5],[1,1,1],[.3,.59,.11]],         // 7 Earth (luma-ish phase)
+    [[.55,.35,.28],[.42,.32,.18],[1.2,.7,.45],[0,.10,.22]],       // 8 Sunset blaze
+    [[.18,.30,.48],[.16,.26,.34],[1,1,1],[.55,.45,.25]],          // 9 Ocean deep
+    [[.22,.42,.22],[.20,.32,.14],[1.2,1,.55],[.15,.28,.10]],      // 10 Forest canopy
+    [[.52,.28,.52],[.38,.28,.35],[1.4,1.1,1.4],[0,.33,.66]],      // 11 Neon vapor
+    [[.48,.50,.52],[.30,.30,.28],[1,1,1],[0,.02,.04]],            // 12 Mono steel
+    [[.55,.45,.65],[.30,.20,.30],[1,.85,.7],[.08,.18,.28]],       // 13 Lavender mist
+    [[.62,.38,.55],[.30,.35,.30],[2,1.5,2],[0,.25,.5]],           // 14 Candy pop
+    [[.60,.40,.20],[.35,.25,.10],[1,.7,.4],[0,.14,.24]],          // 15 Amber glow
+    [[.55,.68,.78],[.30,.26,.20],[1,1,.9],[.55,.62,.70]],         // 16 Arctic ice
+    [[.55,.22,.48],[.40,.16,.32],[1.3,1,1.5],[0,.22,.4]],         // 17 Magenta pulse
+    [[.22,.52,.50],[.24,.32,.28],[1.1,1.2,.9],[.05,0,.28]],       // 18 Tropical lagoon
+    [[.58,.30,.20],[.35,.20,.10],[1,.6,.35],[.05,.20,.30]],       // 19 Copper rust
+    [[.32,.22,.55],[.30,.20,.35],[1.3,1,1.5],[.18,.28,.05]],      // 20 Violet storm
+    [[.38,.58,.22],[.30,.35,.16],[1.5,1.1,.5],[.12,0,.28]],       // 21 Chartreuse
+    [[.70,.48,.40],[.26,.20,.16],[1,.7,.5],[0,.14,.24]],          // 22 Rose gold
+    [[.14,.18,.42],[.12,.16,.32],[1,1,1.1],[.62,.55,.38]],        // 23 Midnight indigo
+    [[.75,.58,.48],[.18,.18,.14],[.9,.6,.45],[0,.16,.28]],        // 24 Peach cream
+    [[.38,.60,.30],[.32,.32,.20],[1.8,1.4,.9],[0,.22,.42]],       // 25 Electric lime
+    [[.58,.22,.38],[.36,.20,.26],[1.2,1,1.35],[.05,.28,.15]],     // 26 Berry crush
+    [[.62,.52,.30],[.30,.26,.16],[1,.85,.45],[.12,.22,.05]],      // 27 Sahara dune
+    [[.28,.48,.52],[.30,.32,.28],[2.0,1.5,1.1],[.28,.08,.52]],    // 28 Aurora bands
+    [[.38,.38,.44],[.20,.20,.24],[1,1,1],[0,.04,.08]],            // 29 Ink wash
+    [[.55,.38,.28],[.38,.30,.25],[2.2,1.4,.9],[0,.16,.36]],       // 30 Fire opal
+    [[.62,.38,.38],[.32,.26,.20],[1.1,.95,.7],[0,.22,.32]]        // 31 Coral bloom
+  ];
+  const PAL_MAP = ['Hue', 'Brightness'];
+  const PAL_PARAMS = [
+    { id: 'amt', label: 'Amount', min: 0, max: 1, step: .01, def: 0, fmt: x => Math.round(x * 100) + '%', title: 'How strongly every feedback effect’s final colours are rewritten through the chosen palette (0 = off, identical to the current picture before vignette)' },
+    { id: 'pal', label: 'Palette', type: 'choice', opts: PAL_NAMES, min: 0, max: PAL_NAMES.length - 1, step: 1, def: 0, fmt: x => PAL_NAMES[x] || '', title: 'Cosine palette (Inigo Quilez): colour = a + b·cos(2π(c·t + d)); t comes from Hue or Brightness (see Map by)' },
+    { id: 'map', label: 'Map by', type: 'choice', opts: PAL_MAP, min: 0, max: 1, step: 1, def: 0, fmt: x => PAL_MAP[x] || '', title: 'What drives the palette index t. Hue (default): each pixel’s hue — steadier as the picture moves. Brightness: previous behaviour (luminance → t). Near-grey pixels in Hue mode blend toward Brightness so undefined hue does not flicker' },
+    { id: 'rot', label: 'Rotate offset', min: 0, max: 1, step: .001, def: 0, fmt: x => x.toFixed(3), title: 'Static phase offset around the palette (0…1). With Rotation speed at 0 the mapping stays fixed at this offset — the palette itself does not spin (Hue mode keeps colours steadier as brightness changes)' },
+    { id: 'speed', label: 'Rotation speed', min: -2, max: 2, step: .01, def: 0, fmt: x => x.toFixed(2) + ' Hz', title: 'How fast the palette spins in cycles per second (0 = frozen at the Rotate offset; negative reverses). Independent of the picture changing' }
+  ];
+  function palGradient(i, stops = 18) {
+    const abcd = PAL_ABCD[i] || PAL_ABCD[0], parts = [];
+    for (let k = 0; k < stops; k++) {
+      const t = k / (stops - 1);
+      const rgb = abcd[0].map((av, ch) => {
+        let v = av + abcd[1][ch] * Math.cos(6.283185307179586 * (abcd[2][ch] * t + abcd[3][ch]));
+        return Math.round(Math.min(1, Math.max(0, v)) * 255);
+      });
+      parts.push('rgb(' + rgb.join(',') + ') ' + (t * 100).toFixed(1) + '%');
+    }
+    return 'linear-gradient(90deg,' + parts.join(',') + ')';
+  }
+  function palParams() {
+    const sv = S.meta.scopeFxPal || {}, o = {};
+    for (const p of PAL_PARAMS) { const x = sv[p.id]; o[p.id] = typeof x === 'number' && Number.isFinite(x) ? Math.min(p.max, Math.max(p.min, x)) : p.def; }
+    return o;
+  }
+  /* r72: wrapped spin accumulation (not time×speed). Speed 0 → phase is exactly Rotate offset (spin cleared),
+     so Rotate 0 / speed 0 is stable and reproducible; no float drift from a growing clock. */
+  let palSpin = 0, palBlitLast = 0;
+  function palPhasePeek(pp = palParams()) {
+    const rot = ((pp.rot % 1) + 1) % 1;
+    if (!(Math.abs(pp.speed) > 1e-12)) return rot;
+    return ((rot + palSpin) % 1 + 1) % 1;
+  }
+  function palPhase(pp) {
+    const now = performance.now() / 1000;
+    const dt = palBlitLast ? Math.min(.1, Math.max(0, now - palBlitLast)) : 0;
+    palBlitLast = now;
+    const rot = ((pp.rot % 1) + 1) % 1;
+    if (!(Math.abs(pp.speed) > 1e-12)) { palSpin = 0; return rot; }   // frozen exactly at Rotate offset
+    palSpin = ((palSpin + dt * pp.speed) % 1 + 1) % 1;
+    return ((rot + palSpin) % 1 + 1) % 1;
+  }
   const VS = 'attribute vec2 a; varying vec2 v; void main() { v = a * 0.5 + 0.5; gl_Position = vec4(a, 0.0, 1.0); }';
-  // r67: final screen blit; u_vig===0 is algebraically identical to the old plain COPY_FS
-  const COPY_FS = 'uniform sampler2D u_tex; uniform float u_vig; void main() { vec3 c = texture2D(u_tex, v).rgb; float vignette = 0.5+0.5*pow(max(0.0,100.0*v.x*v.y*(1.0-v.x)*(1.0-v.y)),0.7); c *= mix(1.0, vignette, u_vig); gl_FragColor = vec4(clamp(c,0.0,1.0), 1.0); }';
+  // r71/r73: final screen blit — IQ palette remap (Amount 0 = identity), then vignette (Amount 0 = identity).
+  // r73: t from Hue (default) or Brightness; near-grey Hue blends to Brightness via smoothstep on saturation.
+  const COPY_FS = `uniform sampler2D u_tex; uniform float u_vig, u_palAmt, u_palPhase, u_palMap;
+    uniform vec3 u_palA, u_palB, u_palC, u_palD;
+    void main() {
+      vec3 c = texture2D(u_tex, v).rgb;
+      float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), d = mx - mn;
+      float sat = mx > 1e-5 ? d / mx : 0.0;
+      float hue = 0.0;
+      if (d > 1e-5) {
+        if (mx == c.r) hue = (c.g - c.b) / d + (c.g < c.b ? 6.0 : 0.0);
+        else if (mx == c.g) hue = (c.b - c.r) / d + 2.0;
+        else hue = (c.r - c.g) / d + 4.0;
+        hue /= 6.0;
+      }
+      float tBri = fract(lum + u_palPhase);
+      float tHue = fract(hue + u_palPhase);
+      // Hue mode: soft-mix toward Brightness when sat is low (undefined/noisy hue) — ramp ~0.02..0.18
+      float hueW = smoothstep(0.02, 0.18, sat);
+      float t = u_palMap > 0.5 ? tBri : mix(tBri, tHue, hueW);
+      vec3 pal = u_palA + u_palB * cos(6.2831853 * (u_palC * t + u_palD));
+      pal *= lum;   // keep blacks black / preserve brightness envelope
+      c = mix(c, clamp(pal, 0.0, 1.0), u_palAmt);
+      float vignette = 0.5+0.5*pow(max(0.0,100.0*v.x*v.y*(1.0-v.x)*(1.0-v.y)),0.7);
+      // r75: keep corner darkening (<1); halve only the extra brightening above 1 (centre ~2.3× → ~1.65×)
+      if (vignette > 1.0) vignette = 1.0 + 0.5 * (vignette - 1.0);
+      c *= mix(1.0, vignette, u_vig);
+      gl_FragColor = vec4(clamp(c,0.0,1.0), 1.0);
+    }`;
   function glInit() {                        // lazily, the first time an effect is shown; false when WebGL is unavailable
     if (gl) return !lost;
     if (glFailed) return false;
@@ -9121,9 +9621,14 @@ void main(){
       srcTex = tex(); fbs = null; return true;
     } catch (e) { console.warn('Scope effects unavailable:', e.message); return false; }
   }
-  function fxBlit(tex) {                     // r67: final copy to the screen with the global vignette
+  function fxBlit(tex) {                     // r67/r71/r72: final copy — palette remap, then global vignette
     const P = progs.copy; gl.useProgram(P.pr); gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.uniform1i(P.u('u_tex'), 0); gl.uniform1f(P.u('u_vig'), vigParams().vig);
+    const pv = vigParams(), pp = palParams(), abcd = PAL_ABCD[Math.round(pp.pal)] || PAL_ABCD[0];
+    const phase = palPhase(pp);
+    gl.uniform1i(P.u('u_tex'), 0); gl.uniform1f(P.u('u_vig'), pv.vig);
+    gl.uniform1f(P.u('u_palAmt'), pp.amt); gl.uniform1f(P.u('u_palPhase'), phase); gl.uniform1f(P.u('u_palMap'), pp.map);
+    gl.uniform3fv(P.u('u_palA'), abcd[0]); gl.uniform3fv(P.u('u_palB'), abcd[1]);
+    gl.uniform3fv(P.u('u_palC'), abcd[2]); gl.uniform3fv(P.u('u_palD'), abcd[3]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
   function fbAlloc(w, h) {                   // two colour targets, cleared to the theme background
@@ -9363,30 +9868,33 @@ void main(){
     if (document.hidden) settle = SETTLE;
     if (settle < SETTLE) settle++;
     fxRender(Math.max(0, 1 - settle / SETTLE));
-    if (settle < SETTLE && !raf && !settleRaf) settleRaf = requestAnimationFrame(() => { settleRaf = 0; if (!raf) fxIdle(); });
+    const pp = palParams(), keepSpin = pp.amt > 1e-6 && Math.abs(pp.speed) > 1e-6;
+    if ((settle < SETTLE || keepSpin) && !raf && !settleRaf) settleRaf = requestAnimationFrame(() => { settleRaf = 0; if (!raf) fxIdle(); });
   }
   function fxLabel(text, ms = 1300) {
     sfFx.textContent = text; sfFx.classList.add('show');
     clearTimeout(fxLabelT); fxLabelT = setTimeout(() => sfFx.classList.remove('show'), ms);
   }
   /* ---- settings panel (Enter, or ⚙): "Scope" (always; SCOPE_PARAMS, S.meta.scopeView), "Vignette" (r67; when an effect is
-     chosen; VIG_PARAMS, S.meta.scopeFxVig), and the effect's own settings (FX[i].params, S.meta.scopeFxParams). Each part is
-     built from its schema and has its own Reset all; values apply live and are saved per browser. ---- */
-  const panel = $('#sfPanel'), gear = $('#sfGear'), prows = $('#sfpRows'), srows = $('#sfpScopeRows'), vrows = $('#sfpVigRows'), fxSec = $('#sfpFx'), vigSec = $('#sfpVig');
+     chosen; VIG_PARAMS, S.meta.scopeFxVig), "Palette" (r71; same visibility; PAL_PARAMS, S.meta.scopeFxPal), and the effect's
+     own settings (FX[i].params, S.meta.scopeFxParams). Each part is built from its schema and has its own Reset all; values
+     apply live and are saved per browser. ---- */
+  const panel = $('#sfPanel'), gear = $('#sfGear'), prows = $('#sfpRows'), srows = $('#sfpScopeRows'), vrows = $('#sfpVigRows'), prowsPal = $('#sfpPalRows'), fxSec = $('#sfpFx'), vigSec = $('#sfpVig'), palSec = $('#sfpPal');
   const SEC = { scope: { rows: srows, pre: 'sfs-', schema: () => SCOPE_PARAMS, vals: () => sv(), set: (id, x) => setView(id, x) },
     vig: { rows: vrows, pre: 'sfv-', schema: () => VIG_PARAMS, vals: () => vigParams(), set: (id, x) => setVig(id, x) },
+    pal: { rows: prowsPal, pre: 'sfa-', schema: () => PAL_PARAMS, vals: () => palParams(), set: (id, x) => setPal(id, x) },
     fx: { rows: prows, pre: 'sfp-', schema: () => FX[fxIx()].params || [], vals: () => fxParams(), set: (id, x) => setParam(id, x) } };
-  /* Round 37 / r67: every heading in the panel folds: sections (Scope, Vignette, the effect: keys 'scope' / 'vig' / 'fx') and each group in them
+  /* Round 37 / r67 / r71: every heading in the panel folds: sections (Scope, Vignette, Palette, the effect: keys 'scope' / 'vig' / 'pal' / 'fx') and each group in them
      ('scope:Size', 'fx:…'). Folded rows are hidden (so also out of the Tab order); the state is kept per browser in localStorage
      (mp3lib.scopeFold, only folded keys; none = all open, the old panel). */
   const FOLD_K = 'mp3lib.scopeFold';
   let fold = (() => { try { const o = JSON.parse(localStorage.getItem(FOLD_K)); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } })();
   const foldSave = () => { try { if (Object.keys(fold).length) localStorage.setItem(FOLD_K, JSON.stringify(fold)); else localStorage.removeItem(FOLD_K); } catch (e) { } };
   const grpHTML = g => `<button type="button" class="sfp-grp" data-g="${esc(g)}" aria-expanded="true">${esc(g)}</button>`;
-  const secEl = sec => $(sec === 'scope' ? '#sfpScope' : sec === 'vig' ? '#sfpVig' : '#sfpFx');
+  const secEl = sec => $(sec === 'scope' ? '#sfpScope' : sec === 'vig' ? '#sfpVig' : sec === 'pal' ? '#sfpPal' : '#sfpFx');
   function foldApply() {                      // reflect fold in the panel (after every build and toggle)
     let open_ = false, shut = false;
-    for (const sec of ['scope', 'vig', 'fx']) {
+    for (const sec of ['scope', 'vig', 'pal', 'fx']) {
       const el = secEl(sec), off = !!fold[sec]; el.classList.toggle('sfp-shut', off); el.querySelector('.sfp-st').setAttribute('aria-expanded', String(!off));
       let on = true;
       for (const c of SEC[sec].rows.children) {
@@ -9401,14 +9909,16 @@ void main(){
   function foldSet(k, off) { if (off) fold[k] = 1; else delete fold[k]; foldSave(); foldApply(); }
   function foldAll() {                        // Collapse all: every group heading (the sections stay open, so the headings show); Expand all: everything
     if (panel.querySelector('.sfp-fold').textContent === 'Expand all') fold = {};
-    else { fold = {}; for (const sec of ['scope', 'vig', 'fx']) for (const c of SEC[sec].rows.querySelectorAll('.sfp-grp')) fold[sec + ':' + c.dataset.g] = 1;
+    else { fold = {}; for (const sec of ['scope', 'vig', 'pal', 'fx']) for (const c of SEC[sec].rows.querySelectorAll('.sfp-grp')) fold[sec + ':' + c.dataset.g] = 1;
       for (const g of new Set(SCOPE_PARAMS.map(p => p.group).filter(Boolean))) fold['scope:' + g] = 1; }
     foldSave(); foldApply();
   }
   function rowHTML(p, x, pre) {
     const id = pre + p.id, t = esc(p.title), v = esc(p.fmt(x)), al = p.short ? ` aria-label="${esc(p.label)}"` : '';
     if (al) return rowHTML({ ...p, short: null }, x, pre).replace(`id="${id}"`, `id="${id}"${al}`).replace(`>${esc(p.label)}</label>`, `>${esc(p.short)}</label>`);
-    const ctl = p.type === 'choice' ? `<select id="${id}" title="${t}">${p.opts.map((o, i) => `<option value="${i}"${i === x ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`
+    const ctl = (p.id === 'pal' && p.type === 'choice')
+      ? `<button type="button" class="sfp-palpick" id="${id}" title="${t}" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-controls="${id}-list" data-value="${x}" aria-label="${esc(p.label)}: ${esc(p.opts[x] || '')}"><span class="sfp-pal-swatch" style="background:${palGradient(x)}"></span><span class="sfp-pal-name">${esc(p.opts[x] || '')}</span><span class="sfp-pal-caret" aria-hidden="true">▾</span></button>`
+      : p.type === 'choice' ? `<select id="${id}" title="${t}">${p.opts.map((o, i) => `<option value="${i}"${i === x ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`
       : p.type === 'toggle' ? `<input type="checkbox" id="${id}"${x ? ' checked' : ''} title="${t}"><output for="${id}">${v}</output>`
       : `<input type="range" id="${id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${x}" aria-valuetext="${v}" title="${t}"><output for="${id}">${v}</output>`;
     return `<div class="sfp-row" data-p="${p.id}"><label for="${id}" title="${t}">${esc(p.label)}</label>${ctl}<button type="button" class="sfp-r" aria-label="Reset ${esc(p.label)}" title="Reset ${esc(p.label)} to ${esc(p.fmt(p.def))}">↺</button>` +
@@ -9425,8 +9935,9 @@ void main(){
     migrateVig();
     srows.innerHTML = themeRow() + rowsHTML(SCOPE_PARAMS, sv(), 'sfs-'); preSync();
     const f = FX[fxIx()], has = hasParams(f), vigOn = fxIx() > 0;
-    vigSec.hidden = !vigOn;
-    if (vigOn) vrows.innerHTML = rowsHTML(VIG_PARAMS, vigParams(), 'sfv-'); else vrows.innerHTML = '';
+    vigSec.hidden = !vigOn; palSec.hidden = !vigOn;
+    if (vigOn) { vrows.innerHTML = rowsHTML(VIG_PARAMS, vigParams(), 'sfv-'); prowsPal.innerHTML = rowsHTML(PAL_PARAMS, palParams(), 'sfa-'); }
+    else { vrows.innerHTML = ''; prowsPal.innerHTML = ''; }
     fxSec.hidden = !has;
     if (has) { $('#sfpTitle').textContent = f.name; prows.innerHTML = rowsHTML(f.params, fxParams(f), 'sfp-'); const st = fxSt[f.id]; if (st && st.keep != null) effSync(f, st.keep); }
     else prows.innerHTML = '';
@@ -9447,7 +9958,16 @@ void main(){
   }
   function panelRow(p, x, sec = 'fx') {      // reflect one value in its row
     const r = SEC[sec].rows.querySelector(`[data-p="${p.id}"]`); if (!r) return;
-    const c = r.querySelector('input,select');
+    const pick = r.querySelector('.sfp-palpick');
+    if (pick) {
+      const name = (p.opts && p.opts[x]) || p.fmt(x);
+      pick.dataset.value = x;
+      pick.setAttribute('aria-label', (p.label || 'Palette') + ': ' + name);
+      const sw = pick.querySelector('.sfp-pal-swatch'); if (sw) sw.style.background = palGradient(x);
+      const nm = pick.querySelector('.sfp-pal-name'); if (nm) nm.textContent = name;
+      return;
+    }
+    const c = r.querySelector('input,select'); if (!c) return;
     if (c.type === 'checkbox') c.checked = !!x; else if (+c.value !== x) c.value = x;
     if (c.type === 'range') c.setAttribute('aria-valuetext', p.fmt(x));
     const o = r.querySelector('output'); if (o) o.textContent = p.fmt(x);
@@ -9473,33 +9993,64 @@ void main(){
     clearTimeout(paramT); paramT = setTimeout(saveMeta, 250);
     if (fxShown && !raf) { settle = 0; fxIdle(); }
   }
-  /* Round 39: presets. A preset is a snapshot of every scope setting (all SCOPE_PARAMS values, the Theme), the mode, the effect
+  function setPal(id, x) {                   // r71: global IQ palette (S.meta.scopeFxPal)
+    const p = PAL_PARAMS.find(q => q.id === id); if (!p) return;
+    x = Number.isFinite(+x) ? Math.min(p.max, Math.max(p.min, +x)) : p.def;
+    if (p.step >= 1) x = Math.round(x);
+    const o = S.meta.scopeFxPal = S.meta.scopeFxPal || {};
+    if (Math.abs(x - p.def) < 1e-9) delete o[id]; else o[id] = x;
+    if (!Object.keys(o).length) delete S.meta.scopeFxPal;
+    panelRow(p, x, 'pal'); preSync();
+    clearTimeout(paramT); paramT = setTimeout(saveMeta, 250);
+    if (fxShown && !raf) { settle = 0; fxIdle(); }
+  }
+  /* Round 39 / r77: presets. A preset is a snapshot of every scope setting (all SCOPE_PARAMS values, the Theme), the mode, the effect
      and that effect's settings; not the panel's place or folds. S saves the current settings as a new one, Shift+← → step through
-     them (wrapping), the Preset list at the top of the panel picks one. Kept in S.meta.scopePresets (IndexedDB) and written to
-     the library file (visualiserPresets); a value that is missing / out of range falls back to its default / is clamped, unknown
-     values are ignored and an unknown mode or effect leaves the current one, so older and newer presets both apply. */
+     them (wrapping), the Preset list at the top of the panel picks one. User presets live in S.meta.scopePresets (IndexedDB) and
+     the library file (visualiserPresets). r77: 32 built-in factory presets always list first; they are immutable and not exported.
+     Missing / out of range values fall back to defaults; unknown mode or effect leaves the current one. */
   const PRESET_V = 1;
-  let preAt = -1;                                // the preset last applied or saved (Shift+← → go on from it after a tweak)
-  const preList = () => Array.isArray(S.meta.scopePresets) ? S.meta.scopePresets : (S.meta.scopePresets = []);
+  const FACTORY_PRESETS = [{"id":"factory-01","origId":"vp-mw2q7ps3-mag2k","name":"Factory 1 – Spiral","factory":true,"created":"2026-11-04T23:06:47.235Z","mode":"spiral","effect":"diffwarp","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"cols":1,"rows":1,"alt":0,"gap":0,"grid":0,"text":0,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1},"fxParams":{"warp":3,"swirl":1.5,"cells":0.5,"follow":1,"diffuse":0.15,"trails":1,"speed":1,"drift":1,"beat":1},"vigParams":{},"palParams":{},"oldName":"Preset 1 – Spiral"},{"id":"factory-02","origId":"vp-mw2qaf0k-pq5ov","name":"Factory 2 – Mirror Zoom","factory":true,"created":"2026-11-04T23:08:53.252Z","mode":"mirror","effect":"diffwarp","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"cols":1,"rows":1,"alt":0,"gap":0,"grid":0,"text":0,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1},"fxParams":{"warp":3,"swirl":1.5,"cells":0.5,"follow":1,"diffuse":0.15,"trails":1,"speed":1,"drift":1,"beat":1},"vigParams":{},"palParams":{},"oldName":"Preset 2 – Mirror Zoom"},{"id":"factory-03","origId":"vp-mw2qc6rk-2m33z","name":"Factory 3 – Mirror Zoom","factory":true,"created":"2026-11-04T23:10:15.872Z","mode":"mirror","effect":"storm","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"cols":1,"rows":1,"alt":0,"gap":0,"grid":0,"text":0,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1},"fxParams":{"wind":2,"scale":1.5,"warp":4,"feed":1.5,"pastel":0.6,"trails":0.97,"speed":1,"drift":1,"beat":1},"vigParams":{},"palParams":{},"oldName":"Preset 3 – Mirror Zoom"},{"id":"factory-04","origId":"vp-mw2qdvji-r8ekj","name":"Factory 4 – Spiral","factory":true,"created":"2026-11-04T23:11:34.638Z","mode":"spiral","effect":"feedback","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"cols":1,"rows":1,"alt":0,"gap":0,"grid":0,"text":0,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1},"fxParams":{"rot":0,"speed":1,"drift":1,"scale":1.028,"offX":0,"offY":0,"tiltX":0,"tiltY":0,"trails":0.9,"hue":0},"vigParams":{},"palParams":{},"oldName":"Preset 4 – Spiral"},{"id":"factory-05","origId":"vp-mw2qj0wo-xc8mh","name":"Factory 5 – XY","factory":true,"created":"2026-11-04T23:15:34.872Z","mode":"xy","effect":"none","theme":"dark","params":{"amp":3,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":-136,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"cols":1,"rows":1,"alt":0,"gap":0,"grid":0,"text":0,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1},"fxParams":{},"vigParams":{},"palParams":{},"oldName":"Preset 5 – XY"},{"id":"factory-06","origId":"vp-mw2qng9q-wuvrk","name":"Factory 6 – Pleiades","factory":true,"created":"2026-11-04T23:19:01.406Z","mode":"pleiades","effect":"feedback","theme":"dark","params":{"amp":2.05,"width":0.67,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":1,"rot":42,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"cols":1,"rows":1,"alt":0,"gap":0,"grid":0,"text":0,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1},"fxParams":{"rot":0,"speed":1,"drift":1,"scale":1.028,"offX":0,"offY":0,"tiltX":0,"tiltY":0,"trails":0.9,"hue":0},"vigParams":{},"palParams":{},"oldName":"Preset 6 – Pleiades"},{"id":"factory-07","origId":"vp-mw2qplie-mfbmd","name":"Factory 7 – XY","factory":true,"created":"2026-11-04T23:20:41.510Z","mode":"xy","effect":"starwarp","theme":"dark","params":{"amp":3,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":-136,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"cols":1,"rows":1,"alt":0,"gap":0,"grid":0,"text":0,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1},"fxParams":{"reach":4,"spacing":3.5,"twist":100,"spin":0.3,"gain":1.2,"bands":1,"echo":0,"ink":0.5,"warp":1,"blur":1.2,"gloss":0.4,"hue":1,"trails":0.94,"speed":1,"beat":1},"vigParams":{},"palParams":{},"oldName":"Preset 7 – XY"},{"id":"factory-08","origId":"vp-mw9h0997-cxju5","name":"Factory 8 – Title","factory":true,"created":"2026-11-09T16:23:25.915Z","mode":"title","effect":"praeterea","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"scale":0.5,"warp":4,"oct":2,"speed":1,"edge":0.87,"soft":0.36,"invert":0,"ink":1,"mask":0.63,"disp":0.32,"bend":0,"res":980,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0,"pal":16,"map":1,"rot":0.995,"speed":0},"oldName":"Preset 8 – Title"},{"id":"factory-09","origId":"vp-mw9h312d-ik7ze","name":"Factory 9 – XY","factory":true,"created":"2026-11-09T16:25:35.269Z","mode":"xy","effect":"praeterea","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"scale":0.5,"warp":4,"oct":2,"speed":1,"edge":0.87,"soft":0.36,"invert":0,"ink":1,"mask":0.63,"disp":0.32,"bend":0,"res":980,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0,"pal":16,"map":1,"rot":0.995,"speed":0},"oldName":"Preset 9 – XY"},{"id":"factory-10","origId":"vp-mw9h5aoc-caqd8","name":"Factory 10 – Pleiades","factory":true,"created":"2026-11-09T16:27:21.036Z","mode":"pleiades","effect":"feedback","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"rot":0,"speed":1,"drift":1,"scale":1.028,"offX":0,"offY":0,"tiltX":0,"tiltY":0,"trails":0.9,"hue":0},"vigParams":{"vig":0},"palParams":{"amt":0.62,"pal":8,"map":1,"rot":0.995,"speed":0.72},"oldName":"Preset 10 – Pleiades"},{"id":"factory-11","origId":"vp-mw9h79z0-9mh7d","name":"Factory 11 – 4rknova Wave","factory":true,"created":"2026-11-09T16:28:53.436Z","mode":"novawave","effect":"heliostasis","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"memory":0.999,"noise":1,"speed":1,"flow":2.9,"reach":30,"twist":0.049,"bands":5,"shift":0,"shimmer":0.1,"vig":0.7,"res":540,"ink":1,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":1,"pal":4,"map":1,"rot":0.995,"speed":0.72},"oldName":"Preset 11 – 4rknova Wave"},{"id":"factory-12","origId":"vp-mw9h8gzj-lylor","name":"Factory 12 – DuckMonster Halo","factory":true,"created":"2026-11-09T16:29:49.183Z","mode":"halo","effect":"heliostasis","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"memory":0.999,"noise":1,"speed":1,"flow":2.9,"reach":30,"twist":0.049,"bands":5,"shift":0,"shimmer":0.1,"vig":0.7,"res":540,"ink":1,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":1,"pal":2,"map":0,"rot":0.995,"speed":0.72},"oldName":"Preset 12 – DuckMonster Halo"},{"id":"factory-13","origId":"vp-mw9h95sq-tvsht","name":"Factory 13 – Neuro","factory":true,"created":"2026-11-09T16:30:21.338Z","mode":"neuro","effect":"heliostasis","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"memory":0.999,"noise":1,"speed":1,"flow":2.9,"reach":30,"twist":0.049,"bands":5,"shift":0,"shimmer":0.1,"vig":0.7,"res":540,"ink":1,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":1,"pal":2,"map":0,"rot":0.995,"speed":-2},"oldName":"Preset 13 – Neuro"},{"id":"factory-14","origId":"vp-mw9ha1hk-lzg7c","name":"Factory 14 – Waveform","factory":true,"created":"2026-11-09T16:31:02.408Z","mode":"wave","effect":"heliostasis","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"memory":0.999,"noise":1,"speed":1,"flow":2.9,"reach":30,"twist":0.049,"bands":5,"shift":0,"shimmer":0.1,"vig":0.7,"res":540,"ink":1,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":1,"pal":2,"map":0,"rot":0.995,"speed":-2},"oldName":"Preset 14 – Waveform"},{"id":"factory-15","origId":"vp-mw9hc7o8-n3cea","name":"Factory 15 – XY","factory":true,"created":"2026-11-09T16:32:43.736Z","mode":"xy","effect":"heliostasis","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"memory":0.999,"noise":1,"speed":1,"flow":2.9,"reach":30,"twist":0.049,"bands":5,"shift":0,"shimmer":0.1,"vig":0.7,"res":540,"ink":1,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":1,"pal":2,"map":1,"rot":0.995,"speed":-2},"oldName":"Preset 15 – XY"},{"id":"factory-16","origId":"vp-mw9he9hd-urz0f","name":"Factory 16 – Pleiades","factory":true,"created":"2026-11-09T16:34:19.393Z","mode":"pleiades","effect":"heliostasis","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"memory":0.999,"noise":1,"speed":1,"flow":2.9,"reach":30,"twist":0.049,"bands":5,"shift":0,"shimmer":0.1,"vig":0.7,"res":540,"ink":1,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":1,"pal":2,"map":1,"rot":0.995,"speed":-2},"oldName":"Preset 16 – Pleiades"},{"id":"factory-17","origId":"vp-mw9hf484-pep3i","name":"Factory 17 – 3D Audio","factory":true,"created":"2026-11-09T16:34:59.236Z","mode":"audio3d","effect":"heliostasis","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"memory":0.999,"noise":1,"speed":1,"flow":2.9,"reach":30,"twist":0.049,"bands":5,"shift":0,"shimmer":0.1,"vig":0.7,"res":540,"ink":1,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":1,"pal":5,"map":1,"rot":0.995,"speed":0.38},"oldName":"Preset 17 – 3D Audio"},{"id":"factory-18","origId":"vp-mw9hw9g9-mywky","name":"Factory 18 – 3D Audio","factory":true,"created":"2026-11-09T16:48:19.161Z","mode":"audio3d","effect":"nebula","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":150,"brush":0,"bsize":4.7,"outline":2.5,"olight":0.91,"ohue":260,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":6,"stwist":0,"spulse":1,"sdust":1.15,"shue":180,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1.1,"sbsmooth":0.78,"sbop":0.37,"sbkey":1,"sbscale":0.9,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"swirl":1,"bloom":1,"size":1,"swell":0.3,"ink":0.3,"pupil":0.45,"split":1,"gloss":0.35,"grain":0.3,"hue":1,"trails":0.985,"speed":1,"drift":1,"beat":1},"vigParams":{"vig":1.2},"palParams":{"amt":1,"pal":6,"map":1,"rot":0.995,"speed":0.38},"oldName":"Preset 18 – 3D Audio"},{"id":"factory-19","origId":"vp-mw9hxz5x-t8lt4","name":"Factory 19 – 3D Audio","factory":true,"created":"2026-11-09T16:49:39.141Z","mode":"audio3d","effect":"fractalecho","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":150,"brush":0,"bsize":4.7,"outline":2.5,"olight":0.91,"ohue":260,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":1,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":6,"stwist":0,"spulse":1,"sdust":1.15,"shue":180,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":0.47,"akey":1,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1.1,"sbsmooth":0.78,"sbop":0.37,"sbkey":1,"sbscale":0.9,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":0.2,"copies":4,"zoom":1.9,"zrange":0.2,"prange":0.2,"blend":0.5,"bmix":-0.07,"bscale":0.1,"bsamples":16,"grain":0.05,"gain":1.8,"tint":0,"bleed":1,"tonemap":1,"res":480,"ink":0.6,"beat":0.5},"vigParams":{"vig":1.2},"palParams":{"amt":1,"pal":6,"map":1,"rot":0.995,"speed":0.38},"oldName":"Preset 19 – 3D Audio"},{"id":"factory-20","origId":"vp-mw9hzugi-ewhz8","name":"Factory 20 – 3D Audio","factory":true,"created":"2026-11-09T16:51:06.354Z","mode":"audio3d","effect":"feedbackfractal","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":150,"brush":0,"bsize":4.7,"outline":2.5,"olight":0.91,"ohue":260,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":1,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":6,"stwist":0,"spulse":1,"sdust":1.15,"shue":180,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":0.47,"akey":1,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1.1,"sbsmooth":0.78,"sbop":0.37,"sbkey":1,"sbscale":0.9,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":1,"rot":0.01,"fold":0.8,"off":0.1,"offw":0.05,"inv":1,"zoom":1.05,"zoomw":0.05,"turb":0.005,"con":0.1,"gam":1,"keep":1,"ink":1,"seed":0,"hue":1,"beat":0.5},"vigParams":{"vig":1.2},"palParams":{"amt":1,"pal":6,"map":1,"rot":0.995,"speed":0.38},"oldName":"Preset 20 – 3D Audio"},{"id":"factory-21","origId":"vp-mw9i3xtv-8cehn","name":"Factory 21 – Waveform","factory":true,"created":"2026-11-09T16:54:17.347Z","mode":"wave","effect":"plasticcream","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":150,"brush":0,"bsize":4.7,"outline":2.5,"olight":0.91,"ohue":260,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":1,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":6,"stwist":0,"spulse":1,"sdust":1.15,"shue":180,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":0.47,"akey":1,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1.1,"sbsmooth":0.78,"sbop":0.37,"sbkey":1,"sbscale":0.9,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":1.44,"turb":1.3,"attr":0.3,"ring":39,"centre":0,"thr":4,"rate":4,"relief":20,"height":1,"spec":1,"blue":1,"color":0,"res":540,"ink":0.93,"beat":0,"trans":0,"transkey":0},"vigParams":{"vig":1.2},"palParams":{"amt":1,"pal":6,"map":1,"rot":0.995,"speed":0.38},"oldName":"Preset 21 – Waveform"},{"id":"factory-22","origId":"vp-mw9i900b-5o712","name":"Factory 22 – Neuro","factory":true,"created":"2026-11-09T16:58:13.451Z","mode":"neuro","effect":"heliostasis","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":150,"brush":0,"bsize":4.7,"outline":2.5,"olight":0.91,"ohue":260,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":1,"kseg":6,"kspin":1.6,"kzoom":1.65,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":6,"stwist":0,"spulse":1,"sdust":1.15,"shue":180,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":0.47,"akey":1,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":2,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.65,"sbspeed":1,"sbsteps":64,"sbdrive":1.1,"sbsmooth":0.78,"sbop":0.37,"sbkey":1,"sbscale":0.9,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"memory":0.999,"noise":1,"speed":1,"flow":2.9,"reach":30,"twist":0.049,"bands":5,"shift":0,"shimmer":0.1,"vig":0.7,"res":540,"ink":1,"beat":0.5},"vigParams":{"vig":1.2},"palParams":{"amt":1,"pal":6,"map":1,"rot":0.995,"speed":0.38},"oldName":"Preset 22 – Neuro"},{"id":"factory-23","origId":"vp-mw9iewvk-tjowp","name":"Factory 23 – Spiral","factory":true,"created":"2026-11-09T17:02:49.328Z","mode":"spiral","effect":"heliostasis","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":150,"brush":0,"bsize":4.7,"outline":2.5,"olight":0.91,"ohue":260,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":1,"kseg":6,"kspin":1.6,"kzoom":1.65,"kx":0,"ky":0,"tshape":2,"cols":2,"rows":1,"alt":0,"tmir":1,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":6,"stwist":0,"spulse":1,"sdust":1.15,"shue":180,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":0.47,"akey":1,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":2,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.65,"sbspeed":1,"sbsteps":64,"sbdrive":1.1,"sbsmooth":0.78,"sbop":0.37,"sbkey":1,"sbscale":0.9,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"memory":0.9741,"noise":2.65,"speed":1,"flow":7.35,"reach":34,"twist":0.8,"bands":5,"shift":6.28,"shimmer":0.1,"vig":0.7,"res":540,"ink":1,"beat":1.65},"vigParams":{"vig":1.2},"palParams":{"amt":1,"pal":30,"map":0,"rot":0.995,"speed":0.38},"oldName":"Preset 23 – Spiral"},{"id":"factory-24","origId":"vp-mw9iloao-t16fi","name":"Factory 24 – 4rknova Wave","factory":true,"created":"2026-11-09T17:08:04.800Z","mode":"novawave","effect":"aquarelle","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":1,"seasmooth":0.25,"seaheight":0.6,"seafreq":0.2,"seaspeed":0.8,"seachop":4,"seadrift":1,"seasteps":8,"seaop":1,"seakey":0,"seascale":0.35,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"bloom":1,"bleed":1,"size":1,"swell":0.5,"ink":0.35,"hue":1,"wet":0.25,"trails":0.98,"speed":1,"drift":1,"beat":1},"vigParams":{"vig":0},"palParams":{"amt":0.77,"pal":1,"map":1,"rot":0,"speed":1.09},"oldName":"Preset 24 – 4rknova Wave"},{"id":"factory-25","origId":"vp-mw9ine29-drtgq","name":"Factory 25 – Seascape","factory":true,"created":"2026-11-09T17:09:24.849Z","mode":"seascape","effect":"lavalamp","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":1,"seasmooth":0.25,"seaheight":0.6,"seafreq":0.2,"seaspeed":0.8,"seachop":4,"seadrift":1,"seasteps":8,"seaop":1,"seakey":0,"seascale":0.9,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"flow":1,"bloom":1,"size":1,"swell":0.4,"ink":0.15,"outline":0.2,"split":1,"hue":1,"trails":0.98,"speed":1,"drift":1,"beat":1},"vigParams":{"vig":0},"palParams":{"amt":0.77,"pal":1,"map":1,"rot":0,"speed":1.09},"oldName":"Preset 25 – Seascape"},{"id":"factory-26","origId":"vp-mw9io5tb-95plv","name":"Factory 26 – Seascape","factory":true,"created":"2026-11-09T17:10:00.815Z","mode":"seascape","effect":"fractalecho","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":1,"seasmooth":0.25,"seaheight":0.6,"seafreq":0.2,"seaspeed":0.8,"seachop":4,"seadrift":1,"seasteps":8,"seaop":1,"seakey":0,"seascale":0.9,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":0.2,"copies":4,"zoom":1.9,"zrange":0.2,"prange":0.2,"blend":0.5,"bmix":-0.07,"bscale":0.1,"bsamples":16,"grain":0.05,"gain":1.8,"tint":0,"bleed":1,"tonemap":1,"res":480,"ink":0.6,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0.77,"pal":1,"map":1,"rot":0,"speed":1.09},"oldName":"Preset 26 – Seascape"},{"id":"factory-27","origId":"vp-mw9iov06-h3u6n","name":"Factory 27 – Neuro","factory":true,"created":"2026-11-09T17:10:33.462Z","mode":"neuro","effect":"fractalecho","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":1,"seasmooth":0.25,"seaheight":0.6,"seafreq":0.2,"seaspeed":0.8,"seachop":4,"seadrift":1,"seasteps":8,"seaop":1,"seakey":0,"seascale":0.9,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":0.2,"copies":4,"zoom":1.9,"zrange":0.2,"prange":0.2,"blend":0.5,"bmix":-0.07,"bscale":0.1,"bsamples":16,"grain":0.05,"gain":1.8,"tint":0,"bleed":1,"tonemap":1,"res":480,"ink":0.6,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0.77,"pal":1,"map":1,"rot":0,"speed":1.09},"oldName":"Preset 27 – Neuro"},{"id":"factory-28","origId":"vp-mw9ipi5m-ginpj","name":"Factory 28 – Swirly Eyes","factory":true,"created":"2026-11-09T17:11:03.466Z","mode":"swirlyeyes","effect":"fractalecho","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":1,"seasmooth":0.25,"seaheight":0.6,"seafreq":0.2,"seaspeed":0.8,"seachop":4,"seadrift":1,"seasteps":8,"seaop":1,"seakey":0,"seascale":0.9,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":0.2,"copies":4,"zoom":1.9,"zrange":0.2,"prange":0.2,"blend":0.5,"bmix":-0.07,"bscale":0.1,"bsamples":16,"grain":0.05,"gain":1.8,"tint":0,"bleed":1,"tonemap":1,"res":480,"ink":0.6,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0.77,"pal":1,"map":1,"rot":0,"speed":1.09},"oldName":"Preset 28 – Swirly Eyes"},{"id":"factory-29","origId":"vp-mw9iqaop-l4k3k","name":"Factory 29 – Swirly Eyes","factory":true,"created":"2026-11-09T17:11:40.441Z","mode":"swirlyeyes","effect":"fractalecho","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":1,"seasmooth":0.25,"seaheight":0.6,"seafreq":0.2,"seaspeed":0.8,"seachop":4,"seadrift":1,"seasteps":8,"seaop":1,"seakey":0,"seascale":0.9,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":0.2,"copies":4,"zoom":1.9,"zrange":0.2,"prange":0.2,"blend":0.5,"bmix":-0.07,"bscale":0.1,"bsamples":16,"grain":0.05,"gain":1.8,"tint":0,"bleed":1,"tonemap":1,"res":480,"ink":0.1,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0.77,"pal":1,"map":1,"rot":0,"speed":1.09},"oldName":"Preset 29 – Swirly Eyes"},{"id":"factory-30","origId":"vp-mw9iu13s-od1w2","name":"Factory 30 – 4rknova Wave","factory":true,"created":"2026-11-09T17:14:34.648Z","mode":"novawave","effect":"fractalecho","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.001,"nwwidth":2,"nwamp":0.3,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":1,"seasmooth":0.25,"seaheight":0.6,"seafreq":0.2,"seaspeed":0.8,"seachop":4,"seadrift":1,"seasteps":8,"seaop":1,"seakey":0,"seascale":0.9,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":0.2,"copies":4,"zoom":1.9,"zrange":0.2,"prange":0.2,"blend":0.5,"bmix":-0.07,"bscale":0.1,"bsamples":16,"grain":0.05,"gain":1.8,"tint":0,"bleed":1,"tonemap":1,"res":480,"ink":0.6,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0.77,"pal":3,"map":1,"rot":0,"speed":1.09},"oldName":"Preset 30 – 4rknova Wave"},{"id":"factory-31","origId":"vp-mw9iudxl-3d794","name":"Factory 31 – 4rknova Wave","factory":true,"created":"2026-11-09T17:14:51.273Z","mode":"novawave","effect":"feedbackfractal","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.001,"nwwidth":2,"nwamp":0.3,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":1,"seasmooth":0.25,"seaheight":0.6,"seafreq":0.2,"seaspeed":0.8,"seachop":4,"seadrift":1,"seasteps":8,"seaop":1,"seakey":0,"seascale":0.9,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":1,"rot":0.01,"fold":0.8,"off":0.1,"offw":0.05,"inv":1,"zoom":1.05,"zoomw":0.05,"turb":0.005,"con":0.1,"gam":1,"keep":1,"ink":1,"seed":0,"hue":1,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0.77,"pal":3,"map":1,"rot":0,"speed":1.09},"oldName":"Preset 31 – 4rknova Wave"},{"id":"factory-32","origId":"vp-mw9iv9t8-eh4n1","name":"Factory 32 – Mirror Zoom","factory":true,"created":"2026-11-09T17:15:32.588Z","mode":"mirror","effect":"meltingthreads","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":-0.25,"lhue":78,"brush":0,"bsize":2,"outline":0,"olight":0.15,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":0,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":4,"mcol":0,"mop":0.08,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.02,"sspeed":1,"sring":41,"sstrobe":13,"sarms":4,"stwist":10,"spulse":1.75,"sdust":0.9,"shue":15,"svig":0.48,"scol":2,"sop":0,"skey":1,"sscale":0.75,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.001,"nwwidth":2,"nwamp":0.3,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":1,"seasmooth":0.25,"seaheight":0.6,"seafreq":0.2,"seaspeed":0.8,"seachop":4,"seadrift":1,"seasteps":8,"seaop":1,"seakey":0,"seascale":0.9,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"zoom":1.055,"orbit":0.33,"radius":0.33,"warp":1,"fold":4,"damp":1.1,"edge":1,"grain":1,"color":0,"hue":0.56,"res":540,"ink":1,"beat":1.45},"vigParams":{"vig":0},"palParams":{"amt":0.77,"pal":3,"map":1,"rot":0,"speed":1.09},"oldName":"Preset 32 – Mirror Zoom"},{"id":"factory-33","origId":"vp-mw9k4k8v-5hl03","name":"Factory 33 – Spiky Ball","oldName":"Preset 1 – Spiky Ball","factory":true,"created":"2026-11-09T17:50:45.631Z","mode":"spikyball","effect":"fractalecho","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":150,"brush":0,"bsize":4.7,"outline":2.5,"olight":0.91,"ohue":260,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":1,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":6,"stwist":0,"spulse":1,"sdust":1.15,"shue":180,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":0.47,"akey":1,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1.1,"sbsmooth":0.78,"sbop":0.37,"sbkey":1,"sbscale":0.9,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":0.2,"copies":4,"zoom":1.9,"zrange":0.2,"prange":0.2,"blend":0.5,"bmix":-0.07,"bscale":0.1,"bsamples":16,"grain":0.05,"gain":1.8,"tint":0,"bleed":1,"tonemap":1,"res":480,"ink":0.6,"beat":0.5},"vigParams":{"vig":1.2},"palParams":{"amt":0.87,"pal":27,"map":0,"rot":0.995,"speed":0.38}},{"id":"factory-34","origId":"vp-mw9ka8ol-gqi8q","name":"Factory 34 – DuckMonster Halo","oldName":"Preset 2 – DuckMonster Halo","factory":true,"created":"2026-11-09T17:55:10.581Z","mode":"halo","effect":"diffwarp","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":150,"brush":0,"bsize":4.7,"outline":2.5,"olight":0.91,"ohue":260,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":1,"kseg":6,"kspin":0.5,"kzoom":1.5,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":6,"stwist":0,"spulse":1,"sdust":1.15,"shue":180,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":0.47,"akey":1,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1.1,"sbsmooth":0.78,"sbop":0.37,"sbkey":1,"sbscale":0.9,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"warp":3,"swirl":1.5,"cells":0.5,"follow":1,"diffuse":0.15,"trails":1,"speed":1,"drift":1,"beat":1},"vigParams":{"vig":1.2},"palParams":{"amt":0.87,"pal":27,"map":0,"rot":0.995,"speed":0.38}},{"id":"factory-35","origId":"vp-mw9nihpf-soa6r","name":"Factory 35 – Waveform","oldName":"Preset 3 – Waveform","factory":true,"created":"2026-11-09T19:25:34.371Z","mode":"wave","effect":"liquidmetal","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":1,"scale":2,"warp":5.4,"height":0.35,"round":3,"detail":1,"gloss":9,"contrast":1,"beat":1,"response":0.25,"trails":0.96,"flow":1,"ink":0.8,"surface":1,"res":420},"vigParams":{"vig":0},"palParams":{"amt":1,"pal":2,"map":0,"rot":0.995,"speed":-2}},{"id":"factory-36","origId":"vp-mw9njshy-gq3qa","name":"Factory 36 – DuckMonster Halo","oldName":"Preset 4 – DuckMonster Halo","factory":true,"created":"2026-11-09T19:26:35.014Z","mode":"halo","effect":"liquidmetal","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.4,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":1,"scale":2,"warp":5.4,"height":0.35,"round":3,"detail":1,"gloss":9,"contrast":1,"beat":1,"response":0.25,"trails":0.96,"flow":1,"ink":0.8,"surface":1,"res":420},"vigParams":{"vig":0},"palParams":{"amt":1,"pal":2,"map":0,"rot":0.995,"speed":-2}},{"id":"factory-37","origId":"vp-mw9no306-d997o","name":"Factory 37 – Neuro","oldName":"Preset 5 – Neuro","factory":true,"created":"2026-11-09T19:29:55.254Z","mode":"neuro","effect":"followme","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"rot":0.02,"off":1,"split":1,"nsize":256,"gain":1.01,"fade":0.001,"speed":1,"dot":1,"dotb":1,"sharp":132,"res":540,"ink":0.25,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0,"pal":0,"map":0,"rot":0,"speed":0}},{"id":"factory-38","origId":"vp-mw9nq2ej-q4wrw","name":"Factory 38 – DuckMonster Halo","oldName":"Preset 6 – DuckMonster Halo","factory":true,"created":"2026-11-09T19:31:27.787Z","mode":"halo","effect":"followme","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"rot":0.02,"off":1,"split":1,"nsize":256,"gain":1.01,"fade":0.001,"speed":1,"dot":1,"dotb":1,"sharp":132,"res":540,"ink":0.25,"beat":0.5},"vigParams":{"vig":0.6},"palParams":{"amt":0,"pal":0,"map":0,"rot":0,"speed":0}},{"id":"factory-39","origId":"vp-mw9nqthj-kujpx","name":"Factory 39 – 4rknova Wave","oldName":"Preset 7 – 4rknova Wave","factory":true,"created":"2026-11-09T19:32:02.887Z","mode":"novawave","effect":"followme","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"rot":0.02,"off":1,"split":1,"nsize":256,"gain":1.01,"fade":0.001,"speed":1,"dot":1,"dotb":1,"sharp":132,"res":540,"ink":0.25,"beat":0.5},"vigParams":{"vig":0.6},"palParams":{"amt":0,"pal":0,"map":0,"rot":0,"speed":0}},{"id":"factory-40","origId":"vp-mw9nw12x-kyg6p","name":"Factory 40 – 3D Audio","oldName":"Preset 8 – 3D Audio","factory":true,"created":"2026-11-09T19:36:06.009Z","mode":"audio3d","effect":"followme","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"rot":0.02,"off":1,"split":1,"nsize":256,"gain":1.01,"fade":0.001,"speed":1,"dot":1,"dotb":1,"sharp":132,"res":540,"ink":0.25,"beat":0.5},"vigParams":{"vig":0.6},"palParams":{"amt":0,"pal":0,"map":0,"rot":0,"speed":0}},{"id":"factory-41","origId":"vp-mw9nwde9-s327w","name":"Factory 41 – Pleiades","oldName":"Preset 9 – Pleiades","factory":true,"created":"2026-11-09T19:36:21.969Z","mode":"pleiades","effect":"followme","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"rot":0.02,"off":1,"split":1,"nsize":256,"gain":1.01,"fade":0.001,"speed":1,"dot":1,"dotb":1,"sharp":132,"res":540,"ink":0.25,"beat":0.5},"vigParams":{"vig":0.6},"palParams":{"amt":0,"pal":0,"map":0,"rot":0,"speed":0}},{"id":"factory-42","origId":"vp-mw9nykcu-pdruz","name":"Factory 42 – Swirly Eyes","oldName":"Preset 10 – Swirly Eyes","factory":true,"created":"2026-11-09T19:38:04.302Z","mode":"swirlyeyes","effect":"pendula","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"field":1,"steps":32,"scene":0,"palette":0,"hold":2,"length":1,"speed":1,"flow":0.9,"fade":0.01,"grain":0.025,"vig":1,"res":360,"ink":0.35,"beat":0.5},"vigParams":{"vig":0.6},"palParams":{"amt":0,"pal":0,"map":0,"rot":0,"speed":0}},{"id":"factory-43","origId":"vp-mw9o9j07-zbhyk","name":"Factory 43 – Spiky Ball","oldName":"Preset 11 – Spiky Ball","factory":true,"created":"2026-11-09T19:46:35.767Z","mode":"spikyball","effect":"followme","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"rot":0.02,"off":1,"split":1,"nsize":256,"gain":1.01,"fade":0.001,"speed":1,"dot":1,"dotb":1,"sharp":132,"res":540,"ink":0.25,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0,"pal":0,"map":0,"rot":0,"speed":0}},{"id":"factory-44","origId":"vp-mw9oc8vd-c0olm","name":"Factory 44 – Blobby","oldName":"Preset 12 – Blobby","factory":true,"created":"2026-11-09T19:48:42.601Z","mode":"blobby","effect":"followme","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"rot":0.02,"off":1,"split":1,"nsize":256,"gain":1.01,"fade":0.001,"speed":1,"dot":1,"dotb":1,"sharp":132,"res":540,"ink":0.25,"beat":0.5},"vigParams":{"vig":0},"palParams":{"amt":0,"pal":0,"map":0,"rot":0,"speed":0}},{"id":"factory-45","origId":"vp-mw9of65h-2vt3j","name":"Factory 45 – 4rknova Wave","oldName":"Preset 13 – 4rknova Wave","factory":true,"created":"2026-11-09T19:50:59.045Z","mode":"novawave","effect":"fractalfeedback","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"speed":0.2,"aa":5,"mix":0.66,"beat":0.15,"response":1,"ink":1,"tint":0.75,"res":780},"vigParams":{"vig":0},"palParams":{"amt":0.63,"pal":2,"map":0,"rot":0,"speed":0.34}},{"id":"factory-46","origId":"vp-mw9oogn5-y8bu1","name":"Factory 46 – Rings","oldName":"Preset 14 – Rings","factory":true,"created":"2026-11-09T19:58:12.545Z","mode":"rings","effect":"feedback","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"rot":0,"speed":1,"drift":0,"scale":1.034,"offX":0,"offY":0,"tiltX":0,"tiltY":0,"trails":1,"hue":0},"vigParams":{"vig":0.6},"palParams":{"amt":0,"pal":0,"map":0,"rot":0,"speed":0}},{"id":"factory-47","origId":"vp-mw9otks5-auqg7","name":"Factory 47 – Bounce","oldName":"Preset 15 – Bounce","factory":true,"created":"2026-11-09T20:02:11.189Z","mode":"bounce","effect":"storm","theme":"dark","params":{"amp":1,"width":1,"zoom":1,"thick":1,"llight":0,"lhue":0,"brush":0,"bsize":4.7,"outline":3,"olight":0.53,"ohue":0,"orient":0,"rot":0,"flipH":0,"flipV":0,"mirror":0,"kal":0,"kseg":6,"kspin":0.5,"kzoom":1,"kx":0,"ky":0,"tshape":0,"cols":1,"rows":1,"alt":0,"tmir":0,"gap":0,"grid":0,"text":0,"fxdpr":1.5,"fxmp":2,"bspeed":1,"cspeed":1,"tspeed":1,"tspin":1,"tlights":1,"tdrift":1,"tpulse":1,"xgain":1,"xpersist":0.3,"xbeam":1,"xglow":1,"xms":1,"xgrat":1,"mdrive":1,"msmooth":0.25,"mspin":0.4,"moff":1,"mdrift":1,"miter":4,"mrad":0.12,"msharp":24,"mzmin":2,"mzmax":16,"mcs":1.4,"mcol":0,"mop":1,"mkey":0,"mscale":0.5,"pdrive":1,"psmooth":0.3,"porbit":1,"ppitch":1,"pdist":14,"pzoom":1,"ppulse":1,"pexp":2.2,"pneb":1,"psteps":12,"pmw":1,"pbg":1,"pspk":1,"pcol":0,"pop":1,"pkey":0,"pscale":0.25,"sdrive":1,"ssmooth":0.3,"sspeed":1,"sring":25,"sstrobe":13,"sarms":1,"stwist":0,"spulse":1,"sdust":1,"shue":0,"svig":0.4,"scol":0,"sop":1,"skey":0,"sscale":1,"xdelay":1,"xsx":4,"again":1,"asmooth":0.8,"athr":1,"asteps":30,"aatt":10,"abox":0.3,"awall":1,"aspeed":1,"aop":1,"akey":0,"ascale":0.5,"nwthick":0.03,"nwwidth":2,"nwamp":0.09,"nwvel":1,"nwop":0,"nwkey":1,"nwscale":0.5,"seadrive":0,"seasmooth":0.36,"seaheight":0.85,"seafreq":0.18,"seaspeed":0.25,"seachop":3.5,"seadrift":0.35,"seasteps":12,"seaop":0.28,"seakey":1,"seascale":0.95,"haradius":0.6,"habright":0.2,"haspeed":0.2,"harange":64,"hagain":1,"hasmooth":0.8,"hapulse":0,"haray":0,"haop":0,"hakey":1,"hascale":0.5,"ngspeed":3,"ngfov":1,"ngglow":1,"ngelectric":1,"ngbump":0.1,"ngior":1.31,"ngtexture":1,"ngsteps":128,"ngdrive":1,"ngsmooth":0.8,"ngop":1,"ngkey":0,"ngscale":0.35,"sbspeed":1,"sbsteps":64,"sbdrive":1,"sbsmooth":0.8,"sbop":1,"sbkey":0,"sbscale":0.8,"blspeed":1,"bldrive":1,"blsmooth":0.8,"blop":1,"blkey":0,"blscale":0.5,"swspeed":1,"swdrive":1,"swsmooth":0.2,"swoct":5,"swop":1,"swkey":0,"swscale":0.45},"fxParams":{"wind":2,"scale":1.5,"warp":4,"feed":1.5,"pastel":0.6,"trails":1,"speed":1,"drift":1,"beat":1},"vigParams":{"vig":0.6},"palParams":{"amt":0,"pal":0,"map":0,"rot":0,"speed":0}}];
+  const FACTORY_N = FACTORY_PRESETS.length;
+  const FACTORY_IDS = new Set(FACTORY_PRESETS.map(p => p.id));
+  const FACTORY_ALIASES = new Map(FACTORY_PRESETS.map(p => [p.origId, p.id]));
+  const FACTORY_NAMES = new Set(FACTORY_PRESETS.map(p => p.name));
+  const FACTORY_OLD_NAMES = new Set(FACTORY_PRESETS.map(p => p.oldName || p.name.replace(/^Factory /, 'Preset ')));
+  let preAt = -1;                                // index into preAll() of the last applied / saved preset
+  const preUserList = () => { if (!Array.isArray(S.meta.scopePresets)) S.meta.scopePresets = []; preMigrate(); return S.meta.scopePresets; };
+  const preAll = () => FACTORY_PRESETS.concat(preUserList());
+  const preList = preAll;                        // apply / step / match / sync use factory + user
+  const preIsFactory = p => !!(p && (p.factory || FACTORY_IDS.has(p.id) || FACTORY_ALIASES.has(p.id)));
+  function preMigrate() {                         // drop user copies that are now built-in factory presets
+    const L = S.meta.scopePresets; if (!Array.isArray(L) || !L.length) return;
+    let n = 0;
+    for (let i = L.length - 1; i >= 0; i--) {
+      const p = L[i]; if (!p) continue;
+      if (FACTORY_IDS.has(p.id) || FACTORY_ALIASES.has(p.id) || FACTORY_NAMES.has(p.name) || FACTORY_OLD_NAMES.has(p.name)) { L.splice(i, 1); n++; }
+    }
+    if (n) { try { saveMeta(); } catch (e) { } }
+  }
+
   const preNum = (x, p) => { let v = typeof x === 'number' && Number.isFinite(x) ? Math.min(p.max, Math.max(p.min, x)) : p.def; if (p.step >= 1) v = Math.round(v); return v; };
   function preSnap() {
     const v = sv(), params = {}, f = FX[fxIx()]; SCOPE_PARAMS.forEach(p => params[p.id] = v[p.id]);
-    return { mode: MODES[modeIx()].id, effect: f.id, params, fxParams: hasParams(f) ? { ...fxParams(f) } : {}, vigParams: { ...vigParams() }, theme: S.meta.theme || 'dark' };
+    return { mode: MODES[modeIx()].id, effect: f.id, params, fxParams: hasParams(f) ? { ...fxParams(f) } : {}, vigParams: { ...vigParams() }, palParams: { ...palParams() }, theme: S.meta.theme || 'dark' };
   }
   function preNorm(pr) {                         // a preset's full values (clamped, defaults for the missing ones)
     const P = pr && pr.params && typeof pr.params === 'object' ? pr.params : {}, params = {};
     SCOPE_PARAMS.forEach(p => params[p.id] = preNum(P[p.id], p));
-    const mi = MODES.findIndex(m => m.id === pr.mode), fi = FX.findIndex(f => f.id === pr.effect), fxp = {}, vigp = {};
+    const mi = MODES.findIndex(m => m.id === pr.mode), fi = FX.findIndex(f => f.id === pr.effect), fxp = {}, vigp = {}, palp = {};
     const FP = pr.fxParams && typeof pr.fxParams === 'object' ? pr.fxParams : {};
     if (fi >= 0) (FX[fi].params || []).forEach(p => fxp[p.id] = preNum(FP[p.id], p));
-    // r67: vigParams; also lift a legacy liquidmetal.fxParams.vig into Amount when vigParams was missing
     const VP = pr.vigParams && typeof pr.vigParams === 'object' ? pr.vigParams : {};
     const vigSrc = (typeof VP.vig === 'number') ? VP
       : (pr.effect === 'liquidmetal' && typeof FP.vig === 'number') ? { vig: FP.vig } : VP;
     VIG_PARAMS.forEach(p => vigp[p.id] = preNum(vigSrc[p.id], p));
-    return { mi, fi, params, fxp, vigp, theme: THEMES.some(t => t.id === pr.theme) ? pr.theme : null };
+    const PP = pr.palParams && typeof pr.palParams === 'object' ? pr.palParams : {};
+    PAL_PARAMS.forEach(p => palp[p.id] = preNum(PP[p.id], p));
+    return { mi, fi, params, fxp, vigp, palp, theme: THEMES.some(t => t.id === pr.theme) ? pr.theme : null };
   }
-  function preMatch(pr) {                        // do the current settings equal this preset?
+  function preMatch(pr) {
     const n = preNorm(pr), v = sv(), eq = (a, b) => Math.abs(a - b) < 1e-9;
     if (n.mi >= 0 && n.mi !== modeIx()) return false;
     if (n.fi >= 0 && n.fi !== fxIx()) return false;
@@ -9507,12 +10058,13 @@ void main(){
     if (!SCOPE_PARAMS.every(p => eq(v[p.id], n.params[p.id]))) return false;
     if (n.fi >= 0) { const c = fxParams(FX[n.fi]); if (!(FX[n.fi].params || []).every(p => eq(c[p.id], n.fxp[p.id]))) return false; }
     const cv = vigParams(); if (!VIG_PARAMS.every(p => eq(cv[p.id], n.vigp[p.id]))) return false;
+    const cp = palParams(); if (!PAL_PARAMS.every(p => eq(cp[p.id], n.palp[p.id]))) return false;
     return true;
   }
-  const preCur = () => { const L = preList(); if (preAt >= 0 && preAt < L.length && preMatch(L[preAt])) return preAt; return L.findIndex(preMatch); };
-  const preTarget = () => { const m = preCur(), L = preList(); return m >= 0 ? m : (preAt >= 0 && preAt < L.length ? preAt : -1); };
+  const preCur = () => { const L = preAll(); if (preAt >= 0 && preAt < L.length && preMatch(L[preAt])) return preAt; return L.findIndex(preMatch); };
+  const preTarget = () => { const m = preCur(), L = preAll(); return m >= 0 ? m : (preAt >= 0 && preAt < L.length ? preAt : -1); };
   function preApply(i, quiet) {
-    const L = preList(); if (!open || !L.length) return;
+    const L = preAll(); if (!open || !L.length) return;
     i = ((i % L.length) + L.length) % L.length; const pr = L[i], n = preNorm(pr);
     if (n.theme && n.theme !== (S.meta.theme || 'dark')) applyTheme(n.theme, true);
     const o = {}; SCOPE_PARAMS.forEach(p => { if (Math.abs(n.params[p.id] - p.def) >= 1e-9) o[p.id] = n.params[p.id]; });
@@ -9527,73 +10079,111 @@ void main(){
     }
     { const q = {}; VIG_PARAMS.forEach(p => { if (Math.abs(n.vigp[p.id] - p.def) >= 1e-9) q[p.id] = n.vigp[p.id]; });
       if (Object.keys(q).length) S.meta.scopeFxVig = q; else delete S.meta.scopeFxVig; }
+    { const q = {}; PAL_PARAMS.forEach(p => { if (Math.abs(n.palp[p.id] - p.def) >= 1e-9) q[p.id] = n.palp[p.id]; });
+      if (Object.keys(q).length) S.meta.scopeFxPal = q; else delete S.meta.scopeFxPal; }
     preAt = i; clearTimeout(paramT); paramT = 0;
-    setMode(n.mi >= 0 ? n.mi : modeIx(), false);   // redraws, retunes the filters and rebuilds the panel
+    setMode(n.mi >= 0 ? n.mi : modeIx(), false);
     gearSync(); saveMeta();
-    if (!quiet) modeToast(`Preset ${i + 1}/${L.length} · ${pr.name}`);
+    if (!quiet) {
+      const kind = pr.factory ? 'Factory' : 'Preset';
+      const num = pr.factory ? (FACTORY_PRESETS.indexOf(pr) + 1) + '/' + FACTORY_N : (i + 1) + '/' + L.length;
+      modeToast(`${kind} ${num} · ${pr.name}`);
+    }
     preSync(true);
   }
   function preStep(d) {
-    const L = preList(); if (!L.length) return modeToast('No presets yet · S saves one');
+    const L = preAll(); if (!L.length) return modeToast('No presets yet · S saves one');
     const m = preCur(), from = m >= 0 ? m : preAt;
     preApply(from < 0 || from >= L.length ? (d > 0 ? 0 : L.length - 1) : from + d);
   }
   const preId = () => 'vp-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
   function preSave() {
     if (!open) return null;
-    const L = preList(), mn = MODES[modeIx()].name, names = new Set(L.map(p => p.name));
-    let k = L.length + 1; while (names.has(`Preset ${k} – ${mn}`)) k++;
-    const pr = { id: preId(), name: `Preset ${k} – ${mn}`, created: new Date().toISOString(), ...preSnap() };
-    L.push(pr); preAt = L.length - 1; touch(); preSync(true);
+    const U = preUserList(), all = preAll(), mn = MODES[modeIx()].name, names = new Set(all.map(p => p.name));
+    let k = U.length + 1; let nm = `Preset ${k} – ${mn}`;
+    while (names.has(nm) || FACTORY_NAMES.has(nm) || FACTORY_OLD_NAMES.has(nm)) { k++; nm = `Preset ${k} – ${mn}`; }
+    const pr = { id: preId(), name: nm, created: new Date().toISOString(), ...preSnap() };
+    U.push(pr); preAt = FACTORY_N + U.length - 1; touch(); preSync(true);
     modeToast(`Saved ${pr.name} · Shift+← → to switch`); return pr;
   }
   async function preAct(a, b) {
     if (a === 'save') return preSave();
-    const L = preList(), t = preTarget(); if (t < 0) return; const pr = L[t];
+    const L = preAll(), t = preTarget(); if (t < 0) return; const pr = L[t];
+    if (preIsFactory(pr)) { modeToast('Factory presets can’t be changed'); return; }   // r77
+    const U = preUserList();
     if (a === 'update') { Object.assign(pr, preSnap(), { updated: new Date().toISOString() }); preAt = t; touch(); preSync(true); modeToast(`Updated ${pr.name}`); }
     else if (a === 'rename') {
       const nm = await modal({ title: 'Rename preset', input: true, value: pr.name, okLabel: 'Rename' });
-      if (typeof nm === 'string' && nm.trim() && L.includes(pr)) { pr.name = nm.trim().slice(0, 80); touch(); preSync(true); }
+      if (typeof nm === 'string' && nm.trim() && U.includes(pr)) {
+        const n = nm.trim().slice(0, 80);
+        if (FACTORY_NAMES.has(n)) modeToast('That name is used by a factory preset');
+        else { pr.name = n; touch(); preSync(true); }
+      }
     } else if (a === 'delete') {
       const ok = await modal({ title: 'Delete preset?', message: `Delete the preset “${pr.name}”? Your current settings stay as they are.`, okLabel: 'Delete', danger: true });
-      const j = L.indexOf(pr);
-      if (ok && j >= 0) { L.splice(j, 1); preAt = preAt === j ? -1 : preAt > j ? preAt - 1 : preAt; touch(); preSync(true); modeToast(`Deleted ${pr.name}`); }
+      const j = U.indexOf(pr);
+      if (ok && j >= 0) {
+        U.splice(j, 1);
+        const allI = FACTORY_N + j;
+        preAt = preAt === allI ? -1 : preAt > allI ? preAt - 1 : preAt;
+        touch(); preSync(true); modeToast(`Deleted ${pr.name}`);
+      }
     }
     if (b && b.isConnected && open && panelOpen) (b.disabled ? $('#sfpPreset') : b).focus({ preventScroll: true });
   }
   let preN = -1;
-  function preSync(full) {                       // the Preset list and its buttons follow the settings
+  function preSync(full) {
     const sel = $('#sfpPreset'); if (!sel || !panelOpen) return;
-    const L = preList(), m = preCur(), t = m >= 0 ? m : (preAt >= 0 && preAt < L.length ? preAt : -1);
-    const cur = !L.length ? '— No presets yet (S saves one) —' : t >= 0 ? `— Current (changed from “${L[t].name}”) —` : '— Current (custom) —';
-    if (full || preN !== L.length || sel.options.length !== L.length + 1) {
-      sel.innerHTML = `<option value="-1">${esc(cur)}</option>` + L.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join(''); preN = L.length;
+    const L = preAll(), U = preUserList(), m = preCur(), t = m >= 0 ? m : (preAt >= 0 && preAt < L.length ? preAt : -1);
+    const cur = t >= 0 ? `— Current (changed from “${L[t].name}”) —` : '— Current (custom) —';
+    const wantLen = L.length + 1 + 2;   // current + 2 separators + items
+    if (full || preN !== L.length || sel.options.length !== wantLen) {
+      let h = `<option value="-1">${esc(cur)}</option>`;
+      h += `<option value="" disabled>— Factory —</option>`;
+      FACTORY_PRESETS.forEach((p, i) => { h += `<option value="${i}">${esc(p.name)}</option>`; });
+      h += `<option value="" disabled>— My presets —</option>`;
+      U.forEach((p, i) => { h += `<option value="${FACTORY_N + i}">${esc(p.name)}</option>`; });
+      sel.innerHTML = h; preN = L.length;
     } else sel.options[0].textContent = cur;
     sel.value = String(m);
-    const on = { save: true, update: t >= 0 && m < 0, rename: t >= 0, delete: t >= 0 };
+    const fac = t >= 0 && preIsFactory(L[t]);
+    const on = { save: true, update: t >= 0 && m < 0 && !fac, rename: t >= 0 && !fac, delete: t >= 0 && !fac };
     panel.querySelectorAll('.sfp-pb').forEach(b => {
       if (b.disabled === !on[b.dataset.pa]) return;
       if (!on[b.dataset.pa] && document.activeElement === b) sel.focus({ preventScroll: true });
       b.disabled = !on[b.dataset.pa];
     });
-    if (t >= 0) panel.querySelectorAll('.sfp-pb:not([data-pa=save])').forEach(b => b.title = ({ update: 'Overwrite “%” with the current settings', rename: 'Rename “%”', delete: 'Delete “%”' })[b.dataset.pa].replace('%', L[t].name));
+    const upd = panel.querySelector('[data-pa=update]'), ren = panel.querySelector('[data-pa=rename]'), del = panel.querySelector('[data-pa=delete]');
+    if (fac) {
+      if (upd) upd.title = 'Factory presets can’t be overwritten';
+      if (ren) ren.title = 'Factory presets can’t be renamed';
+      if (del) del.title = 'Factory presets can’t be deleted';
+    } else if (t >= 0) {
+      panel.querySelectorAll('.sfp-pb:not([data-pa=save])').forEach(b => b.title = ({ update: 'Overwrite “%” with the current settings', rename: 'Rename “%”', delete: 'Delete “%”' })[b.dataset.pa].replace('%', L[t].name));
+    }
   }
-  function presetsOut() {                        // for the library file
-    return { version: PRESET_V, presets: preList().map(p => ({ id: p.id, name: p.name, created: p.created, ...(p.updated ? { updated: p.updated } : {}), mode: p.mode, effect: p.effect, theme: p.theme, params: { ...p.params }, fxParams: { ...(p.fxParams || {}) }, vigParams: { ...(p.vigParams || {}) } })) };
+  function presetsOut() {                        // library file: user presets only (factory is built-in)
+    const U = preUserList();
+    return { version: PRESET_V, presets: U.map(p => ({ id: p.id, name: p.name, created: p.created, ...(p.updated ? { updated: p.updated } : {}), mode: p.mode, effect: p.effect, theme: p.theme, params: { ...p.params }, fxParams: { ...(p.fxParams || {}) }, vigParams: { ...(p.vigParams || {}) }, palParams: { ...(p.palParams || {}) } })) };
   }
-  function presetsIn(sec) {                      // from a library file: same id (or else same name) = replaced, others added
+  function presetsIn(sec) {                      // from a library file; never import/overwrite factory
     const A = Array.isArray(sec) ? sec : sec && Array.isArray(sec.presets) ? sec.presets : null; if (!A) return 0;
     const nums = o => { const r = {}; if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) if (typeof v === 'number' && Number.isFinite(v)) r[k] = v; return r; };
-    const L = preList(); let n = 0;
+    const L = preUserList(); let n = 0;
     for (const x of A) {
       if (!x || typeof x !== 'object' || !(typeof x.name === 'string' && x.name.trim() || typeof x.id === 'string' && x.id)) continue;
       const str = v => typeof v === 'string' ? v : undefined;
-      const pr = { id: str(x.id) || preId(), name: (str(x.name) || '').trim().slice(0, 80) || 'Preset', created: str(x.created) || new Date().toISOString(), ...(str(x.updated) ? { updated: x.updated } : {}),
-        mode: str(x.mode), effect: str(x.effect), theme: str(x.theme), params: nums(x.params), fxParams: nums(x.fxParams), vigParams: nums(x.vigParams) };
+      const id = str(x.id) || '';
+      const name = (str(x.name) || '').trim().slice(0, 80) || 'Preset';
+      // skip anything that is (or aliases) a built-in factory preset
+      if (FACTORY_IDS.has(id) || FACTORY_ALIASES.has(id) || FACTORY_NAMES.has(name) || FACTORY_OLD_NAMES.has(name)) continue;
+      const pr = { id: id || preId(), name, created: str(x.created) || new Date().toISOString(), ...(str(x.updated) ? { updated: x.updated } : {}),
+        mode: str(x.mode), effect: str(x.effect), theme: str(x.theme), params: nums(x.params), fxParams: nums(x.fxParams), vigParams: nums(x.vigParams), palParams: nums(x.palParams) };
       let j = L.findIndex(p => p.id === pr.id); if (j < 0) j = L.findIndex(p => p.name === pr.name);
       if (j >= 0) { pr.id = L[j].id; L[j] = pr; } else L.push(pr);
       n++;
     }
+    preMigrate();
     if (open && panelOpen) preSync(true);
     return n;
   }
@@ -9613,8 +10203,8 @@ void main(){
     on = !!on && open;
     if (on !== panelOpen) {
       panelOpen = on; panel.hidden = !on; gear.setAttribute('aria-expanded', String(on));
-      if (on) { panelBuild(); posApply(); }
-      else { clearTimeout(paramT); if (paramT) saveMeta(); paramT = 0; if (panel.contains(document.activeElement)) fs.focus({ preventScroll: true }); }
+      if (on) { panelBuild(); posApply(); idleReveal(false); }   // r76: keep chrome while panel open
+      else { palPickClose(); clearTimeout(paramT); if (paramT) saveMeta(); paramT = 0; if (panel.contains(document.activeElement)) fs.focus({ preventScroll: true }); idleReveal(true); }
     }
     if (on && focusIt) { const sc = $('#sfpScope'), i = [...sc.querySelectorAll('.sfp-row:not([data-x]) input, .sfp-row:not([data-x]) select')].find(ctlVis)
         || sc.querySelector('.sfp-st[aria-expanded=false]') || [...sc.querySelectorAll('.sfp-grp[aria-expanded=false]')].find(ctlVis) || panelCtl()[0]; if (i) i.focus({ preventScroll: true }); }
@@ -9647,6 +10237,109 @@ void main(){
     else if (b.dataset.pa && !b.disabled) preAct(b.dataset.pa, b);
   });
   $('#sfpPreset').addEventListener('change', e => { const i = +e.target.value; if (i >= 0) preApply(i); else preSync(); });
+  /* r75: custom palette dropdown with gradient swatches (native <select> cannot paint them). */
+  let palListEl = null, palTypeBuf = '', palTypeT = 0;
+  function palPickClose() {
+    if (palListEl) { palListEl.remove(); palListEl = null; }
+    panel.querySelectorAll('.sfp-palpick[aria-expanded=true]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+    if (typeof idleReveal === 'function' && open && !panelOpen) idleReveal(true);   // r76
+  }
+  function palPickPlace(btn, list) {
+    const r = btn.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
+    const w = Math.max(r.width, 220);
+    let left = Math.min(r.left, vw - w - 8); if (left < 8) left = 8;
+    list.style.width = w + 'px';
+    list.style.left = left + 'px';
+    list.style.visibility = 'hidden'; list.hidden = false;
+    const h = list.offsetHeight;
+    let top = r.bottom + 4;
+    if (top + h > vh - 8 && r.top - 4 - h > 8) top = r.top - 4 - h;
+    list.style.top = Math.max(8, top) + 'px';
+    list.style.visibility = '';
+  }
+  function palPickOpen(btn) {
+    palPickClose();
+    const cur = Math.round(+btn.dataset.value || 0);
+    const list = document.createElement('div');
+    list.className = 'sfp-pal-list'; list.id = btn.id + '-list'; list.setAttribute('role', 'listbox');
+    list.setAttribute('aria-label', 'Palette');
+    PAL_NAMES.forEach((name, i) => {
+      const o = document.createElement('button');
+      o.type = 'button'; o.className = 'sfp-pal-opt'; o.setAttribute('role', 'option');
+      o.dataset.i = i; o.setAttribute('aria-selected', i === cur ? 'true' : 'false');
+      o.innerHTML = `<span class="sfp-pal-swatch" style="background:${palGradient(i)}"></span><span class="sfp-pal-name">${esc(name)}</span>`;
+      list.appendChild(o);
+    });
+    list.addEventListener('click', e => { const o = e.target.closest('.sfp-pal-opt'); if (o) { e.preventDefault(); e.stopPropagation(); palPickChoose(+o.dataset.i); } });
+    list.addEventListener('keydown', e => palListKey(e));
+    ($('#scopeFull') || document.body).appendChild(list);
+    palListEl = list; btn.setAttribute('aria-expanded', 'true');
+    if (typeof idleReveal === 'function') idleReveal(false);   // r76: keep chrome while palette list open
+    palPickPlace(btn, list);
+    const sel = list.querySelector('[aria-selected=true]') || list.firstElementChild;
+    if (sel) { sel.focus({ preventScroll: true }); sel.scrollIntoView({ block: 'nearest' }); }
+  }
+  function palListKey(e) {
+    if (!palListEl) return;
+    const opts = [...palListEl.querySelectorAll('.sfp-pal-opt')];
+    const cur = opts.findIndex(o => o === document.activeElement || o.getAttribute('aria-selected') === 'true');
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); palPickClose(); const b = panel.querySelector('.sfp-palpick'); if (b) b.focus({ preventScroll: true }); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault(); e.stopPropagation();
+      const n = opts.length; if (!n) return;
+      const j = e.key === 'ArrowDown' ? (cur + 1 + n) % n : (cur - 1 + n) % n;
+      opts.forEach(o => o.setAttribute('aria-selected', 'false'));
+      opts[j].setAttribute('aria-selected', 'true'); opts[j].focus({ preventScroll: true }); opts[j].scrollIntoView({ block: 'nearest' });
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault(); e.stopPropagation();
+      const o = opts.find(x => x.getAttribute('aria-selected') === 'true') || document.activeElement;
+      if (o && o.dataset && o.dataset.i != null) palPickChoose(+o.dataset.i);
+      return;
+    }
+    if (e.key === 'Home') { e.preventDefault(); if (opts[0]) { opts.forEach(o => o.setAttribute('aria-selected', 'false')); opts[0].setAttribute('aria-selected', 'true'); opts[0].focus({ preventScroll: true }); } return; }
+    if (e.key === 'End') { e.preventDefault(); const last = opts[opts.length - 1]; if (last) { opts.forEach(o => o.setAttribute('aria-selected', 'false')); last.setAttribute('aria-selected', 'true'); last.focus({ preventScroll: true }); } return; }
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); palPickTypeahead(e.key); }
+  }
+  function palPickToggle(btn) {
+    if (btn.getAttribute('aria-expanded') === 'true') palPickClose(); else palPickOpen(btn);
+  }
+  function palPickChoose(i) {
+    setPal('pal', i); palPickClose();
+    const b = panel.querySelector('.sfp-palpick'); if (b) b.focus({ preventScroll: true });
+  }
+  function palPickTypeahead(ch) {
+    const now = performance.now();
+    if (now - palTypeT > 800) palTypeBuf = '';
+    palTypeT = now; palTypeBuf += ch.toLowerCase();
+    const i = PAL_NAMES.findIndex(n => n.toLowerCase().startsWith(palTypeBuf));
+    if (i >= 0) {
+      if (palListEl) {
+        palListEl.querySelectorAll('[aria-selected=true]').forEach(x => x.setAttribute('aria-selected', 'false'));
+        const o = palListEl.querySelector(`[data-i="${i}"]`);
+        if (o) { o.setAttribute('aria-selected', 'true'); o.focus({ preventScroll: true }); o.scrollIntoView({ block: 'nearest' }); }
+      } else setPal('pal', i);
+    }
+  }
+  panel.addEventListener('click', e => {
+    const btn = e.target.closest('.sfp-palpick'); if (btn && panel.contains(btn)) { e.preventDefault(); palPickToggle(btn); return; }
+  });
+  panel.addEventListener('keydown', e => {
+    const btn = e.target.closest && e.target.closest('.sfp-palpick');
+    if (!(btn && panel.contains(btn))) return;
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (btn.getAttribute('aria-expanded') !== 'true') palPickOpen(btn); else if (e.key === 'Enter' || e.key === ' ') palPickClose(); return; }
+    if (e.key === 'Escape') { e.preventDefault(); palPickClose(); return; }
+    if (e.key === 'ArrowUp') { e.preventDefault(); const cur = Math.round(+btn.dataset.value || 0); setPal('pal', (cur - 1 + PAL_NAMES.length) % PAL_NAMES.length); return; }
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); palPickTypeahead(e.key); }
+  });
+  document.addEventListener('pointerdown', e => {
+    if (!palListEl) return;
+    if (palListEl.contains(e.target)) return;
+    if (e.target.closest && e.target.closest('.sfp-palpick')) return;
+    palPickClose();
+  }, true);
+  panel.addEventListener('scroll', () => { if (palListEl) palPickClose(); }, { passive: true });
   gear.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); panelShow(!panelOpen, e.detail === 0); });
   /* Round 38: the panel can be moved: drag its head (mouse, pen or touch; not from its buttons other than the grip ⠿, a 4 px
      threshold), or arrow keys on the focused grip (Shift: 64 px). The place is kept per browser (mp3lib.scopePanelPos, px from
@@ -9713,6 +10406,59 @@ void main(){
   function modeToast(txt) { const el = $('#sfMode'); el.textContent = txt; el.classList.add('show'); clearTimeout(modeT); modeT = setTimeout(() => el.classList.remove('show'), 1300); }
   function start() { if (!raf && enabled() && !audio.paused && !document.hidden) raf = requestAnimationFrame(frame); }
   function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; flat(); }
+  /* r76: after 4s idle in fullscreen, hide the cursor and the settings ⚙ (not while the panel /
+     palette dropdown is open, or while hovering the gear/panel). Any real pointer/key activity
+     shows them again. Zero-delta mousemove (some browsers fire after cursor:none) is ignored. */
+  let IDLE_MS = 4000, sfIdleT = 0, sfIdleOn = false, sfIdleLX = null, sfIdleLY = null;
+  function idleBusy() {
+    if (!open) return true;
+    if (panelOpen) return true;
+    if (typeof palListEl !== 'undefined' && palListEl) return true;
+    try { if (gear.matches(':hover') || (!panel.hidden && panel.matches(':hover'))) return true; } catch (e) { }
+    return false;
+  }
+  function idleReveal(rearm = true) {
+    if (sfIdleOn) {
+      sfIdleOn = false;
+      fs.classList.remove('sf-idle');
+      gear.classList.remove('sf-idle-hide');
+    }
+    if (rearm) idleArm(); else { clearTimeout(sfIdleT); sfIdleT = 0; }
+  }
+  function idleHide() {
+    sfIdleT = 0;
+    if (!open || idleBusy()) { idleArm(); return; }
+    sfIdleOn = true;
+    fs.classList.add('sf-idle');
+    gear.classList.add('sf-idle-hide');
+  }
+  function idleArm() {
+    clearTimeout(sfIdleT); sfIdleT = 0;
+    if (!open || idleBusy()) return;
+    sfIdleT = setTimeout(idleHide, IDLE_MS);
+  }
+  function idleClear() {
+    clearTimeout(sfIdleT); sfIdleT = 0;
+    sfIdleOn = false; sfIdleLX = sfIdleLY = null;
+    fs.classList.remove('sf-idle');
+    gear.classList.remove('sf-idle-hide');
+  }
+  function idleActivity(e) {
+    if (!open) return;
+    if (e && e.type === 'mousemove') {
+      const x = e.clientX, y = e.clientY;
+      if (sfIdleLX != null && x === sfIdleLX && y === sfIdleLY) return;   // spurious zero-delta
+      sfIdleLX = x; sfIdleLY = y;
+    }
+    idleReveal(true);
+  }
+  ['mousemove', 'mousedown', 'pointerdown', 'wheel', 'touchstart', 'touchmove'].forEach(ev =>
+    fs.addEventListener(ev, idleActivity, { passive: true, capture: true }));
+  gear.addEventListener('mouseenter', () => { if (open) idleReveal(true); });
+  gear.addEventListener('mouseleave', () => { if (open) idleArm(); });
+  panel.addEventListener('mouseenter', () => { if (open) idleReveal(true); });
+  panel.addEventListener('mouseleave', () => { if (open) idleArm(); });
+
   /* ---- full-screen view: same analyser, same loop; the overlay always, the Fullscreen API on top where it exists ---- */
   const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   function meta() {
@@ -9729,6 +10475,7 @@ void main(){
     if (!fxApply() && fxIx() > 0 && !reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} isn’t available here (no WebGL) · None`, 2600);   // the choice is kept for next time
     else if (fxIx() > 0 && reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} · off while reduced motion is on`, 2200);
     gearSync();
+    idleReveal(true);                         // r76: start idle hide timer
     flat(small); flat(full); start();
     fs.focus({ preventScroll: true });
     const rq = fs.requestFullscreen || fs.webkitRequestFullscreen;
@@ -9738,6 +10485,7 @@ void main(){
   function collapse() {
     if (!open) return;
     panelShow(false);
+    idleClear();                              // r76
     open = false; fs.hidden = true; bandSync(); fxApply(); gear.hidden = true;
     clearTimeout(modeT); $('#sfMode').classList.remove('show'); clearTimeout(fxLabelT); sfFx.classList.remove('show');
     if (an) { an.fftSize = 2048; buf = new Float32Array(an.fftSize); }
@@ -9756,8 +10504,14 @@ void main(){
   fs.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (Date.now() - swipeAt < 600) return; if (panelOpen) return panelShow(false); collapse(); });
   window.addEventListener('keydown', e => {       // while open, these keys belong to the view: Esc / Space close, ← → and 1–9 switch modes, ↑ ↓ effects
     if (!open || anyDlgOpen()) return;              // Enter opens / closes the settings panel; Esc closes it first (r39: a dialog keeps its keys)
+    idleActivity(e);                              // r76: any key resets idle hide
     if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); if (panelOpen) panelShow(false); else collapse(); return; }
     const sp = e.key === ' ' || e.code === 'Space';
+    if (palListEl && palListEl.contains(e.target)) {   // r75: portaled palette list sits outside the panel
+      e.stopImmediatePropagation();
+      palListKey(e);
+      return;
+    }
     if (panelOpen && panel.contains(e.target)) {    // inside the panel: the controls' own keys (sliders, buttons), nothing else
       e.stopImmediatePropagation();
       const btn = e.target.matches('button');
@@ -9856,6 +10610,7 @@ void main(){
     effects: () => FX.map(f => f.id), effect: () => FX[fxIx()].id, fxStats,
     fxParams: () => ({ ...fxParams() }), fxSchema: () => (FX[fxIx()].params || []).map(({ fmt, ...p }) => p), setParam,
     vigParams: () => ({ ...vigParams() }), vigSchema: () => VIG_PARAMS.map(({ fmt, ...p }) => p), setVig,
+    palParams: () => ({ ...palParams() }), palSchema: () => PAL_PARAMS.map(({ fmt, ...p }) => p), setPal, palNames: () => [...PAL_NAMES], palAbcd: () => PAL_ABCD.map(x => x.map(v => v.slice())), palGradient, palPhase: () => palPhasePeek(),
     view: () => { const { xf, ...v } = sv(); return { ...v, composited: xf }; }, viewSchema: () => SCOPE_PARAMS.map(({ fmt, ...p }) => p), setView,
     layout: () => sv().xf && lay ? { ...lay, tile: [tileT.cv.width, tileT.cv.height] } : null, tileCanvas: () => tileT.cv,
     tiles: () => lay ? tiles(sv(), lay).map(t => ({ ...t, poly: t.poly === TRI ? 'tri' : t.poly === HEX ? 'hex' : null })) : [],
@@ -9879,7 +10634,8 @@ void main(){
       xf: () => tsCur && (({ sc, rot, cx, cy }) => ({ sc, rot, cx, cy }))(tsXf(tsCur, 0)), hold(on) { tsHold = !!on; }, reset() { tsTau = 0; tsT = 0; }, clear() { tsCache.clear(); tsCur = tsOld = null; tsWant = ''; tsFade = 1; },
       worker: () => tsW === null ? 'unstarted' : tsW ? 'on' : 'off', drifting: () => tsDrift(full) },
     panelPos: () => ({ saved: ppos && { ...ppos }, ...(panelOpen ? posNow() : {}), home: !panel.querySelector('.sfp-home').hidden }),   // (tests) r38
-    brushInfo: () => ({ ...brInfo }), brushSprite: (b, c, px) => brSprite(c, px, b), presetsOut, presetsIn, presets: () => preList().map(p => ({ ...p })), presetCur: () => preCur(), presetSave: () => preSave(), presetApply: i => preApply(i), presetStep: d => preStep(d), brushGlyphs: () => [...brGly.keys()], brushText: () => brTxt.join(''),   // (tests) brush b's sprite in colour c, px across
+    idleHidden: () => !!sfIdleOn, idleMs: (n) => { if (typeof n === 'number' && n >= 0) IDLE_MS = n; return IDLE_MS; }, idleArm, idleReveal, idleClear,   // r76
+    brushInfo: () => ({ ...brInfo }), brushSprite: (b, c, px) => brSprite(c, px, b), presetsOut, presetsIn, presets: () => preAll().map(p => ({ ...p })), factoryPresets: () => FACTORY_PRESETS.map(p => ({ id: p.id, origId: p.origId, name: p.name, factory: true, mode: p.mode, effect: p.effect })), presetCur: () => preCur(), presetSave: () => preSave(), presetApply: i => preApply(i), presetStep: d => preStep(d), brushGlyphs: () => [...brGly.keys()], brushText: () => brTxt.join(''),   // (tests) brush b's sprite in colour c, px across
     linePal: () => { const p = linePal(sv()); return { line: p.line, base: p.base, bands: [...p.bands], theme: p === col }; },
     spiral: { info: () => ({ ...spiInfo }), canvas: () => spiS.cv, failed: () => spiS.failed, fs: SPI_FS },
     liquidmetal: { a: LM_A_FS, b: LM_B_FS, fs: LM_FS },
