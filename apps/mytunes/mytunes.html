@@ -581,7 +581,7 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
   <header class="topbar">
     <div class="brand"><span class="logo">♪</span> MyTunes</div>
     <div class="top-actions">
-      <button class="btn primary" data-action="pick-folder" title="Pick your music folder (imports all audio files inside it: MP3, Ogg, FLAC, WAV)"><i data-icon="folder"></i><span id="pickLabel">Choose music folder</span></button>
+      <button class="btn primary" data-action="pick-folder" title="Pick your music folder (imports all audio files inside it: MP3, Ogg, FLAC, WAV, AIFF)"><i data-icon="folder"></i><span id="pickLabel">Choose music folder</span></button>
       <button class="btn" id="saveBtn" data-action="save-library" title="Export ratings, albums and track orders to mytunes-library.json"><i data-icon="save"></i>Save library</button>
       <button class="btn" data-action="import-json" title="Load a library file backup (any .json, e.g. mytunes-library.json)"><i data-icon="upload"></i>Import library JSON</button>
       <button class="btn" id="settingsBtn" data-action="settings" title="Settings" aria-haspopup="true"><i data-icon="gear"></i><span class="lbl-settings">Settings</span></button>
@@ -1007,6 +1007,62 @@ var ID3 = (function () {
       wav: fmt && data ? { codec: fmt.codec, tag: fmt.tag, channels: fmt.channels, sampleRate: fmt.sampleRate, blockAlign: fmt.blockAlign, bits: fmt.bits, start: data.start, size: data.size } : null, chunks: chunks };
   }
   function isWavHead(b) { var m = latin1(b, 0, 4); return b.length >= 12 && (m === 'RIFF' || m === 'RF64' || m === 'BW64') && latin1(b, 8, 12) === 'WAVE'; }
+  /* ---------- AIFF / AIFF-C: FORM container (big-endian); SSND sample data is never read here ---------- */
+  function u16be(b, i) { return (b[i] << 8) | b[i + 1]; }
+  function u32be(b, i) { return ((b[i] << 24) >>> 0) + (b[i + 1] << 16) + (b[i + 2] << 8) + b[i + 3]; }
+  function ieee80(b, i) {                          // 80-bit IEEE 754 extended, big-endian
+    if (!b || i + 10 > b.length) return 0;
+    var exp = u16be(b, i), sign = exp >> 15, e = exp & 0x7fff, hi = u32be(b, i + 2), lo = u32be(b, i + 6);
+    if (e === 0 && hi === 0 && lo === 0) return 0;
+    if (e === 0x7fff) return sign ? -Infinity : Infinity;
+    var f = (hi * 4294967296 + lo) * Math.pow(2, e - 16383 - 63);
+    return sign ? -f : f;
+  }
+  function isAiffHead(b) { return !!(b && b.length >= 12 && latin1(b, 0, 4) === 'FORM' && (latin1(b, 8, 12) === 'AIFF' || latin1(b, 8, 12) === 'AIFC')); }
+  var AIFF_CODEC = { NONE: 'pcm', twos: 'pcm', in24: 'pcm', in32: 'pcm', sowt: 'sowt', fl32: 'float', FL32: 'float', fl64: 'float64', FL64: 'float64', ulaw: 'mulaw', ULAW: 'mulaw', alaw: 'alaw', ALAW: 'alaw' };
+  function aiffCodec(type) { type = (type || 'NONE').replace(/\0/g, ''); return AIFF_CODEC[type] || type.trim() || 'pcm'; }
+  async function readAiffInfo(file, buf) {
+    var aifc = latin1(buf, 8, 12) === 'AIFC', pos = 12, comm = null, ssnd = null, id3 = null, text = {}, n = 0, chunks = [];
+    while (n++ < 1024 && pos + 8 <= file.size) {
+      var h = await rd(file, buf, pos, 8); if (h.length < 8) break;
+      var id = latin1(h, 0, 4), size = u32be(h, 4), body = pos + 8;
+      if (!/^[\x20-\x7e]{4}$/.test(id)) break;
+      chunks.push(id);
+      if (id === 'COMM' && size >= 18 && size <= 4096) {
+        var c = await rd(file, buf, body, size);
+        if (c.length >= 18) {
+          var ch = u16be(c, 0), frames = u32be(c, 2), bits = u16be(c, 6), rate = ieee80(c, 8), type = 'NONE';
+          if (aifc && c.length >= 22) type = latin1(c, 18, 22);
+          comm = { channels: ch, frames: frames, bits: bits, sampleRate: rate, compression: type, codec: aiffCodec(type) };
+        }
+      } else if (id === 'SSND' && size >= 8 && !ssnd) {
+        var sh = await rd(file, buf, body, 8), off = sh.length >= 8 ? u32be(sh, 0) : 0;
+        var avail = Math.max(0, file.size - (body + 8 + off)), dataSize = Math.max(0, size - 8 - off);
+        ssnd = { start: body + 8 + off, size: Math.min(dataSize, avail), offset: off, declared: size };
+      } else if ((id === 'ID3 ' || id === 'id3 ' || id === 'ID32') && size >= 10 && size <= BLOCK_MAX) {
+        var r = parseV2(await rd(file, buf, body, size)); if (r) id3 = r.tags;
+      } else if ((id === 'NAME' || id === 'AUTH' || id === 'ANNO' || id === '(c) ') && size > 0 && size <= BLOCK_MAX) {
+        var tx = riffText(await rd(file, buf, body, size), 0, size);
+        if (tx) {
+          if (id === 'NAME' && !text.title) text.title = tx;
+          else if (id === 'AUTH' && !text.artist) text.artist = tx;
+          else if ((id === 'ANNO' || id === '(c) ') && !text.comment) text.comment = tx;
+        }
+      }
+      pos = body + size + (size & 1);                        // odd-sized chunks carry a pad byte
+    }
+    var tags = {}, k;
+    for (k in text) tags[k] = text[k];
+    if (id3) for (k in id3) if (id3[k]) tags[k] = id3[k];    // embedded ID3v2 wins over NAME/AUTH/ANNO
+    delete tags.tlen;
+    var d = 0, rate = comm && comm.sampleRate > 0 ? comm.sampleRate : 0;
+    if (comm && rate > 0 && comm.frames > 0) d = comm.frames / rate;
+    else if (comm && ssnd && rate > 0 && comm.channels > 0 && comm.bits > 0) {
+      var bpf = comm.channels * Math.ceil(comm.bits / 8); if (bpf > 0) d = Math.floor(ssnd.size / bpf) / rate;
+    }
+    var aiff = comm && ssnd ? { codec: comm.codec, compression: comm.compression, channels: comm.channels, sampleRate: rate, bits: comm.bits, frames: comm.frames, start: ssnd.start, size: ssnd.size, le: comm.codec === 'sowt', aifc: aifc } : null;
+    return { tags: tags, duration: d, durationSource: d > 0 ? 'aiff' : '', format: 'aiff', codec: comm ? comm.codec : '', sampleRate: rate, channels: comm ? comm.channels : 0, bits: comm ? comm.bits : 0, aifc: aifc, aiff: aiff, chunks: chunks };
+  }
   /* Read tags + duration from a File/Blob: only small slices (head, audio start, last 128 bytes) */
   async function readInfo(file) {
     var HEAD = 128 * 1024, MAXTAG = 16 * 1024 * 1024, SCAN = 64 * 1024;
@@ -1014,6 +1070,7 @@ var ID3 = (function () {
     if (buf.length >= 4 && isPage(buf, 0)) return readOggInfo(file, buf);   // Ogg container (by content, whatever the extension)
     if (buf.length >= 4 && latin1(buf, 0, 4) === 'fLaC') return readFlacInfo(file, buf, 0, null);
     if (isWavHead(buf)) return readWavInfo(file, buf);
+    if (isAiffHead(buf)) return readAiffInfo(file, buf);
     var r = parseV2(buf), tags = r ? r.tags : {};
     if (r && r.total + 4 <= file.size && latin1(await rd(file, buf, r.total, 4), 0, 4) === 'fLaC') {   // FLAC with an ID3v2 tag in front
       if (r.truncated && r.total <= MAXTAG) { r = parseV2(await rd(file, null, 0, r.total)) || r; }
@@ -1044,14 +1101,14 @@ var ID3 = (function () {
     return { tags: tags, duration: duration, durationSource: source, mpeg: m, format: 'mp3', codec: m ? 'mp3' : '' };
   }
   async function readTags(file) { return (await readInfo(file)).tags; }
-  return { readFlacInfo: readFlacInfo, flacStreamInfo: flacStreamInfo, readWavInfo: readWavInfo, parseWavFmt: parseWavFmt, parseInfoList: parseInfoList, isWavHead: isWavHead, PCM_LIKE: PCM_LIKE, oggPackets: oggPackets, oggHeaders: oggHeaders, parseVorbisComment: parseVorbisComment, lastGranule: lastGranule, oggDuration: oggDuration, readOggInfo: readOggInfo, parseV2: parseV2, parseV1: parseV1, decodeText: decodeText, readTags: readTags, readInfo: readInfo, frameHeader: frameHeader, mpegInfo: mpegInfo, num: num, year: year, date: date };
+  return { readFlacInfo: readFlacInfo, flacStreamInfo: flacStreamInfo, readWavInfo: readWavInfo, parseWavFmt: parseWavFmt, parseInfoList: parseInfoList, isWavHead: isWavHead, readAiffInfo: readAiffInfo, isAiffHead: isAiffHead, ieee80: ieee80, PCM_LIKE: PCM_LIKE, oggPackets: oggPackets, oggHeaders: oggHeaders, parseVorbisComment: parseVorbisComment, lastGranule: lastGranule, oggDuration: oggDuration, readOggInfo: readOggInfo, parseV2: parseV2, parseV1: parseV1, decodeText: decodeText, readTags: readTags, readInfo: readInfo, frameHeader: frameHeader, mpegInfo: mpegInfo, num: num, year: year, date: date };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = ID3;
 </script>
 
 <script id="autorate">
 /* ---------- Autorate: star markers in the file name -> positive rating (rule version 2) ----------
-   Only the file's base name is used (folders and the .mp3 / .ogg / .oga / .opus / .flac / .wav extension are ignored; leading/trailing spaces are ignored).
+   Only the file's base name is used (folders and the .mp3 / .ogg / .oga / .opus / .flac / .wav / .aif / .aiff / .aifc extension are ignored; leading/trailing spaces are ignored).
    A marker run is one or more consecutive '*' and/or '_' characters at the very END or very START of the name:
      'Song*' = 1, 'Song *' = 1, 'Song_' = 1, 'My_Song_' = 1, 'Song ***' = 3, 'Song *_*' = 3, 'Song_____' = 5,
      '*Song' = 1, '_Intro' = 1, '** Song' = 2 (a leading track number such as '01 ', '01 - ' or '01. ' is skipped first).
@@ -1061,7 +1118,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = ID3;
    ('*' itself is not allowed in Windows file names). */
 var Autorate = (function () {
   var MAX = 5, RULE = 2;
-  function base(name) { return String(name == null ? '' : name).split(/[\\/]/).pop().replace(/\.(mp3|ogg|oga|opus|flac|wav|wave)$/i, '').trim(); }
+  function base(name) { return String(name == null ? '' : name).split(/[\\/]/).pop().replace(/\.(mp3|ogg|oga|opus|flac|wav|wave|aif|aiff|aifc)$/i, '').trim(); }
   function norm(s) { return s.replace(/[\uFF0A\u2217\u204E\u2731]/g, '*').replace(/\uFF3F/g, '_'); }
   function parse(name) {
     var b = norm(base(name));
@@ -1978,11 +2035,11 @@ function avgRating(tracks) { const r = tracks.filter(t => t.rating); return r.le
 function customArtist(tracks) { const s = new Set(tracks.map(t => t.artist).filter(Boolean)); return s.size === 1 ? [...s][0] : s.size ? 'Various Artists' : ''; }
 
 /* ---------- import folder ---------- */
-const AUDIO_EXT = /\.(mp3|ogg|oga|opus|flac|wav|wave)$/i;
+const AUDIO_EXT = /\.(mp3|ogg|oga|opus|flac|wav|wave|aif|aiff|aifc)$/i;
 const fileFormat = id => { const m = /\.([a-z0-9]+)$/i.exec(id || ''); return m ? m[1].toLowerCase() : ''; };
 /* the extension, unless the parser found a different container (Ogg / FLAC / WAV are recognised from the bytes) */
-const CONTAINER = { mp3: 'mp3', ogg: 'ogg', oga: 'ogg', opus: 'ogg', flac: 'flac', wav: 'wav', wave: 'wav' };
-const containerOf = (id, info) => { const f = fileFormat(id), g = info && info.format; return /^(ogg|flac|wav)$/.test(g || '') && CONTAINER[f] && CONTAINER[f] !== g ? g : f; };
+const CONTAINER = { mp3: 'mp3', ogg: 'ogg', oga: 'ogg', opus: 'ogg', flac: 'flac', wav: 'wav', wave: 'wav', aif: 'aiff', aiff: 'aiff', aifc: 'aiff' };
+const containerOf = (id, info) => { const f = fileFormat(id), g = info && info.format; return /^(ogg|flac|wav|aiff)$/.test(g || '') && CONTAINER[f] && CONTAINER[f] !== g ? g : f; };
 /* ---------- Ogg fallback (round 28) ----------
    When the browser can't play an Ogg track (canPlayType says no, or its native decode fails), the file is decoded in a Worker
    built lazily from the #ogg-dec text (WebAssembly libvorbis / libopus): Vorbis / Opus → a 16-bit WAV Blob, Ogg FLAC → a remuxed
@@ -2063,16 +2120,120 @@ const OGGX = (() => {
     dispose: () => keep([])
   };
 })();
+/* ---------- r79: AIFF / AIFF-C playback fallback ----------
+   Chrome's <audio> often cannot play AIFF. When canPlayType('audio/aiff') is empty (or a native play fails),
+   the file is converted once on play to an in-memory WAV Blob URL (PCM 8/16/24/32-bit, sowt, float32/64, A/µ-law).
+   Only the current track and the next one are kept; other Blob URLs are revoked. Nothing is decoded at scan time.
+   Compressed AIFF-C codecs (ima4, etc.) are not decoded here. */
+const AIFFX = (() => {
+  const PLAYABLE = { pcm: 1, sowt: 1, float: 1, float64: 1, alaw: 1, mulaw: 1 };
+  const nativeBad = new Set(), cache = new Map();   // File → { p, url, blob }
+  const isAiff = t => !!t && isAiffFmt(t.format || fileFormat(t.id));
+  const off = () => !!window.__forceNoAiff;
+  const supported = t => !!(t && PLAYABLE[t.codec || 'pcm']);
+  const can = t => isAiff(t) && !off() && (supported(t) || nativeCan(t));
+  const need = t => isAiff(t) && supported(t) && !off();   // Chrome canPlayType is untrustworthy for AIFF; always convert PCM we can decode
+  let pend = null;
+  const st = { decodes: 0, created: 0, revoked: 0, last: null };
+  function swap(u, w) {
+    const n = u.length - (u.length % w);
+    for (let i = 0; i < n; i += w) for (let a = i, b = i + w - 1; a < b; a++, b--) { const t = u[a]; u[a] = u[b]; u[b] = t; }
+    return u.subarray(0, n);
+  }
+  function s8toU8(u) { for (let i = 0; i < u.length; i++) u[i] = (u[i] + 128) & 255; return u; }
+  function f64toF32(u, le) {
+    const n = Math.floor(u.length / 8), dv = new DataView(u.buffer, u.byteOffset, n * 8), out = new Float32Array(n);
+    for (let i = 0; i < n; i++) out[i] = dv.getFloat64(i * 8, !!le);
+    return new Uint8Array(out.buffer);
+  }
+  function f32swap(u, le) {
+    if (le) return u.subarray(0, u.length - (u.length % 4));
+    const n = Math.floor(u.length / 4), dv = new DataView(u.buffer, u.byteOffset, n * 4), out = new Uint8Array(n * 4), od = new DataView(out.buffer);
+    for (let i = 0; i < n; i++) od.setFloat32(i * 4, dv.getFloat32(i * 4, false), true);
+    return out;
+  }
+  function wavHdr(ch, rate, bits, tag, dataLen, align) {
+    const b = new Uint8Array(44), v = new DataView(b.buffer), s4 = (o, x) => { for (let i = 0; i < 4; i++) b[o + i] = x.charCodeAt(i); };
+    s4(0, 'RIFF'); v.setUint32(4, 36 + dataLen, true); s4(8, 'WAVE'); s4(12, 'fmt '); v.setUint32(16, 16, true);
+    v.setUint16(20, tag, true); v.setUint16(22, ch, true); v.setUint32(24, rate, true);
+    v.setUint32(28, rate * align, true); v.setUint16(32, align, true); v.setUint16(34, bits, true);
+    s4(36, 'data'); v.setUint32(40, dataLen, true); return b;
+  }
+  /* PCM / float / A-law / µ-law AIFF sample bytes → a WAV Buffer/Uint8Array the browser can play */
+  function toWavBytes(a, pcm) {
+    let codec = a.codec || 'pcm', bits = a.bits | 0, le = !!a.le, data = pcm, tag = 1, ch = a.channels | 0, rate = Math.round(a.sampleRate) || 0;
+    if (!ch || !rate) throw new Error('AIFF header missing channels or sample rate');
+    if (codec === 'float64') { data = f64toF32(data, le); codec = 'float'; bits = 32; le = true; }
+    else if (codec === 'float') { data = f32swap(data, le); bits = 32; le = true; tag = 3; }
+    else if (codec === 'alaw' || codec === 'mulaw') { tag = codec === 'alaw' ? 6 : 7; bits = 8; }
+    else if (bits === 8) { data = s8toU8(data); le = true; }
+    else if (!le) { data = swap(data, bits === 24 ? 3 : bits === 32 ? 4 : 2); le = true; }
+    else { const w = bits === 24 ? 3 : bits === 32 ? 4 : 2; data = data.subarray(0, data.length - (data.length % w)); }
+    if (codec === 'float') tag = 3;
+    const align = ch * Math.ceil((bits || 8) / 8);
+    if (align > 0) data = data.subarray(0, data.length - (data.length % align));
+    const hdr = wavHdr(ch, rate, bits || 8, tag, data.length, align || 1);
+    const out = new Uint8Array(hdr.length + data.length); out.set(hdr); out.set(data, hdr.length); return out;
+  }
+  async function infoOf(file) {
+    const r = await ID3.readInfo(file); if (!r.aiff) throw new Error('not a valid AIFF file'); return r.aiff;
+  }
+  function wavURL(file, onprog) {
+    let e = cache.get(file); if (e) { if (onprog) e.onprog = onprog; return e.p; }
+    e = { url: '', onprog }; cache.set(file, e); const t0 = performance.now();
+    e.p = (async () => {
+      const a = await infoOf(file);
+      if (!PLAYABLE[a.codec || 'pcm']) throw new Error('unsupported AIFF-C codec ' + (a.compression || a.codec));
+      if (onprog) onprog(0);
+      const pcm = new Uint8Array(await file.slice(a.start, a.start + a.size).arrayBuffer());
+      if (cache.get(file) !== e) throw Object.assign(new Error('aborted'), { aborted: true });
+      e.blob = new Blob([toWavBytes(a, pcm)], { type: 'audio/wav' });
+      e.url = URL.createObjectURL(e.blob); st.created++; st.decodes++;
+      st.last = { ms: Math.round(performance.now() - t0), bytes: e.blob.size, codec: a.codec, rate: a.sampleRate, ch: a.channels };
+      if (onprog) onprog(1);
+      return e.url;
+    })();
+    e.p.catch(() => { if (cache.get(file) === e) cache.delete(file); });
+    return e.p;
+  }
+  function keep(files) {
+    for (const [f, e] of cache) if (!files.includes(f)) {
+      cache.delete(f);
+      if (e.url) { URL.revokeObjectURL(e.url); st.revoked++; }
+    }
+  }
+  /* mid-file WAV excerpt for analysis (same ~61 s window as WAV), or the whole file if short */
+  async function excerpt(file) {
+    const a = (await ID3.readInfo(file)).aiff;
+    if (!a || !PLAYABLE[a.codec || 'pcm'] || a.channels <= 0 || a.sampleRate <= 0 || a.bits <= 0) return null;
+    const bpf = a.channels * Math.ceil(a.bits / 8), frames = Math.floor(a.size / bpf), want = Math.ceil(62 * a.sampleRate);
+    let start = a.start, n = frames, sliced = false;
+    if (frames > want) { start = a.start + Math.floor((frames - want) / 2) * bpf; n = want; sliced = true; }
+    if (n <= 0) return null;
+    const pcm = new Uint8Array(await file.slice(start, start + n * bpf).arrayBuffer());
+    const wa = Object.assign({}, a, { size: pcm.length });
+    return { buf: toWavBytes(wa, pcm).buffer, sliced };
+  }
+  return {
+    can, need, isAiff, supported, nativeBad, wavURL, keep, excerpt, toWavBytes, st,
+    get pend() { return pend; }, set pend(v) { pend = v; },
+    blobOf: file => { const e = cache.get(file); return e && e.blob || null; },
+    retry: t => { if (!t || !can(t) || nativeBad.has(t.id) || !nativeCan(t)) return false; nativeBad.add(t.id); return true; },
+    dispose: () => keep([])
+  };
+})();
 /* can this browser play the track? (Safari often can't play Ogg). Asked once per type via canPlayType. */
 const CAN_PLAY = new Map();
 const WAV_TAG = { pcm: 1, adpcm: 2, float: 3, alaw: 6, mulaw: 7, 'ima-adpcm': 17, gsm: 49, mp3: 85 };
 const isWavFmt = f => f === 'wav' || f === 'wave';
+const isAiffFmt = f => f === 'aiff' || f === 'aif' || f === 'aifc';
 function trackMime(t) {
   const c = t.codec || '', f = t.format || fileFormat(t.id);
   if (isWavFmt(f)) {   // the browser plays PCM (8–32-bit), float and A/µ-law WAV; ask about anything else by its format tag (usually "no")
     if (!c || c === 'pcm' || c === 'float' || c === 'alaw' || c === 'mulaw') return 'audio/wav';
     const n = WAV_TAG[c] || parseInt(String(c).replace(/^wav-/, ''), 16) || 0; return `audio/wav; codecs="${n}"`;
   }
+  if (isAiffFmt(f)) return 'audio/aiff';
   if (f === 'flac') return 'audio/flac';
   if (f === 'mp3' || c === 'mp3') return 'audio/mpeg';
   if (c === 'opus' || (!c && f === 'opus')) return 'audio/ogg; codecs="opus"';
@@ -2081,7 +2242,8 @@ function trackMime(t) {
   return '';
 }
 const WAV_LABEL = { pcm: 'PCM', float: 'float', alaw: 'A-law', mulaw: 'µ-law', adpcm: 'ADPCM', 'ima-adpcm': 'IMA ADPCM', gsm: 'GSM', mp3: 'MP3' };
-function formatLabel(t) { const c = t.codec, f = t.format || fileFormat(t.id); if (isWavFmt(f)) return c ? `WAV (${WAV_LABEL[c] || c})` : 'WAV'; if (f === 'flac') return 'FLAC'; return f === 'mp3' ? 'MP3' : c === 'opus' ? 'Ogg Opus' : c === 'flac' ? 'Ogg FLAC' : c === 'vorbis' ? 'Ogg Vorbis' : (f || 'audio').toUpperCase(); }
+const AIFF_LABEL = { pcm: 'PCM', sowt: 'sowt', float: 'float', float64: 'float64', alaw: 'A-law', mulaw: 'µ-law' };
+function formatLabel(t) { const c = t.codec, f = t.format || fileFormat(t.id); if (isWavFmt(f)) return c ? `WAV (${WAV_LABEL[c] || c})` : 'WAV'; if (isAiffFmt(f)) { const kind = f === 'aifc' || (c && c !== 'pcm') ? 'AIFF-C' : 'AIFF'; return c ? `${kind} (${AIFF_LABEL[c] || c})` : 'AIFF'; } if (f === 'flac') return 'FLAC'; return f === 'mp3' ? 'MP3' : c === 'opus' ? 'Ogg Opus' : c === 'flac' ? 'Ogg FLAC' : c === 'vorbis' ? 'Ogg Vorbis' : (f || 'audio').toUpperCase(); }
 function nativeCan(t) {
   if (!t) return false; const m = trackMime(t); if (!m || m === 'audio/mpeg') return true;
   return nativeMime(m);
@@ -2091,12 +2253,12 @@ function nativeMime(m) {
   return CAN_PLAY.get(m);
 }
 /* round 28: an Ogg track the browser can't play (Safari / iOS before 18.4…) is decoded by MyTunes itself (OGGX) */
-function canPlay(t) { return nativeCan(t) || OGGX.can(t); }
+function canPlay(t) { return nativeCan(t) || OGGX.can(t) || AIFFX.can(t); }
 const playable = id => S.files.has(id) && canPlay(S.tracks.get(id));
 const cantPlayMsg = t => `“${t.title}” is ${formatLabel(t)}, which this browser can’t play.` + (/Safari/.test(navigator.userAgent) && !/Chrome|Chromium|Edg/.test(navigator.userAgent) && /^(ogg|oga|opus)$/.test(t.format || fileFormat(t.id)) ? ' Try Chrome, Edge or Firefox for Ogg files.' : '');
 function fmtTag(t) {
   const f = t.format || fileFormat(t.id); if (!f || f === 'mp3') return '';
-  const lab = isWavFmt(f) ? 'WAV' : f === 'flac' ? 'FLAC' : t.codec === 'opus' || (!t.codec && f === 'opus') ? 'OPUS' : t.codec === 'flac' ? 'FLAC' : 'OGG', ok = canPlay(t);
+  const lab = isWavFmt(f) ? 'WAV' : isAiffFmt(f) ? 'AIFF' : f === 'flac' ? 'FLAC' : t.codec === 'opus' || (!t.codec && f === 'opus') ? 'OPUS' : t.codec === 'flac' ? 'FLAC' : 'OGG', ok = canPlay(t);
   return `<span class="fmt${ok ? '' : ' bad'}" title="${esc(formatLabel(t))}${ok ? '' : ': this browser can’t play it'}">${lab}</span>`;
 }
 function buildTrack(id, f, info, old) {
@@ -2148,7 +2310,7 @@ async function handleFolder(fileList, viaHandle) {
     const rel = f => f.webkitRelativePath || f.name;
     const root = rel(all[0]).split('/')[0];
     if (!viaHandle && FSA.dir) { FSA.dir = null; fsaStore(); }   // no handle for this folder: Save falls back to a chosen file / download
-    const mp3s = all.filter(f => AUDIO_EXT.test(f.name));   // MP3, Ogg (Vorbis / Opus / FLAC-in-Ogg), FLAC, WAV
+    const mp3s = all.filter(f => AUDIO_EXT.test(f.name));   // MP3, Ogg (Vorbis / Opus / FLAC-in-Ogg), FLAC, WAV, AIFF / AIFF-C
     // mytunes-library.json (shallowest wins); an older library.json is used only when there is no new-name file
     const libsNamed = n => all.filter(f => f.name.toLowerCase() === n).sort((a, b) => rel(a).split('/').length - rel(b).split('/').length);
     let libs = libsNamed(LIB_FILE), legacy = false;
@@ -2158,7 +2320,7 @@ async function handleFolder(fileList, viaHandle) {
       try { await mergeLibrary(JSON.parse(await libs[0].text()), { auto: true, source: rel(libs[0]), legacy }); }
       catch (e) { toast('Found ' + rel(libs[0]) + ' but could not read it: ' + e.message, 'error', 7000); }
     }
-    if (!mp3s.length) { toast('No audio files (MP3, Ogg, FLAC, WAV) found in “' + root + '”.', 'warn'); return; }
+    if (!mp3s.length) { toast('No audio files (MP3, Ogg, FLAC, WAV, AIFF) found in “' + root + '”.', 'warn'); return; }
     if (mp3s.length > 400) { busyShow(`Matching ${mp3s.length.toLocaleString()} audio files with your library…`); await nextPaint(); }
     showProgress(0, mp3s.length, root);
     S.files.clear();
@@ -2910,7 +3072,7 @@ const Detect = (() => {
   const BIG = 64 * 1024 * 1024; let bigQ = Promise.resolve();   // …and decode big ones one at a time (file + decoded audio can pass 100s of MB)
   async function decode(file, mp3) {
     if (file.size <= BIG || mp3) return decode1(file, mp3);
-    const h = await bytes(file, 0, 12); if (ID3.isWavHead(h) || isFlacHead(h)) return decode1(file, mp3);   // MP3 / WAV are cut, not decoded whole
+    const h = await bytes(file, 0, 12); if (ID3.isWavHead(h) || isFlacHead(h) || ID3.isAiffHead(h)) return decode1(file, mp3);   // MP3 / WAV / AIFF are cut, not decoded whole
     const run = bigQ.then(() => decode1(file, mp3)); bigQ = run.catch(() => { }); return run;
   }
   /* an MP3 is read in pieces: its head (tags + first frames), the last 128 bytes, and the ~61 s of frames that are decoded,
@@ -2952,6 +3114,9 @@ const Detect = (() => {
         if (n > 0) buf = wavWrap(w, await bytes(file, w.start + a * w.blockAlign, w.start + (a + n) * w.blockAlign)).buffer;
       }
     }
+    else if (ID3.isAiffHead(h12)) {
+      const ex = await AIFFX.excerpt(file); if (ex) { buf = ex.buf; sliced = ex.sliced; }
+    }
     else if (buf) { }
     else if (isFlacHead(h12) && file.size > 200000) { buf = await flacExcerpt(file); sliced = flac = !!buf; }
     else if (mp3 && file.size > 200000) {
@@ -2984,7 +3149,7 @@ const Detect = (() => {
     if (pcm.length < SR * 4) throw new Error('too short to analyse');
     return analyse(pcm);   // the PCM is transferred to the worker, never kept here
   }
-  const whole = (file, mp3, fmt) => file.size > BIG && !mp3 && !/^(wav|wave|flac)$/.test(fmt || '');
+  const whole = (file, mp3, fmt) => file.size > BIG && !mp3 && !/^(wav|wave|flac|aiff|aif|aifc)$/.test(fmt || '');
   return { run, whole, busy: () => busy, workers: () => idle.length + busy, OPTS, SR, EX };
 })();
 
@@ -3113,10 +3278,33 @@ const Dup = (() => {
     }
     return { start: Math.min(i, file.size), end: file.size };
   }
+  async function aiffRange(file) {
+    const head = new Uint8Array(await file.slice(0, Math.min(file.size, 12)).arrayBuffer());
+    if (head.length < 12 || String.fromCharCode(...head.subarray(0, 4)) !== 'FORM') return { start: 0, end: file.size };
+    const form = String.fromCharCode(...head.subarray(8, 12));
+    if (form !== 'AIFF' && form !== 'AIFC') return { start: 0, end: file.size };
+    const u32be = (b, i) => ((b[i] << 24) >>> 0) + (b[i + 1] << 16) + (b[i + 2] << 8) + b[i + 3];
+    let pos = 12, n = 0;
+    while (n++ < 1024 && pos + 8 <= file.size) {
+      const h = new Uint8Array(await file.slice(pos, pos + 8).arrayBuffer()); if (h.length < 8) break;
+      const id = String.fromCharCode(...h.subarray(0, 4));
+      const size = u32be(h, 0 + 4), body = pos + 8;
+      if (id === 'SSND' && size >= 8) {
+        const sh = new Uint8Array(await file.slice(body, body + 8).arrayBuffer());
+        const off = sh.length >= 8 ? u32be(sh, 0) : 0;
+        const start = body + 8 + off, dataSize = Math.max(0, size - 8 - off);
+        const avail = Math.max(0, file.size - start);
+        return { start, end: start + Math.min(dataSize, avail) };
+      }
+      pos = body + size + (size & 1);
+    }
+    return { start: 0, end: file.size };
+  }
   async function audioRange(file, fmt) {
     const f = (fmt || '').toLowerCase();
     if (f === 'flac') return flacRange(file);
     if (f === 'wav' || f === 'wave') return wavRange(file);
+    if (f === 'aiff' || f === 'aif' || f === 'aifc') return aiffRange(file);
     if (f === 'ogg' || f === 'oga' || f === 'opus') return oggRange(file);
     return mp3Range(file);
   }
@@ -3765,7 +3953,7 @@ function renderMain() {
   if (!S.tracks.size && !S.albums.size) {
     S.lastList = [];
     m.innerHTML = `<div class="empty"><div class="big">🎧</div><h2>Your local music library</h2>
-      <p>Pick the folder where your music lives. Every audio file inside it (MP3, Ogg, FLAC and WAV: .mp3, .ogg, .oga, .opus, .flac, .wav — also in subfolders) is imported, tags are read, and albums are grouped automatically. Nothing is uploaded; files stay on your computer.</p>
+      <p>Pick the folder where your music lives. Every audio file inside it (MP3, Ogg, FLAC, WAV and AIFF: .mp3, .ogg, .oga, .opus, .flac, .wav, .aif, .aiff, .aifc — also in subfolders) is imported, tags are read, and albums are grouped automatically. Nothing is uploaded; files stay on your computer.</p>
       <button class="btn primary" data-action="pick-folder">${svg('folder')}Choose music folder</button>
       <button class="btn" data-action="import-json">${svg('upload')}Import library JSON</button>
       <small>Tip: after rating tracks, click “Save library” and keep ${LIB_FILE} in your music folder. It is restored automatically when you pick the folder.</small></div>`;
@@ -4394,37 +4582,43 @@ function loadCurrent(autoplay, dir, reveal = false) {
   if (skipped.length) toast(skipped.length === 1 ? cantPlayMsg(skipped[0]) + ' Skipped.' : `Skipped ${skipped.length} tracks this browser can’t play (${[...new Set(skipped.map(formatLabel))].join(', ')}).`, 'warn', 6000);
   if (S.qi < 0 || S.qi >= S.queue.length) { S.qi = Math.max(0, Math.min(S.qi, S.queue.length - 1)); audio.pause(); updatePlayer(); return; }
   const f = S.files.get(S.queue[S.qi]), ct = currentTrack(), old = curURL; curURL = null;
-  if (OGGX.need(ct)) {   // round 28: decoded by MyTunes (the <audio> gets a WAV / FLAC Blob when ready)
+  const dec = fallbackOf(ct);
+  OGGX.keep([dec === OGGX ? f : null, nextFallbackFor(OGGX)].filter(Boolean));
+  AIFFX.keep([dec === AIFFX ? f : null, nextFallbackFor(AIFFX)].filter(Boolean));
+  if (dec) {   // r28 Ogg / r79 AIFF: decoded by MyTunes (the <audio> gets a WAV / FLAC Blob when ready)
     audio.pause(); audio.removeAttribute('src'); audio.load(); if (old) URL.revokeObjectURL(old);
-    OGGX.keep([f, nextFallbackFile()]);
-    const tok = OGGX.pend = { id: ct.id, auto: !!autoplay, p: 0 };
+    OGGX.pend = AIFFX.pend = null;
+    const tok = dec.pend = { id: ct.id, auto: !!autoplay, p: 0 };
     $('#tDur').textContent = fmtTime(ct.duration || 0); $('#tCur').textContent = fmtTime(0); const sk = $('#seek'); sk.value = 0; setRangeFill(sk);
-    OGGX.wavURL(f, s => { if (OGGX.pend === tok) { tok.p = s; showDecoding(); } }).then(u => {
-      if (OGGX.pend !== tok) return; OGGX.pend = null;
+    dec.wavURL(f, s => { if (dec.pend === tok) { tok.p = s; showDecoding(); } }).then(u => {
+      if (dec.pend !== tok) return; dec.pend = null;
       audio.src = u; if (tok.auto) audio.play().catch(e => { if (e.name !== 'AbortError') toast('Playback failed: ' + e.message, 'error'); });
       updatePlayer();
     }).catch(err => {
-      if (OGGX.pend !== tok || err.aborted) return; OGGX.pend = null; updatePlayer();
+      if (dec.pend !== tok || err.aborted) return; dec.pend = null; updatePlayer();
       const more = playableFrom(S.qi + 1, 1) >= 0;
       toast(`Can’t decode “${ct.title}” (${formatLabel(ct)}): ${err.message}.` + (more ? ' Skipping to the next track.' : ''), 'warn', 6000);
       if (more) next();
     });
   } else {
-    OGGX.pend = null; OGGX.keep([nextFallbackFile()]);
+    OGGX.pend = AIFFX.pend = null;
     curURL = URL.createObjectURL(f); audio.src = curURL; if (old) URL.revokeObjectURL(old);
     $('#tDur').textContent = fmtTime(ct && ct.duration || 0);
-    if (autoplay) audio.play().catch(e => { if (e.name !== 'AbortError' && !(e.name === 'NotSupportedError' && (OGGX.pend || OGGX.need(ct) || currentTrack() !== ct))) toast('Playback failed: ' + e.message, 'error'); });
+    if (autoplay) audio.play().catch(e => { if (e.name !== 'AbortError' && !(e.name === 'NotSupportedError' && (decPend() || fallbackOf(ct) || currentTrack() !== ct))) toast('Playback failed: ' + e.message, 'error'); });
   }
   updatePlayer();
   if (reveal) revealPlaying();
 }
-/* the next playable track's file when it needs the Ogg fallback (pre-decoded near the end of the current one) */
-function nextFallbackFile() { const j = playableFrom(S.qi + 1, 1), t = j >= 0 ? S.tracks.get(S.queue[j]) : null; return t && OGGX.need(t) ? S.files.get(t.id) : null; }
+const fallbackOf = t => t && (OGGX.need(t) ? OGGX : (AIFFX.need(t) ? AIFFX : null));
+const decPend = () => OGGX.pend || AIFFX.pend;
+function nextFallbackFor(mod) { const j = playableFrom(S.qi + 1, 1), t = j >= 0 ? S.tracks.get(S.queue[j]) : null; return t && fallbackOf(t) === mod ? S.files.get(t.id) : null; }
+/* the next playable track's file when it needs a decode fallback (pre-decoded near the end of the current one) */
+function nextFallbackFile() { const j = playableFrom(S.qi + 1, 1), t = j >= 0 ? S.tracks.get(S.queue[j]) : null; return t && fallbackOf(t) ? S.files.get(t.id) : null; }
 function showDecoding() {
-  const t = currentTrack(), p = OGGX.pend; if (!t || !p || p.id !== t.id) return;
-  const d = t.duration || 0, el = $('#npSub'); el.textContent = 'Decoding…' + (d > 0 && p.p > 0 ? ` ${Math.min(99, Math.round(p.p / d * 100))}%` : ''); el.classList.add('decoding');
+  const t = currentTrack(), p = decPend(); if (!t || !p || p.id !== t.id) return;
+  const d = t.duration || 0, el = $('#npSub'); el.textContent = 'Decoding…' + (p.p > 0 ? ` ${Math.min(99, Math.round(p.p <= 1 ? p.p * 100 : (d > 0 ? p.p / d * 100 : 0)))}%` : ''); el.classList.add('decoding');
 }
-const isLoaded = () => !!(audio.src || OGGX.pend);
+const isLoaded = () => !!(audio.src || decPend());
 function playableFrom(i, dir) { for (; i >= 0 && i < S.queue.length; i += dir) if (playable(S.queue[i])) return i; return -1; }
 function next() { const j = playableFrom(S.qi + 1, 1); if (j >= 0) { S.qi = j; loadCurrent(true, 1, true); } else { audio.pause(); audio.currentTime = 0; markAlbums(); } }
 function prev() { const j = audio.currentTime > 3 ? -1 : playableFrom(S.qi - 1, -1); if (j < 0) { audio.currentTime = 0; return; } S.qi = j; loadCurrent(true, -1, true); }
@@ -4769,7 +4963,7 @@ function bindEvents() {
     if (S.seeking) return;
     const dur = audio.duration; seek.value = dur ? audio.currentTime / dur * 1000 : 0; setRangeFill(seek);
     $('#tCur').textContent = fmtTime(audio.currentTime);
-    if (dur - audio.currentTime < 25 && !audio.paused) { const nf = nextFallbackFile(); if (nf) OGGX.wavURL(nf).catch(() => { }); }   // pre-decode the next Ogg track
+    if (dur - audio.currentTime < 25 && !audio.paused) { const j = playableFrom(S.qi + 1, 1), t2 = j >= 0 ? S.tracks.get(S.queue[j]) : null, dec2 = fallbackOf(t2); if (dec2 && S.files.has(t2.id)) dec2.wavURL(S.files.get(t2.id)).catch(() => { }); }   // pre-decode the next fallback track
   });
   audio.addEventListener('loadedmetadata', () => {
     $('#tDur').textContent = fmtTime(audio.duration);
@@ -4778,7 +4972,7 @@ function bindEvents() {
     // the browser's value replaces a rough estimate (CBR guess / missing) when it differs notably.
     // Header counts (Xing/Info/VBRI/TLEN), a frame-averaged VBR estimate, or a length measured at the end
     // of playback are at least as good as the browser's own guess, so they are only replaced on a big mismatch.
-    const good = ['xing', 'info', 'vbri', 'tlen', 'vbr-est', 'ended', 'flac-streaminfo', 'wav'].includes(t.durationSource);
+    const good = ['xing', 'info', 'vbri', 'tlen', 'vbr-est', 'ended', 'flac-streaminfo', 'wav', 'aiff'].includes(t.durationSource);
     if (Math.abs((t.duration || 0) - d) > (good ? Math.max(3, d * 0.1) : Math.max(1.5, d * 0.02))) setTrackDuration(t, d, 'played');
   });
   // at a natural end, currentTime is the exact length; keep it if the stored one was off
@@ -4795,7 +4989,7 @@ function bindEvents() {
   // canPlayType can say "maybe" and still fail to decode: tell the user and move on instead of stalling the queue
   audio.addEventListener('error', () => {
     const t = currentTrack(), e = audio.error; if (!t || !e || !audio.src) return;
-    if ((e.code === 3 || e.code === 4) && OGGX.retry(t)) { loadCurrent(true, 1); return; }   // round 28: native Ogg failed → decode it ourselves
+    if ((e.code === 3 || e.code === 4) && (OGGX.retry(t) || AIFFX.retry(t))) { loadCurrent(true, 1); return; }   // native failed → decode it ourselves
     if (e.code === 3 || e.code === 4) {
       toast(`Can’t play “${t.title}” (${formatLabel(t)}) in this browser.` + (playableFrom(S.qi + 1, 1) >= 0 ? ' Skipping to the next track.' : ''), 'warn', 6000);
       if (playableFrom(S.qi + 1, 1) >= 0) next(); else updatePlayer();
@@ -4803,7 +4997,7 @@ function bindEvents() {
   });
   audio.addEventListener('pause', updatePlayer);
   audio.addEventListener('ended', next);
-  audio.addEventListener('error', () => { const t = currentTrack(), e = audio.error; if (t && audio.src && !OGGX.pend && !(e && (e.code === 3 || e.code === 4))) { toast('Could not play “' + t.title + '”, skipping.', 'error'); setTimeout(next, 600); } });
+  audio.addEventListener('error', () => { const t = currentTrack(), e = audio.error; if (t && audio.src && !decPend() && !(e && (e.code === 3 || e.code === 4))) { toast('Could not play “' + t.title + '”, skipping.', 'error'); setTimeout(next, 600); } });
   seek.addEventListener('input', () => { S.seeking = true; setRangeFill(seek); $('#tCur').textContent = fmtTime(seek.value / 1000 * (audio.duration || 0)); });
   seek.addEventListener('change', () => { if (audio.duration) audio.currentTime = seek.value / 1000 * audio.duration; S.seeking = false; });
   let volSave;
@@ -6298,6 +6492,116 @@ void main(){
     size(t);frames++;t.cv.classList.remove('idle');const now=performance.now(),dt=swS.last?Math.min(.25,(now-swS.last)/1000):1/60;swS.last=now;
     swS.an.smoothingTimeConstant=.8;swS.an.getByteFrequencyData(swS.bins);swPaint(t,swS.bins.subarray(0,512),reduce.matches?0:dt,true);if(!reduce.matches)raf=requestAnimationFrame(frame);
   }
+  /* r80: Orbit — Bands bass lane + mid polar ring + wandering treble XY */
+  const orbS = { x: 0, y: 0, ang: .4, curl: 0, loud: 0, last: 0, t: 0, forced: null, ready: false, info: {} };
+  const orbP = { cv: document.createElement('canvas'), g: null };
+  function orbBassLane() { const h = H * .22, y = H * .74; return { y, h, c: y + h / 2 }; }
+  function orbMidC() { return { cx: W / 2, cy: (H * .74) / 2 }; }
+  function orbSpd(V, loud) { return V.oxspeed * (.08 + 1.7 * V.oxsens * Math.max(0, loud)) * Math.min(W, H); }
+  function orbGain(b, i, pk) {
+    bandPk[i] = pk;
+    const target = Math.min(40, .85 / Math.max(pk, .004));
+    b.gain = reduce.matches || target < b.gain ? target : b.gain + (target - b.gain) * .04;
+    return b.gain;
+  }
+  function orbPh(V) {
+    const cv = orbP.cv;
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; orbP.g = cv.getContext('2d'); }
+    const g = orbP.g, tau = V.oxpersist;
+    if (!tau) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H); return g; }
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-out';
+    g.fillStyle = `rgba(0,0,0,${Math.min(1, 1 - Math.pow(.08, 1 / (60 * tau)))})`;
+    g.fillRect(0, 0, W, H); g.restore();
+    return g;
+  }
+  function orbReset(cx, cy) {
+    orbS.x = cx; orbS.y = cy; orbS.ang = .4; orbS.curl = 0; orbS.last = 0; orbS.t = 0; orbS.ready = true;
+    if (orbP.g) { orbP.g.setTransform(1, 0, 0, 1, 0, 0); orbP.g.clearRect(0, 0, orbP.cv.width, orbP.cv.height); }
+  }
+  function orbitBase(t, idle) {
+    const g = t.g, d = D, V = sv(), L = orbBassLane(), M = orbMidC(), rGuide = Math.min(W, H * .74) * V.ocsize * .5;
+    g.clearRect(0, 0, W, H);
+    if (V.grid) { g.save(); g.strokeStyle = col.grid; g.lineWidth = d; g.globalAlpha = .55;
+      g.beginPath(); g.moveTo(0, Math.round(L.c) + .5); g.lineTo(W, Math.round(L.c) + .5); g.stroke();
+      g.beginPath(); g.arc(M.cx, M.cy, rGuide, 0, Math.PI * 2); g.stroke(); g.restore(); }
+    if (V.text) { g.save(); g.fillStyle = col.label; g.globalAlpha = .75; g.font = `${11 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.textBaseline = 'top';
+      g.fillText('Bass', 20 * d, L.y + 4 * d);
+      g.fillText('Mid', Math.max(20 * d, M.cx - 12 * d), Math.max(4 * d, M.cy - rGuide - 16 * d)); g.restore(); }
+    if (idle) {
+      const sp = W * V.width, x0 = (W - sp) / 2, x = orbS.ready ? orbS.x : W / 2, y = orbS.ready ? orbS.y : H / 2;
+      g.save(); g.strokeStyle = col.bands[0]; g.globalAlpha = .35; g.lineWidth = 1.5 * d * V.thick;
+      g.beginPath(); g.moveTo(x0, L.c); g.lineTo(x0 + sp, L.c); strokeO(g, t, V); g.restore();
+      g.save(); g.strokeStyle = col.bands[1]; g.globalAlpha = .35; g.lineWidth = 1.75 * d * V.thick;
+      g.beginPath(); g.arc(M.cx, M.cy, rGuide, 0, Math.PI * 2); strokeO(g, t, V); g.restore();
+      g.save(); g.strokeStyle = col.bands[2]; g.globalAlpha = .45; g.lineWidth = 1.5 * d * V.thick; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(x - 6 * d, y); g.lineTo(x + 6 * d, y); g.moveTo(x, y - 6 * d); g.lineTo(x, y + 6 * d); strokeO(g, t, V); g.restore();
+    }
+    return { L, M };
+  }
+  function orbitFlat(t) { size(t); orbitBase(t, true); t.cv.classList.add('idle'); orbS.last = 0; }
+  function orbitFrame(t) {
+    bandSync();
+    if (!bandsOn || !running()) { orbitFlat(t); if (src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); const g = t.g, d = D, V = sv(), { L, M } = orbitBase(t, false); t.cv.classList.remove('idle'); frames++;
+    const now = performance.now(), dt = orbS.last ? Math.min(.05, (now - orbS.last) / 1000) : 1 / 60; orbS.last = now; orbS.t += dt;
+    if (!orbS.ready) orbReset(W / 2, H / 2);
+    let rms = 0;
+    bandNodes.forEach((b, i) => {
+      b.an.getFloatTimeDomainData(b.buf);
+      let s = 0, pk = 0; for (let k = 0; k < b.buf.length; k++) { const v = b.buf[k]; s += v * v; pk = Math.max(pk, Math.abs(v)); }
+      orbGain(b, i, pk); rms += Math.min(1, Math.sqrt(s / b.buf.length) * 3.2);
+    });
+    if (orbS.forced != null) orbS.loud = orbS.forced;
+    else orbS.loud += (rms / 3 - orbS.loud) * (1 - Math.exp(-dt / .2));
+    const speed = reduce.matches ? 0 : orbSpd(V, orbS.loud);
+    orbS.curl += (Math.sin(orbS.t * .7) * .8 + Math.sin(orbS.t * 1.31 + 1.7) * .5 - orbS.curl) * (1 - Math.exp(-dt / .6));
+    orbS.ang += orbS.curl * dt;
+    const xyR = Math.min(W, H) * V.oxsize * .5, margin = xyR + 12 * d;
+    orbS.x += Math.cos(orbS.ang) * speed * dt;
+    orbS.y += Math.sin(orbS.ang) * speed * dt;
+    if (orbS.x < margin) { orbS.x = margin; orbS.ang = Math.PI - orbS.ang; }
+    else if (orbS.x > W - margin) { orbS.x = W - margin; orbS.ang = Math.PI - orbS.ang; }
+    if (orbS.y < margin) { orbS.y = margin; orbS.ang = -orbS.ang; }
+    else if (orbS.y > H - margin) { orbS.y = H - margin; orbS.ang = -orbS.ang; }
+    { const b = bandNodes[0], data = b.buf, n = Math.max(32, Math.min(data.length - 32, Math.round(Math.min(BANDS[0].win, data.length >> 1) / V.zoom)));
+      let t0 = 0; for (let k = 1; k < data.length - n; k++) if (data[k - 1] < 0 && data[k] >= 0) { t0 = k; break; }
+      const amp = L.h * .42 * b.gain * V.amp, sp = W * V.width, x0 = (W - sp) / 2, cy = L.c, step = Math.max(1, Math.round(d));
+      g.save(); g.lineWidth = 1.75 * d * V.thick; g.lineJoin = 'round'; g.strokeStyle = col.bands[0]; g.shadowColor = col.bands[0]; g.shadowBlur = 4 * d * V.thick;
+      g.beginPath();
+      for (let x = 0; x <= sp; x += step) { const v = data[t0 + Math.floor(x / sp * n)] || 0, y = cy - v * amp; x ? g.lineTo(x0 + x, y) : g.moveTo(x0 + x, y); }
+      strokeO(g, t, V); g.restore(); }
+    { const b = bandNodes[1], data = b.buf, n = Math.max(32, Math.min(Math.floor((data.length - 32) / 1.2), Math.round(Math.min(BANDS[1].win, data.length >> 1) / V.zoom))), blend = Math.max(4, n >> 3);
+      let t0 = 0; for (let k = 1; k < data.length - n - blend; k++) if (data[k - 1] < 0 && data[k] >= 0) { t0 = k; break; }
+      let midRms = 0; for (let k = 0; k < n; k++) { const v = data[t0 + k] || 0; midRms += v * v; } midRms = Math.sqrt(midRms / n);
+      const r0 = Math.min(W, H * .74) * V.ocsize * .5 * (1 + .18 * Math.min(1, midRms * b.gain * 3)), amp = r0 * .42 * b.gain * V.amp;
+      const at = j => { j = Math.min(n - 1, Math.floor(j)); const a = data[t0 + j] || 0; if (j >= blend) return a; const w = 1 - j / blend; return a * (1 - w) + (data[t0 + n + j] || 0) * w; };
+      const N = Math.max(96, Math.min(n * 2, Math.round(2 * Math.PI * r0 / Math.max(1, Math.round(d)))));
+      g.save(); g.lineWidth = 1.75 * d * V.thick; g.lineJoin = 'round'; g.strokeStyle = col.bands[1]; g.shadowColor = col.bands[1]; g.shadowBlur = 4 * d * V.thick;
+      g.beginPath();
+      for (let k = 0; k < N; k++) { const f = k / N, r = Math.max(0, r0 + at(f * n) * amp), a = -Math.PI / 2 + f * 2 * Math.PI;
+        const x = M.cx + Math.cos(a) * r, y = M.cy + Math.sin(a) * r; k ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.closePath(); strokeO(g, t, V); g.restore(); }
+    { const b = bandNodes[2], data = b.buf, rate = (ac && ac.sampleRate) || 48000;
+      const delay = Math.max(1, Math.round((V.oxdelay / 1000) * rate)), A = xyR * b.gain * V.amp;
+      const pg = orbPh(V);
+      pg.save(); pg.lineWidth = 1.5 * d * V.thick; pg.lineJoin = 'round'; pg.lineCap = 'round';
+      pg.strokeStyle = col.bands[2]; pg.shadowColor = col.bands[2]; pg.shadowBlur = 5 * d * V.thick;
+      pg.beginPath();
+      const n = Math.max(8, Math.min(data.length - delay, Math.round(Math.min(BANDS[2].win, data.length >> 1) / V.zoom)));
+      const step = Math.max(1, Math.floor(n / 512));
+      for (let i = 0, first = true; i < n; i += step) {
+        const x = orbS.x + (data[i] || 0) * A, y = orbS.y - (data[i + delay] || 0) * A;
+        first ? (pg.moveTo(x, y), first = false) : pg.lineTo(x, y);
+      }
+      pg.stroke(); pg.restore();
+      g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(orbP.cv, 0, 0); g.restore();
+      if (V.text) { g.save(); g.fillStyle = col.label; g.globalAlpha = .75; g.font = `${11 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.textBaseline = 'bottom';
+        const lx = Math.min(W - 48 * d, Math.max(8 * d, orbS.x + xyR + 8 * d));
+        g.fillText('Treble', lx, Math.max(16 * d, orbS.y - 4 * d)); g.restore(); } }
+    orbS.info = { n: frames, loud: orbS.loud, speed, x: orbS.x, y: orbS.y, heading: orbS.ang, midX: M.cx, midY: M.cy, xyR, forced: orbS.forced };
+    if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+
   /* ---- full-screen visual modes: add an entry here to add a mode (the small scope always shows mode 1) ---- */
   const MODES = [
     { id: 'wave', name: 'Waveform', draw: waveFrame, idle: waveFlat },
@@ -6319,7 +6623,8 @@ void main(){
     { id: 'neuro', name: 'Neuro', draw: ngFrame, idle: ngFlat },
     { id: 'spikyball', name: 'Spiky Ball', draw: sbFrame, idle: sbFlat },
     { id: 'blobby', name: 'Blobby', draw: blFrame, idle: blFlat },
-    { id: 'swirlyeyes', name: 'Swirly Eyes', draw: swFrame, idle: swFlat }
+    { id: 'swirlyeyes', name: 'Swirly Eyes', draw: swFrame, idle: swFlat },
+    { id: 'orbit', name: 'Orbit', draw: orbitFrame, idle: orbitFlat, taps: true }
   ];
   function modeIx() { const i = MODES.findIndex(m => m.id === S.meta.scopeMode); return i < 0 ? 0 : i; }
   const curMode = () => MODES[modeIx()];
@@ -8004,7 +8309,13 @@ void main(){
     { id: 'swoct', group: 'Swirly Eyes', label: 'Octaves', min: 1, max: 8, step: 1, def: 5, modes: ['swirlyeyes'], fmt: x => String(x), title: 'FBM octaves; source numOct 5.' },
     { id: 'swop', group: 'Swirly Eyes', label: 'Opacity', min: 0, max: 1, step: 0.01, def: 1, modes: ['swirlyeyes'], fmt: x => Math.round(x*100)+'%', title: 'Below 100% reveals active feedback behind the swirl.' },
     { id: 'swkey', group: 'Swirly Eyes', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, modes: ['swirlyeyes'], title: 'Whole picture fades the complete scene. Dark only keeps bright eye cores solid' },
-    { id: 'swscale', group: 'Swirly Eyes', label: 'Internal resolution', min: 0.2, max: 1, step: 0.05, def: 0.45, modes: ['swirlyeyes'], fmt: x => Math.round(x*100)+'%', title: 'Internal FBM resolution; 45% balances detail and speed.' }
+    { id: 'swscale', group: 'Swirly Eyes', label: 'Internal resolution', min: 0.2, max: 1, step: 0.05, def: 0.45, modes: ['swirlyeyes'], fmt: x => Math.round(x*100)+'%', title: 'Internal FBM resolution; 45% balances detail and speed.' },
+    { id: 'ocsize', group: 'Orbit', label: 'Circle size', min: .15, max: 1, step: .01, def: .55, modes: ['orbit'], fmt: x => Math.round(x * 100) + '%', title: 'Diameter of the midrange polar ring, as a fraction of the area above the bass lane.' },
+    { id: 'oxsize', group: 'Orbit', label: 'XY size', min: .06, max: .6, step: .01, def: .22, modes: ['orbit'], fmt: x => Math.round(x * 100) + '%', title: 'Size of the wandering treble XY figure, as a fraction of the shorter screen edge.' },
+    { id: 'oxspeed', group: 'Orbit', label: 'Motion speed', min: 0, max: 3, step: .05, def: 1, modes: ['orbit'], fmt: x => x.toFixed(2) + '×', title: 'Base wander speed of the treble XY figure. 0 parks it.' },
+    { id: 'oxsens', group: 'Orbit', label: 'Loudness sensitivity', min: 0, max: 2, step: .05, def: 1, modes: ['orbit'], fmt: x => x.toFixed(2) + '×', title: 'How much overall loudness speeds up the wander. 0 keeps a constant slow drift.' },
+    { id: 'oxpersist', group: 'Orbit', label: 'Trail', min: 0, max: 2, step: .05, def: .35, modes: ['orbit'], fmt: x => x ? x.toFixed(2) + ' s' : 'Off', title: 'Phosphor fade of the treble XY trace. 0 draws only the current sweep.' },
+    { id: 'oxdelay', group: 'Orbit', label: 'XY delay', min: .1, max: 8, step: .05, def: 1, modes: ['orbit'], fmt: x => x.toFixed(2) + ' ms', title: 'Delay between the two axes of the mono treble Lissajous (sample vs delayed sample).' }
   ];
   SCOPE_PARAMS.forEach(p => { if (p.type === 'choice') p.fmt = x => p.opts[x] || ''; });
   const SV0 = (() => { const o = {}; SCOPE_PARAMS.forEach(p => o[p.id] = p.def); o.xf = false; return o; })();
@@ -10470,7 +10781,7 @@ void main(){
     open = true; fs.hidden = false; meta(); svC = null; dispSync();
     if (an) { an.fftSize = 8192; buf = new Float32Array(an.fftSize); }
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
-    $('#scopeFull .sf-n').textContent = MODES.length > 19 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home, \\' : MODES.length > 18 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home' : MODES.length > 17 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn' : MODES.length > 16 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp' : MODES.length > 15 ? '9, 0, -, =, ⌫, ⌦, End, Ins' : MODES.length > 14 ? '9, 0, -, =, ⌫, ⌦, End' : MODES.length > 13 ? '9, 0, -, =, ⌫, ⌦' : MODES.length > 12 ? '9, 0, -, =, ⌫' : MODES.length > 11 ? '9, 0, -, =' : MODES.length > 10 ? '9, 0, -' : MODES.length > 9 ? '9, 0' : MODES.length;   // r41: key 0 is mode 10; r42: - is mode 11
+    $('#scopeFull .sf-n').textContent = MODES.length > 20 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home, \\, ]' : MODES.length > 19 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home, \\' : MODES.length > 18 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home' : MODES.length > 17 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn' : MODES.length > 16 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp' : MODES.length > 15 ? '9, 0, -, =, ⌫, ⌦, End, Ins' : MODES.length > 14 ? '9, 0, -, =, ⌫, ⌦, End' : MODES.length > 13 ? '9, 0, -, =, ⌫, ⌦' : MODES.length > 12 ? '9, 0, -, =, ⌫' : MODES.length > 11 ? '9, 0, -, =' : MODES.length > 10 ? '9, 0, -' : MODES.length > 9 ? '9, 0' : MODES.length;   // r41: key 0 is mode 10; r42: - is mode 11
     bandSync();
     if (!fxApply() && fxIx() > 0 && !reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} isn’t available here (no WebGL) · None`, 2600);   // the choice is kept for next time
     else if (fxIx() > 0 && reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} · off while reduced motion is on`, 2200);
@@ -10553,6 +10864,7 @@ void main(){
     if (e.key === 'PageDown' && n >= 18) { e.preventDefault(); e.stopImmediatePropagation(); setMode(17); return; } // r61: PageDown = Spiky Ball
     if (e.key === 'Home' && n >= 19 && !(e.target && e.target.classList && e.target.classList.contains('sfp-grip'))) { e.preventDefault(); e.stopImmediatePropagation(); setMode(18); return; } // r63: Home = Blobby
     if (e.key === '\\' && n >= 20) { e.preventDefault(); e.stopImmediatePropagation(); setMode(19); return; } // r64: \\ = Swirly Eyes
+    if (e.key === ']' && n >= 21) { e.preventDefault(); e.stopImmediatePropagation(); setMode(20); return; } // r80: ] = Orbit
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); e.stopImmediatePropagation(); setFxAndSync(fxIx() + (e.key === 'ArrowUp' ? 1 : -1)); return; }
     const k = (e.key || '').toLowerCase();
     if (k === 'g' || k === 't') { e.preventDefault(); e.stopImmediatePropagation(); const id = k === 'g' ? 'grid' : 'text', on = !sv()[id]; setView(id, on ? 1 : 0); modeToast((k === 'g' ? 'Grid' : 'Text') + ': ' + (on ? 'On' : 'Off')); }
@@ -10652,6 +10964,10 @@ void main(){
     pleiades: { info: () => ({ ...pleInfo }), canvas: () => pleS.cv, failed: () => pleS.failed, fs: PLE_FS },
     mirror: { info: () => ({ ...mirInfo }), canvas: () => mirS.cv, failed: () => mirS.failed, fs: MIR_FS },
     xy: { info: () => ({ ...xyInfo }), tapped: () => xyOn, built: () => !!xyN, phosphor: () => xyP.cv, box: () => xyBox() },
+    orbit: { info: () => ({ ...orbS.info, loud: orbS.loud, speed: orbSpd(sv(), orbS.loud), x: orbS.x, y: orbS.y, heading: orbS.ang }),
+      reset() { orbS.ready = false; orbS.forced = null; orbS.loud = 0; orbS.last = 0; },
+      forceLoud(v) { orbS.forced = (v == null || v === false) ? null : Math.max(0, Math.min(1, +v)); if (orbS.forced != null) orbS.loud = orbS.forced; },
+      phosphor: () => orbP.cv, speedAt: (loud) => orbSpd(sv(), loud) },
     bandLevels() { if (!bandNodes) return null; return bandNodes.map(b => { b.an.getFloatTimeDomainData(b.buf); let s = 0; for (const v of b.buf) s += v * v; return Math.sqrt(s / b.buf.length); }); },
     level() { if (!an || !src) return null; const b = new Float32Array(an.fftSize); an.getFloatTimeDomainData(b); let s = 0; for (const v of b) s += v * v; return Math.sqrt(s / b.length); }, setFeed(f) { feed = f; start(); },
     state: () => ({ ctx: ac && ac.state, routed: !!src, drawing: !!raf, shown: !btn.hidden, full: open, fullscreen: !!fsEl(), frames, fft: an && an.fftSize, fullSize: [fcv.width, fcv.height], mode: curMode().id, bandsBuilt: !!bandNodes, bandsOn, bandColors: col.bands, bandGain: bandNodes ? bandNodes.map(b => b.gain) : null, bandPk: bandPk.slice(), ios: IS_IOS, analysing: !!src && enabled(), rate: ac && ac.sampleRate, out: ac && (ac.outputLatency || 0) + ac.baseLatency }),
