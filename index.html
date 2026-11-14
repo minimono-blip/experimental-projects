@@ -1,35 +1,197 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>experimental-projects</title> <style> * { box-sizing: border-box; } body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f4f5f7; color: #222; } .container { max-width: 1100px; margin: 0 auto; padding: 60px 25px; } header { margin-bottom: 45px; } h1 { margin: 0 0 10px 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; } .intro { margin: 0; color: #666; font-size: 1.05rem; } .apps { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; } .app-card { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08); transition: transform 0.2s ease, box-shadow 0.2s ease; } .app-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12); } .app-image { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #ddd; } .app-content { padding: 22px; } .app-title { margin: 0 0 10px 0; font-size: 1.35rem; } .app-description { margin: 0 0 20px 0; color: #666; line-height: 1.5; } .launch { display: inline-block; padding: 9px 16px; border-radius: 7px; background: #222; color: white; text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: background 0.2s ease; } .launch:hover { background: #444; } footer { margin-top: 55px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 0.85rem; } @media (max-width: 600px) { .container { padding: 40px 18px; } h1 { font-size: 2rem; } } </style> </head> <body> <div class="container"> <header> <h1>experimental-projects</h1> <p class="intro"> A collection of small browser-based experiments, prototypes and ideas.(c) minimono 2026 </p> </header>
+<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>experimental-projects</title> <style>
+:root{--page:#e9e6df;--paper:#f5f3ee;--ink:#171816;--muted:#696a64;--line:rgba(23,24,22,.18);--accent:#c7f36b;--dark:#171816;--gutter:clamp(20px,4vw,68px);--section-space:clamp(58px,8vw,112px)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--page);color:var(--ink);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}a{color:inherit}
+.container{width:100%;max-width:none;margin:0;padding:0}.site-header{min-height:76px;padding:0 var(--gutter);display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:1px solid var(--line);background:var(--page)}.wordmark{font-size:1rem;font-weight:800;letter-spacing:-.06em;text-decoration:none;text-transform:uppercase}.site-nav{display:flex;align-items:center;gap:clamp(14px,2.5vw,34px);flex-wrap:wrap}.site-nav a,.category-bar a{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-decoration:none;text-transform:uppercase;opacity:.78}.site-nav a:hover,.category-bar a:hover{opacity:1}
+.hero{min-height:min(660px,76vh);padding:clamp(68px,10vw,150px) var(--gutter);display:flex;flex-direction:column;justify-content:space-between;background:var(--dark);color:var(--paper);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:min(58vw,760px);aspect-ratio:1;right:-9%;bottom:-58%;border:1px solid rgba(245,243,238,.22);border-radius:50%;box-shadow:0 0 0 55px rgba(245,243,238,.025),0 0 0 110px rgba(245,243,238,.025),0 0 0 165px rgba(245,243,238,.025);pointer-events:none}.eyebrow{margin:0 0 28px;color:var(--accent);font-size:.7rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase}.hero h1{max-width:1050px;margin:0;font-size:clamp(3.5rem,10vw,9.5rem);line-height:.86;letter-spacing:-.095em;font-weight:800;text-transform:uppercase}.hero-bottom{max-width:650px;margin-top:70px;display:flex;align-items:end;justify-content:space-between;gap:30px;position:relative;z-index:1}.hero-copy{max-width:480px;margin:0;color:rgba(245,243,238,.72);font-size:clamp(1rem,1.5vw,1.25rem);line-height:1.55}.hero-index{color:var(--accent);font-size:.72rem;font-weight:800;letter-spacing:.12em;white-space:nowrap}
 
- <main class="apps"> 
-<!-- ===================================================== CLUMPEROIDS ===================================================== --> 
-<article class="app-card"> <a href="apps/clumperoids/clumperoids.html"> <img class="app-image" src="apps/clumperoids/images/clumperoids_1.jpg" alt="Clumperoids screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Clumperoids </h2> <p class="app-description"> A small retro game paying homage to Asteroids. Added powerups and gravitational behaviour. </p> <a class="launch" href="apps/clumperoids/clumperoids.html" > Launch app → </a> </div> </article> 
+.hero-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,.92fr);align-items:center;gap:clamp(32px,5vw,80px);position:relative;z-index:1}
+.hero-heading{position:relative;z-index:1}
+.hero-slideshow{height:clamp(300px,37vw,480px);min-height:280px;position:relative;overflow:hidden;background:#292b27;border:1px solid rgba(245,243,238,.22);isolation:isolate}
+.hero-slide-link{position:absolute;inset:0;display:block}
+.hero-slide-image{width:100%;height:100%;display:block;object-fit:cover;opacity:.9;transition:opacity .35s ease,transform 6s ease;transform:scale(1.015)}
+.hero-slideshow:hover .hero-slide-image{transform:scale(1.06)}
+.hero-slide-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.02) 25%,rgba(0,0,0,.78) 100%);pointer-events:none}
+.hero-slide-caption{position:absolute;left:clamp(18px,2.5vw,34px);right:clamp(18px,2.5vw,34px);bottom:clamp(66px,7vw,90px);pointer-events:none}
+.hero-slide-category{display:block;margin-bottom:12px;color:var(--accent);font-size:.65rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.hero-slide-title{display:inline-block;color:#fff;font-size:clamp(2rem,4vw,4.2rem);line-height:.95;letter-spacing:-.07em;font-weight:800;text-decoration:none;pointer-events:auto}
+.hero-slide-description{max-width:42ch;margin:12px 0 0;color:rgba(255,255,255,.8);font-size:.85rem;line-height:1.45}
+.hero-slide-controls{position:absolute;right:clamp(18px,2.5vw,34px);bottom:22px;display:flex;align-items:center;gap:12px;z-index:2}
+.hero-slide-button{width:38px;height:38px;border:1px solid rgba(255,255,255,.55);border-radius:50%;background:rgba(23,24,22,.45);color:white;font:inherit;font-size:1.1rem;cursor:pointer;transition:background .2s,color .2s}
+.hero-slide-button:hover{background:var(--accent);color:var(--ink);border-color:var(--accent)}
+.hero-slide-count{min-width:52px;color:white;font-size:.65rem;font-weight:800;letter-spacing:.1em;text-align:center}
+.hero-slide-progress{position:absolute;left:clamp(18px,2.5vw,34px);bottom:32px;display:flex;gap:5px;z-index:2}
+.hero-slide-dot{width:17px;height:3px;padding:0;border:0;background:rgba(255,255,255,.42);cursor:pointer;transition:width .2s,background .2s}
+.hero-slide-dot[aria-current="true"]{width:30px;background:var(--accent)}
+@media(max-width:850px){.hero-main{grid-template-columns:1fr}.hero-slideshow{height:clamp(280px,55vw,430px)}.hero{min-height:0;gap:48px}}
+@media(max-width:700px){.hero-main{gap:34px}.hero-slideshow{height:340px}.hero-slide-title{font-size:2.4rem}.hero-slide-progress{gap:3px}.hero-slide-dot{width:9px}.hero-slide-dot[aria-current="true"]{width:20px}}
+@media(prefers-reduced-motion:reduce){.hero-slide-image{transition:none}}
 
-<!-- ===================================================== LIGHT SEQUENCER DEVICE ===================================================== --> 
-<article class="app-card"> <a href="apps/lsd/lsd.html"> <img class="app-image" src="apps/lsd/images/app-builder-built.png" alt="Light Sequencer Device screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Light Sequencer Device </h2> <p class="app-description"> An experimental visual sequencer for creating patterns of light, colour and movement directly in the browser. </p> <a class="launch" href="apps/lsd/lsd.html" > Launch app → </a> </div> </article> 
+.category-bar{padding:18px var(--gutter);display:flex;align-items:center;gap:12px 26px;flex-wrap:wrap;border-bottom:1px solid var(--line);background:var(--paper)}.category-bar span{margin-right:8px;color:var(--muted);font-size:.65rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.category-bar a{border-bottom:1px solid transparent;padding:3px 0}.category-bar a:hover{border-color:currentColor}
+.apps{display:flex;flex-direction:column;gap:0;padding:0 0 var(--section-space)}.app-group{margin:0;padding:var(--section-space) 0 0;scroll-margin-top:24px}.group-heading{padding:0 var(--gutter);margin-bottom:26px;display:flex;align-items:end;justify-content:space-between;gap:20px}.group-kicker{display:block;margin-bottom:12px;color:var(--muted);font-size:.65rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.group-title{margin:0;font-size:clamp(2.5rem,5.4vw,5.5rem);line-height:.92;letter-spacing:-.075em;font-weight:800}.group-count{padding-bottom:6px;color:var(--muted);font-size:.7rem;font-weight:700;letter-spacing:.1em;white-space:nowrap;text-transform:uppercase}
+.app-grid{display:flex;gap:clamp(14px,2vw,28px);overflow-x:auto;overflow-y:hidden;padding:8px var(--gutter) 24px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:rgba(23,24,22,.45) transparent;overscroll-behavior-x:contain}.app-grid::-webkit-scrollbar{height:5px}.app-grid::-webkit-scrollbar-track{background:transparent}.app-grid::-webkit-scrollbar-thumb{background:rgba(23,24,22,.35);border-radius:10px}.app-grid .app-card{flex:0 0 clamp(290px,37vw,520px);min-width:0;scroll-snap-align:start}.app-card{overflow:hidden;background:var(--paper);border:1px solid var(--line);border-radius:3px;box-shadow:none;transition:transform .25s ease,background .25s ease}.app-card:hover{transform:translateY(-5px);background:#fffefa;box-shadow:none}.app-card>a:first-child{display:block;overflow:hidden;background:#c9c7c0;aspect-ratio:16/9}.app-image{display:block;width:100%;height:100%;aspect-ratio:16/9;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.2,1)}.app-card:hover .app-image{transform:scale(1.035)}.app-content{min-height:205px;padding:clamp(19px,2.2vw,30px);display:flex;flex-direction:column;align-items:flex-start}.app-title{margin:0 0 12px;font-size:clamp(1.45rem,2.3vw,2rem);line-height:1;letter-spacing:-.055em;font-weight:800}.app-description{max-width:52ch;margin:0 0 24px;color:var(--muted);font-size:.92rem;line-height:1.55}.launch{display:inline-flex;align-items:center;gap:18px;margin-top:auto;padding:11px 15px;background:var(--ink);color:var(--paper);text-decoration:none;font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;transition:color .2s,background .2s}.launch:hover{background:var(--accent);color:var(--ink)}
+.site-footer{margin-top:0;padding:32px var(--gutter);display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--dark);color:var(--paper)}.footer-mark{font-size:1rem;font-weight:800;letter-spacing:-.06em;text-transform:uppercase}.footer-note{margin:0;color:rgba(245,243,238,.6);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
+@media(max-width:700px){.site-header{min-height:68px}.site-nav{gap:12px}.site-nav a{font-size:.6rem}.hero{min-height:570px}.hero-bottom{align-items:flex-start;flex-direction:column}.group-heading{align-items:flex-start;flex-direction:column}.app-grid .app-card{flex-basis:min(82vw,390px)}.app-content{min-height:220px}.site-footer{align-items:flex-start;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition-duration:.01ms!important}}
+</style> </head> <body> <div class="container"> <header class="site-header"><a class="wordmark" href="#">minimono / experiments</a><nav class="site-nav" aria-label="Main navigation"><a href="#games">Games</a><a href="#visualisers">Visualisers</a><a href="#music-apps">Music</a><a href="#physics-experiments">Physics</a><a href="#misc">Misc.</a></nav></header>
+<section class="hero" aria-label="Featured projects slideshow">
+  <div class="hero-main">
+    <div class="hero-heading">
+      <p class="eyebrow">An independent digital playground · Est. 2026</p>
+      <h1>Ideas<br>in motion.</h1>
+    </div>
+    <div class="hero-slideshow" aria-roledescription="carousel" aria-label="App showcase">
+      <a class="hero-slide-link" id="hero-slide-link" href="apps/clumperoids/clumperoids.html" aria-label="Open Clumperoids">
+        <img class="hero-slide-image" id="hero-slide-image" src="apps/clumperoids/images/clumperoids_1.jpg" alt="Clumperoids preview">
+      </a>
+      <div class="hero-slide-shade"></div>
+      <div class="hero-slide-caption">
+        <span class="hero-slide-category" id="hero-slide-category">01 / Games</span>
+        <a class="hero-slide-title" id="hero-slide-title" href="apps/clumperoids/clumperoids.html">Clumperoids</a>
+        <p class="hero-slide-description" id="hero-slide-description">A retro asteroid-inspired game with powerups and gravitational behaviour.</p>
+      </div>
+      <div class="hero-slide-controls">
+        <button class="hero-slide-button" id="hero-prev" type="button" aria-label="Previous project">←</button>
+        <span class="hero-slide-count" id="hero-slide-count" aria-live="polite">01 / 14</span>
+        <button class="hero-slide-button" id="hero-next" type="button" aria-label="Next project">→</button>
+      </div>
+      <div class="hero-slide-progress" id="hero-slide-progress" aria-label="Choose a project"></div>
+    </div>
+  </div>
+  <div class="hero-bottom"><p class="hero-copy">A collection of small browser-based experiments, games, visual instruments and interactive ideas. Made to be explored.</p><span class="hero-index">INDEPENDENT PROJECTS&nbsp; / &nbsp;001—014</span></div>
+</section>
+<nav class="category-bar" aria-label="Explore project categories"><span>Explore</span><a href="#games">01 Games</a><a href="#visualisers">02 Visualisers</a><a href="#music-apps">03 Music apps</a><a href="#physics-experiments">04 Physics</a><a href="#misc">05 Misc.</a></nav>
 
-<!-- ===================================================== ELEMENTAL ===================================================== --> 
-<article class="app-card"> <a href="apps/elemental/Elemental.html"> <img class="app-image" src="apps/elemental/images/air-shock.png" alt="Elemental screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Elemental </h2> <p class="app-description"> An experimental physics simulator along the lines of a falling sand simulator with added navier stokes air pressure simulation for exploring physical reactions directly in the browser. </p> <a class="launch" href="apps/elemental/Elemental.html" > Launch app → </a> </div> </article> 
+ <main class="apps">
 
-<!-- ===================================================== ROLLING ===================================================== --> 
-<article class="app-card"> <a href="apps/rolling/rolling-rolling-rolling.html"> <img class="app-image" src="apps/rolling/images/Screenshot1.png" alt="Rolling screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Rolling Rolling Rolling </h2> <p class="app-description"> An experimental voxel shader landscape rendered via WebGL in the browser. </p> <a class="launch" href="apps/rolling/rolling-rolling-rolling.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== CHORDINATOR ===================================================== --> 
-<article class="app-card"> <a href="apps/chordinator/Chordinator.html"> <img class="app-image" src="apps/chordinator/images/og.jpg" alt="Chordinator image" > </a> <div class="app-content"> <h2 class="app-title"> Chordinator </h2> <p class="app-description"> A browser version of Chordinator app that allows for key and chord exploration. </p> <a class="launch" href="apps/chordinator/Chordinator.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== RESEQUENCER ===================================================== --> 
-<article class="app-card"> <a href="apps/resequencer/resequencer.html"> <img class="app-image" src="apps/resequencer/images/og.png" alt="Resequencer screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Resequencer </h2> <p class="app-description"> A browser music app that uses beat detection to automatically divide music into bars and lets you resequence playback non-destructively. </p> <a class="launch" href="apps/resequencer/resequencer.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== BLOBULUS ===================================================== --> 
-<article class="app-card"> <a href="apps/blobulus/blobulus.html"> <img class="app-image" src="apps/blobulus/images/og.jpg" alt="Blobulus image" > </a> <div class="app-content"> <h2 class="app-title"> Blobulus </h2> <p class="app-description"> A browser version of a simple game, avoid the blob! </p> <a class="launch" href="apps/blobulus/blobulus.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== ORIGINAL LIGHT SEQUENCER ===================================================== --> 
-<article class="app-card"> <a href="apps/ols/blitz-vj.html"> <img class="app-image" src="apps/ols/images/lsd-oscillator.png" alt="Light Sequencer screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Original Light Sequencer </h2> <p class="app-description"> A browser port of an old GL-based light synth. Create unique visualisations to accompany music </p> <a class="launch" href="apps/ols/blitz-vj.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== HEXAFONE ===================================================== --> 
-<article class="app-card"> <a href="apps/hexafone/hexafone.html"> <img class="app-image" src="apps/hexafone/images/og.jpg" alt="Hexafone screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Hexafone </h2> <p class="app-description"> A browser game using webGL and voxel shaders. Navigate through the voxel landscape and nuetralise enemy defences to progress </p> <a class="launch" href="apps/hexafone/hexafone.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== PINBALL MANIA ===================================================== --> 
-<article class="app-card"> <a href="apps/pinball mania/pinball-mania-3d.html"> <img class="app-image" src="apps/pinball mania/images/hallows_eve.png" alt="Pinball Mania screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Pinball Mania </h2> <p class="app-description"> A browser game using webGL. Classic Pinball action using bullet physics and WebGL.Choose from 5 tables or create your own</p> <a class="launch" href="apps/pinball mania/pinball-mania-3d.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== MY TUNES ===================================================== --> 
-<article class="app-card"> <a href="apps/mytunes/mytunes.html"> <img class="app-image" src="apps/mytunes/images/desktop.png" alt="My Tunes screenshot" > </a> <div class="app-content"> <h2 class="app-title"> My Tunes </h2> <p class="app-description"> A browser app for managing and playing local mp3 collections. Choose your local folder and it will import track listings, allow you sort them into albums and rank tracks</p> <a class="launch" href="apps/mytunes/mytunes.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== ARCADIA ===================================================== --> 
-<article class="app-card"> <a href="apps/arcadia/arcadia.html"> <img class="app-image" src="apps/arcadia/images/og.png" alt="Arcadia screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Arcadia </h2> <p class="app-description"> A collection of classic arcade games with a twist. Navier Stokes GPU resolver meet 1980s. </p> <a class="launch" href="apps/arcadia/arcadia.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== GRAVITON ===================================================== --> 
-<article class="app-card"> <a href="apps/graviton/graviton.html"> <img class="app-image" src="apps/graviton/images/og.png" alt="Graviton screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Graviton </h2> <p class="app-description"> A web app port of an old game. Fly a ship around destroying aliens. </p> <a class="launch" href="apps/graviton/graviton.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== QUBES ===================================================== --> 
-<article class="app-card"> <a href="apps/qubes/qubes.html"> <img class="app-image" src="apps/qubes/images/og.png" alt="Qubes screenshot" > </a> <div class="app-content"> <h2 class="app-title"> Qubes </h2> <p class="app-description"> A web app port of an old game. Knock all the Qubes down so they dissolve in the fixed time-frame to progress through increasingly difficult levels. </p> <a class="launch" href="apps/qubes/qubes.html" > Launch app → </a> </div> </article> 
-<!-- ===================================================== ADD NEW APPS ABOVE THIS LINE ===================================================== --> </main> <footer> experimental-projects </footer> </div> </body> </html>
+    <!-- ===================================================== GAMES ===================================================== -->
+    <section class="app-group games" id="games">
+      <div class="group-heading"><div><span class="group-kicker">01 / Play</span><h2 class="group-title">Games</h2></div><span class="group-count">08 projects</span></div>
+      <div class="app-grid">
+        <article class="app-card"> <a href="apps/clumperoids/clumperoids.html"> <img class="app-image" src="apps/clumperoids/images/clumperoids_1.jpg" alt="Clumperoids screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Clumperoids </h3> <p class="app-description"> A small retro game paying homage to Asteroids. Added powerups and gravitational behaviour. </p> <a class="launch" href="apps/clumperoids/clumperoids.html" > Launch app → </a> </div> </article>
+        <article class="app-card"> <a href="apps/blobulus/blobulus.html"> <img class="app-image" src="apps/blobulus/images/og.jpg" alt="Blobulus image" > </a> <div class="app-content"> <h3 class="app-title"> Blobulus </h3> <p class="app-description"> A browser version of a simple game, avoid the blob! </p> <a class="launch" href="apps/blobulus/blobulus.html" > Launch app → </a> </div> </article>
+        <article class="app-card"> <a href="apps/hexafone/hexafone.html"> <img class="app-image" src="apps/hexafone/images/og.jpg" alt="Hexafone screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Hexafone </h3> <p class="app-description"> A browser game using webGL and voxel shaders. Navigate through the voxel landscape and nuetralise enemy defences to progress </p> <a class="launch" href="apps/hexafone/hexafone.html" > Launch app → </a> </div> </article>
+        <article class="app-card"> <a href="apps/pinball mania/pinball-mania-3d.html"> <img class="app-image" src="apps/pinball mania/images/hallows_eve.png" alt="Pinball Mania screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Pinball Mania </h3> <p class="app-description"> A browser game using webGL. Classic Pinball action using bullet physics and WebGL.Choose from 5 tables or create your own</p> <a class="launch" href="apps/pinball mania/pinball-mania-3d.html" > Launch app → </a> </div> </article>
+        <article class="app-card"> <a href="apps/arcadia/arcadia.html"> <img class="app-image" src="apps/arcadia/images/og.png" alt="Arcadia screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Arcadia </h3> <p class="app-description"> A collection of classic arcade games with a twist. Navier Stokes GPU resolver meet 1980s. </p> <a class="launch" href="apps/arcadia/arcadia.html" > Launch app → </a> </div> </article>
+        <article class="app-card"> <a href="apps/graviton/graviton.html"> <img class="app-image" src="apps/graviton/images/og.png" alt="Graviton screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Graviton </h3> <p class="app-description"> A web app port of an old game. Fly a ship around destroying aliens. </p> <a class="launch" href="apps/graviton/graviton.html" > Launch app → </a> </div> </article>
+        <article class="app-card"> <a href="apps/qubes/qubes.html"> <img class="app-image" src="apps/qubes/images/og.png" alt="Qubes screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Qubes </h3> <p class="app-description"> A web app port of an old game. Knock all the Qubes down so they dissolve in the fixed time-frame to progress through increasingly difficult levels. </p> <a class="launch" href="apps/qubes/qubes.html" > Launch app → </a> </div> </article>
+<article class="app-card"> <a href="apps/rolling/rolling-rolling-rolling.html"> <img class="app-image" src="apps/rolling/images/Screenshot1.png" alt="Rolling screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Rolling Rolling Rolling </h3> <p class="app-description"> An experimental voxel shader landscape rendered via WebGL in the browser. </p> <a class="launch" href="apps/rolling/rolling-rolling-rolling.html" > Launch app → </a> </div> </article>
+      </div>
+    </section>
+
+    <!-- ===================================================== VISUALISERS ===================================================== -->
+    <section class="app-group visualisers" id="visualisers">
+      <div class="group-heading"><div><span class="group-kicker">02 / See</span><h2 class="group-title">Visualisers</h2></div><span class="group-count">02 projects</span></div>
+      <div class="app-grid">
+        <article class="app-card"> <a href="apps/lsd/lsd.html"> <img class="app-image" src="apps/lsd/images/app-builder-built.png" alt="Light Sequencer Device screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Light Sequencer Device </h3> <p class="app-description"> An experimental visual sequencer for creating patterns of light, colour and movement directly in the browser. </p> <a class="launch" href="apps/lsd/lsd.html" > Launch app → </a> </div> </article>
+        
+        <article class="app-card"> <a href="apps/ols/blitz-vj.html"> <img class="app-image" src="apps/ols/images/lsd-oscillator.png" alt="Light Sequencer screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Original Light Sequencer </h3> <p class="app-description"> A browser port of an old GL-based light synth. Create unique visualisations to accompany music </p> <a class="launch" href="apps/ols/blitz-vj.html" > Launch app → </a> </div> </article>
+      </div>
+    </section>
+
+    <!-- ===================================================== MUSIC APPS ===================================================== -->
+    <section class="app-group music-apps" id="music-apps">
+      <div class="group-heading"><div><span class="group-kicker">03 / Listen</span><h2 class="group-title">Music Apps</h2></div><span class="group-count">03 projects</span></div>
+      <div class="app-grid">
+        <article class="app-card"> <a href="apps/chordinator/Chordinator.html"> <img class="app-image" src="apps/chordinator/images/og.jpg" alt="Chordinator image" > </a> <div class="app-content"> <h3 class="app-title"> Chordinator </h3> <p class="app-description"> A browser version of Chordinator app that allows for key and chord exploration. </p> <a class="launch" href="apps/chordinator/Chordinator.html" > Launch app → </a> </div> </article>
+        <article class="app-card"> <a href="apps/resequencer/resequencer.html"> <img class="app-image" src="apps/resequencer/images/og.png" alt="Resequencer screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Resequencer </h3> <p class="app-description"> A browser music app that uses beat detection to automatically divide music into bars and lets you resequence playback non-destructively. </p> <a class="launch" href="apps/resequencer/resequencer.html" > Launch app → </a> </div> </article>
+        <article class="app-card"> <a href="apps/mytunes/mytunes.html"> <img class="app-image" src="apps/mytunes/images/desktop.png" alt="My Tunes screenshot" > </a> <div class="app-content"> <h3 class="app-title"> My Tunes </h3> <p class="app-description"> A browser app for managing and playing local mp3 collections. Choose your local folder and it will import track listings, allow you sort them into albums and rank tracks</p> <a class="launch" href="apps/mytunes/mytunes.html" > Launch app → </a> </div> </article>
+      </div>
+    </section>
+
+    <!-- ===================================================== PHYSICS EXPERIMENTS ===================================================== -->
+    <section class="app-group physics-experiments" id="physics-experiments">
+      <div class="group-heading"><div><span class="group-kicker">04 / Experiment</span><h2 class="group-title">Physics Experiments</h2></div><span class="group-count">01 project</span></div>
+      <div class="app-grid">
+        <article class="app-card"> <a href="apps/elemental/Elemental.html"> <img class="app-image" src="apps/elemental/images/air-shock.png" alt="Elemental screenshot" > </a> <div class="app-content"> <h3 class="app-title"> Elemental </h3> <p class="app-description"> An experimental physics simulator along the lines of a falling sand simulator with added navier stokes air pressure simulation for exploring physical reactions directly in the browser. </p> <a class="launch" href="apps/elemental/Elemental.html" > Launch app → </a> </div> </article>
+      </div>
+    </section>
+
+    <!-- ===================================================== MISC. ===================================================== -->
+    <section class="app-group misc" id="misc">
+      <div class="group-heading"><div><span class="group-kicker">05 / Other things</span><h2 class="group-title">Misc.</h2></div><span class="group-count">More to come</span></div>
+      <div class="app-grid">
+        <!-- Add miscellaneous apps here. -->
+      </div>
+    </section>
+
+    <!-- ===================================================== ADD NEW APPS ABOVE THIS LINE ===================================================== -->
+  </main> <footer class="site-footer"><span class="footer-mark">minimono / experiments</span><p class="footer-note">A collection of experiments · © minimono 2026</p></footer> </div> 
+<script>
+(() => {
+  const projects = [
+    {name:"Clumperoids",category:"Games",image:"apps/clumperoids/images/clumperoids_1.jpg",url:"apps/clumperoids/clumperoids.html",description:"A retro asteroid-inspired game with powerups and gravitational behaviour."},
+    {name:"Blobulus",category:"Games",image:"apps/blobulus/images/og.jpg",url:"apps/blobulus/blobulus.html",description:"A simple browser game: avoid the blob!"},
+    {name:"Hexafone",category:"Games",image:"apps/hexafone/images/og.jpg",url:"apps/hexafone/hexafone.html",description:"Navigate a voxel landscape and neutralise enemy defences."},
+    {name:"Pinball Mania",category:"Games",image:"apps/pinball mania/images/hallows_eve.png",url:"apps/pinball mania/pinball-mania-3d.html",description:"Classic pinball action with physics-driven tables and customisation."},
+    {name:"Arcadia",category:"Games",image:"apps/arcadia/images/og.png",url:"apps/arcadia/arcadia.html",description:"Classic arcade games meet a real-time fluid simulation."},
+    {name:"Graviton",category:"Games",image:"apps/graviton/images/og.png",url:"apps/graviton/graviton.html",description:"Fly a ship through space and take on waves of alien enemies."},
+    {name:"Qubes",category:"Games",image:"apps/qubes/images/og.png",url:"apps/qubes/qubes.html",description:"Knock down the Qubes and race the clock through increasingly difficult levels."},
+    {name:"Rolling Rolling Rolling",category:"Games",image:"apps/rolling/images/Screenshot1.png",url:"apps/rolling/rolling-rolling-rolling.html",description:"An experimental voxel-shader landscape rendered in WebGL."},
+    {name:"Light Sequencer Device",category:"Visualisers",image:"apps/lsd/images/app-builder-built.png",url:"apps/lsd/lsd.html",description:"Create patterns of light, colour and movement in an experimental visual sequencer."},
+    {name:"Original Light Sequencer",category:"Visualisers",image:"apps/ols/images/lsd-oscillator.png",url:"apps/ols/blitz-vj.html",description:"A light synth for creating visualisations to accompany music."},
+    {name:"Chordinator",category:"Music Apps",image:"apps/chordinator/images/og.jpg",url:"apps/chordinator/Chordinator.html",description:"Explore musical keys and chords in the browser."},
+    {name:"Resequencer",category:"Music Apps",image:"apps/resequencer/images/og.png",url:"apps/resequencer/resequencer.html",description:"Rearrange music non-destructively with automatic beat detection."},
+    {name:"My Tunes",category:"Music Apps",image:"apps/mytunes/images/desktop.png",url:"apps/mytunes/mytunes.html",description:"Import, organise, rank and play your local MP3 collection."},
+    {name:"Elemental",category:"Physics Experiments",image:"apps/elemental/images/air-shock.png",url:"apps/elemental/Elemental.html",description:"An experimental physics sandbox with falling-sand and air-pressure simulation."}
+  ];
+  const image = document.getElementById("hero-slide-image");
+  const link = document.getElementById("hero-slide-link");
+  const title = document.getElementById("hero-slide-title");
+  const category = document.getElementById("hero-slide-category");
+  const description = document.getElementById("hero-slide-description");
+  const count = document.getElementById("hero-slide-count");
+  const progress = document.getElementById("hero-slide-progress");
+  const previous = document.getElementById("hero-prev");
+  const next = document.getElementById("hero-next");
+  if (!image || !progress) return;
+
+  let current = 0;
+  let timer;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  projects.forEach((project, index) => {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.className = "hero-slide-dot";
+    dot.setAttribute("aria-label", "Show " + project.name);
+    dot.addEventListener("click", () => { show(index); restart(); });
+    progress.appendChild(dot);
+  });
+
+  function show(index) {
+    current = (index + projects.length) % projects.length;
+    const project = projects[current];
+    image.style.opacity = "0";
+    window.setTimeout(() => {
+      image.src = project.image;
+      image.alt = project.name + " preview";
+      image.onload = () => { image.style.opacity = "0.9"; };
+      if (image.complete) image.style.opacity = "0.9";
+    }, 150);
+    link.href = project.url;
+    link.setAttribute("aria-label", "Open " + project.name);
+    title.href = project.url;
+    title.textContent = project.name;
+    category.textContent = String(current + 1).padStart(2, "0") + " / " + project.category;
+    description.textContent = project.description;
+    count.textContent = String(current + 1).padStart(2, "0") + " / " + String(projects.length).padStart(2, "0");
+    [...progress.children].forEach((dot, i) => dot.setAttribute("aria-current", i === current ? "true" : "false"));
+  }
+  function restart() {
+    window.clearInterval(timer);
+    if (!reducedMotion) timer = window.setInterval(() => show(current + 1), 5000);
+  }
+  previous.addEventListener("click", () => { show(current - 1); restart(); });
+  next.addEventListener("click", () => { show(current + 1); restart(); });
+  const slideshow = document.querySelector(".hero-slideshow");
+  slideshow.addEventListener("mouseenter", () => window.clearInterval(timer));
+  slideshow.addEventListener("mouseleave", restart);
+  slideshow.addEventListener("focusin", () => window.clearInterval(timer));
+  slideshow.addEventListener("focusout", restart);
+  document.addEventListener("visibilitychange", () => document.hidden ? window.clearInterval(timer) : restart());
+  show(0);
+  restart();
+})();
+</script>
+
+</body> </html>
