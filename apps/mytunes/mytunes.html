@@ -4977,6 +4977,26 @@ function bindEvents() {
     const tag = (e.target.tagName || '').toLowerCase();
     if (e.code === 'Space' && !['input', 'textarea', 'select', 'button'].includes(tag) && !anyDlgOpen()) { e.preventDefault(); toggle(); }
   });
+  /* r87: cursor keys drive playback in the window while a track is PLAYING (not paused / still decoding): ← → seek back / forward
+     5 s (Shift: 30 s; held keys repeat; clamped to 0 … duration − 1 s so a seek never skips the track), ↑ previous track (prev():
+     after 3 s it restarts the track), ↓ next track (next(): queue order, shuffle as queued). Not while typing (text inputs, textarea,
+     select, contenteditable; the volume slider keeps its arrows, the seek slider gets 5 s steps), with a dialog or popover open, or with
+     the full-screen scope open (its capture handler keeps ← → modes / ↑ ↓ effects). The embedded visualiser view does get them.
+     Alt+arrows (album / row reordering) are untouched. Nothing playing: arrows keep their default (scrolling, sliders). */
+  const PB_ARROWS = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: 0, ArrowDown: 0 };
+  document.addEventListener('keydown', e => {
+    if (!(e.key in PB_ARROWS) || e.altKey || e.ctrlKey || e.metaKey || e.defaultPrevented) return;
+    if (!audio.src || audio.paused || audio.ended) return;
+    const t = e.target;
+    if (t && t.matches && (t.isContentEditable || t.matches('input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not(#seek),textarea,select,[contenteditable]'))) return;
+    if (document.querySelector('dialog[open]') || popEl) return;
+    if (scopeReady() && Scope.isOpen() && !Scope.embShown()) return;
+    e.preventDefault();
+    if (e.key === 'ArrowUp') return prev();
+    if (e.key === 'ArrowDown') return next();
+    const d = audio.duration; if (!isFinite(d) || !(d > 0)) return;
+    audio.currentTime = Math.max(0, Math.min(Math.max(0, d - 1), audio.currentTime + PB_ARROWS[e.key] * (e.shiftKey ? 30 : 5)));
+  });
 
   /* rating hover preview (works for the mirrored negative side too) */
   document.addEventListener('mouseover', e => {
@@ -5216,6 +5236,7 @@ const Scope = (() => {
     swSync();                                // r64: Swirly Eyes bass analyser tap
     muSync();                                // r81: Murmuration FFT tap
     yeSync();                                // r84: Ysin Ember FFT tap (Shadertoy music texture)
+    rcSync();                                // r86: Ring Cells FFT tap
     const want = !!src && enabled() && open && (!!curMode().taps || fxTaps()) && !document.hidden;   // (+ an effect that reacts to the bands)   // Bands and Overlay
     if (want === bandsOn) return;
     if (want) {
@@ -7942,6 +7963,214 @@ void main(){mainImage(yeOut,gl_FragCoord.xy);}
     return Array.from({ length: 9 }, (_, i) => Array.from(px.subarray(i * 4, i * 4 + 4)));
   }
 
+  /* r86: Ring Cells — Shadertoy image shader supplied by the user (no author given); ported. Verbatim source:
+     test/r86/rings-shadertoy.glsl; RC_FS is generated from it by test/r86/build.py (listed, count-checked substitutions).
+     Single pass, WebGL2. Geometry unchanged at the defaults (fbm loops kept at 16 octaves: the cfbm call ignores its octave
+     argument and with persistence 2 its last octaves dominate, so trimming any loop would change the picture).
+     Colours: each cell's two hashed colours become two positions on the active MyTunes palette (Palette section: palette,
+     Rotate offset / speed), or the original random RGB (Colours = Random).
+     Audio (all zero in silence, so silence = the original): 24 log bands 40 Hz–12 kHz with attack/release envelopes are a
+     24×1 texture; the cell's undistorted radius picks its band (bass in the centre, treble at the edge) and the band lifts
+     that ring's brightness and pct contrast. Bass onsets pulse the radial fbm amplitude; loudness speeds the colour
+     animation (the iTime*5 phase, accumulated on the CPU) and slowly drifts the angular fbm; treble adds cell sparkle. */
+  const RC_HEAD = `#version 300 es
+precision highp float;precision highp int;precision highp sampler2D;
+uniform vec2 u_res;uniform float u_time,u_cph,u_drift,u_spin,u_rdist,u_tdist,u_dens,u_cmode,u_pph,u_treb,u_sparkt,u_react,u_op,u_key;
+uniform vec3 u_pa,u_pb,u_pc,u_pd;uniform sampler2D u_bands;
+`;
+  const RC_FS = `// pallette 
+vec3 pal( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d )
+{
+    return a + b*cos( 6.28318*(c*t+d) );
+}
+#define HASHSCALE1 443.8975
+// random functions lib
+float hash11(float p)
+{
+	vec3 p3  = fract(vec3(p) * HASHSCALE1);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+float lerp(float a, float b, float t)
+{
+	return a + t * (b - a);
+}
+float noise(float p)
+{
+	float i = floor(p);
+    float f = fract(p);
+    
+    float t = f * f * (3.0 - 2.0 * f);
+    
+    return lerp(f * hash11(i), (f - 1.0) * hash11(i + 1.0), t);
+}
+float fbm(float x, float persistence, int octaves) 
+{
+    float total = 0.0;
+    float maxValue = 0.0;
+    float amplitude = 1.0;
+    float frequency = 1.0;
+    
+    for(int i=0; i<16;++i)
+    {
+        total += noise(x * frequency) * amplitude;
+        maxValue += amplitude;
+        amplitude *= persistence;
+        frequency *= 2.0;
+    }
+    
+    return (total/maxValue);
+}
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{	
+    float pi = 3.1415926;
+    float res = max(u_res.x, u_res.y);
+    
+    // Center and normalize our coordinate system    
+    vec2 uv = (fragCoord - .5*u_res.xy) / res;
+    if (u_spin != 0.0) uv = mat2(cos(u_spin), sin(u_spin), -sin(u_spin), cos(u_spin)) * uv;   // r86: Rotation
+    
+    float r = length(uv - vec2(0.0,0.0));
+    float theta = atan(uv.y, uv.x);
+    float thetanorm = (theta + pi)/(2.0*pi);
+    // Shift r domain for aesthetics
+    r = r + 0.1;
+    r *= 1.0;
+    float r0 = r;   // r86: undistorted radius -> frequency band
+    float i = floor(r*r*u_dens + 0.02) + 1.0;
+    
+    float at = sin(u_time*0.007 + 0.4) * 0.2 + 1.2;
+    // Add distortion to rings  
+    float rt = at*173.0 + 500.0;
+    float tfbm = fbm(((theta+20.0) + 20.0 + u_drift), 0.54, 16)*2.0*u_tdist + 0.8;
+    float rfbm = fbm(r +rt, 0.54, 16)*4.0*u_rdist + 0.8;
+    //r *= clamp(tfbm,0.3,1.0);
+    //r *= clamp(rfbm,0.8,1.0);
+    r *= rfbm;
+    r *= tfbm;
+    
+    i = floor(r*r*r*u_dens) ;
+    float i2 = pow(i,2.0) +1.0;
+    
+    float pct = fract(thetanorm*i2*2.0);
+    
+    // Flip 
+    pct = abs(mod(i,2.) - pct);
+    
+    
+    
+    float row = floor(thetanorm*i2*2.0);    
+    float k = (row+1.0)*(i+1.0)/200.0;
+    // get random color for each cell
+    vec3 color1 = u_cmode > 0.5 ? vec3(hash11(k+1.0),hash11(k+2.0),hash11(k+3.0)) : clamp(pal(hash11(k+1.0) + u_pph, u_pa, u_pb, u_pc, u_pd), 0.0, 1.0);   // r86: palette
+    vec3 color2 = u_cmode > 0.5 ? vec3(hash11(k+5.0),hash11(k+6.0),hash11(k+7.0)) : clamp(pal(hash11(k+5.0) + u_pph, u_pa, u_pb, u_pc, u_pd), 0.0, 1.0);
+    
+    float cfbm = fbm(i/4.0, 2.0, 2) + 0.5;;
+    float t = sin(u_cph + cfbm*99.0)*0.5 + 0.5;   // r86: u_cph = integral of 5 x Colour speed x (1 + loudness)
+ 
+    vec3 color = mix(color1, color2, t);
+    float lvl = u_react * texture(u_bands, vec2(clamp((r0 - 0.1) / 0.62, 0.0, 1.0), 0.5)).r;   // r86: bass in the centre, treble outside
+    pct = mix(pct, sqrt(pct), 0.5*min(lvl, 1.0));
+    color *= 1.0 + 0.5*lvl;
+    color += u_treb * step(1.0 - 0.12*u_treb, hash11(k*7.31 + u_sparkt)) * vec3(0.9);   // treble sparkle
+    
+   
+    
+    // Color option: Pallette blending
+    // Todo change color to be picked random for each tile 
+    //vec3 c1 = pal( pct, vec3(0.5,0.5,0.5),vec3(0.5,0.5,0.5),vec3(1.0,1.0,1.0),vec3(0.0,0.33,0.67) );
+    // vec3 c2 = pal( pct, vec3(0.5,0.5,0.5),vec3(0.5,0.5,0.5),vec3(2.0,1.0,0.0),vec3(0.5,0.20,0.25) );  
+    // vec3 color = mix(c1,c2,t);
+    // vec3 color = vec3(pct); vec3 color = vec3(hash);
+    //vec3 color = 
+    // Clip
+    // Output to screen
+    vec3 c = clamp(color*pct, 0.0, 1.0);
+    float alpha = u_key>0.5 ? mix(u_op,1.0,smoothstep(0.08,0.35,dot(c,vec3(0.2126,0.7152,0.0722)))) : u_op;
+    fragColor = vec4(c*alpha, alpha);
+}
+out vec4 rcOut;
+void main(){mainImage(rcOut,gl_FragCoord.xy);}
+`;
+  const RC_NB = 24;
+  const rcS = { cv: document.createElement('canvas'), gl: null, failed: false, why: '', on: false, an: null, bins: new Uint8Array(1024), tex: new Uint8Array(RC_NB), lv: new Float32Array(RC_NB),
+    time: 0, cph: 0, drift: 0, spin: 0, fast: 0, slow: 0, beatT: 0, beats: 0, kick: 0, kickReq: false, loud: 0, treb: 0, last: 0, test: null, frame: 0, ms: 0, info: { n: 0 } };
+  function rcSync() {
+    const want = !!src && enabled() && open && curMode().id === 'ringcells' && !document.hidden; if (want === rcS.on) return;
+    if (want) { if (!rcS.an) { rcS.an = ac.createAnalyser(); rcS.an.fftSize = 2048; rcS.an.minDecibels = -100; rcS.an.maxDecibels = -30; rcS.an.smoothingTimeConstant = .5; } src.connect(rcS.an); rcS.on = true; }
+    else { if (rcS.an) try { src.disconnect(rcS.an); } catch (e) {} rcS.on = false; }
+  }
+  function rcGL() {
+    if (rcS.gl || rcS.failed) return rcS.gl;
+    try {
+      const g = rcS.cv.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: false, preserveDrawingBuffer: true });
+      if (!g) throw new Error('WebGL2 unavailable');
+      const shader = (kind, text) => { const s = g.createShader(kind); g.shaderSource(s, text); g.compileShader(s); if (!g.getShaderParameter(s, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(s)); return s; };
+      const p = g.createProgram(); g.attachShader(p, shader(g.VERTEX_SHADER, '#version 300 es\nin vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}')); g.attachShader(p, shader(g.FRAGMENT_SHADER, RC_HEAD + RC_FS));
+      g.bindAttribLocation(p, 0, 'p'); g.linkProgram(p); if (!g.getProgramParameter(p, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(p)); g.useProgram(p);
+      rcS.vao = g.createVertexArray(); g.bindVertexArray(rcS.vao);
+      g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer()); g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW); g.enableVertexAttribArray(0); g.vertexAttribPointer(0, 2, g.FLOAT, false, 0, 0);
+      rcS.U = {}; for (const k of ['res', 'time', 'cph', 'drift', 'spin', 'rdist', 'tdist', 'dens', 'cmode', 'pph', 'treb', 'sparkt', 'react', 'op', 'key', 'pa', 'pb', 'pc', 'pd', 'bands']) rcS.U[k] = g.getUniformLocation(p, 'u_' + k);
+      rcS.tx = g.createTexture(); g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, rcS.tx); g.pixelStorei(g.UNPACK_ALIGNMENT, 1);
+      g.texImage2D(g.TEXTURE_2D, 0, g.R8, RC_NB, 1, 0, g.RED, g.UNSIGNED_BYTE, rcS.tex);
+      for (const k of [g.TEXTURE_WRAP_S, g.TEXTURE_WRAP_T]) g.texParameteri(g.TEXTURE_2D, k, g.CLAMP_TO_EDGE);
+      for (const k of [g.TEXTURE_MIN_FILTER, g.TEXTURE_MAG_FILTER]) g.texParameteri(g.TEXTURE_2D, k, g.LINEAR);
+      g.uniform1i(rcS.U.bands, 0); rcS.gl = g;
+      rcS.cv.addEventListener('webglcontextlost', e => { e.preventDefault(); rcS.gl = null; });
+    } catch (e) { rcS.failed = true; rcS.why = e.message; rcS.gl = null; console.warn('Ring Cells unavailable:', e.message); }
+    return rcS.gl;
+  }
+  function rcAudio(V, B, dt) {               // 24 log bands → envelopes (Audio response), kick, loudness, treble
+    const hz = ((ac && ac.sampleRate) || 48000) / 2048, f = tau => tau <= 0 ? 1 : 1 - Math.exp(-dt / tau), rel = Math.max(.001, V.rcresp), att = Math.max(.001, rel * .25);
+    let raw;
+    if (rcS.test) raw = rcS.test.levels;
+    else if (B) { raw = new Array(RC_NB); for (let i = 0; i < RC_NB; i++) { const lo = 40 * Math.pow(300, i / RC_NB), hi = 40 * Math.pow(300, (i + 1) / RC_NB), a = Math.max(1, Math.floor(lo / hz)), b = Math.max(a, Math.min(1023, Math.floor(hi / hz))); let s = 0, m = 0; for (let j = a; j <= b; j++) { s += B[j]; if (B[j] > m) m = B[j]; } const v = (.5 * s / (b - a + 1) + .5 * m) / 255; /* mean + peak: wide treble bands still see tonal content */ raw[i] = Math.min(1, Math.max(0, (v - .3) / .6)); } }
+    else raw = new Array(RC_NB).fill(0);
+    let loud = 0, treb = 0, bass = 0;
+    for (let i = 0; i < RC_NB; i++) { const x = raw[i] || 0, L = rcS.lv; L[i] += (x - L[i]) * f(x > L[i] ? att : rel); loud += L[i]; if (i >= RC_NB - 6) treb += L[i]; if (i < 4) bass += x; }
+    rcS.loud = loud / RC_NB; rcS.treb = treb / 6; bass /= 4;
+    rcS.fast += (bass - rcS.fast) * f(.03); rcS.slow += (bass - rcS.slow) * f(.5); rcS.beatT += dt;
+    if (rcS.kickReq || (dt > 0 && rcS.fast > rcS.slow * 1.25 + .05 && rcS.fast > .2 && rcS.beatT > .22)) { rcS.kickReq = false; rcS.kick = 1; rcS.beatT = 0; rcS.beats++; }
+    else rcS.kick *= Math.exp(-dt / .25);
+    for (let i = 0; i < RC_NB; i++) rcS.tex[i] = Math.round(Math.min(1, rcS.lv[i]) * 255);
+  }
+  function rcFail(t) {
+    const g = t.g, d = D; g.save(); g.fillStyle = col.label; g.globalAlpha = .85; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `${15 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.fillText('Ring Cells needs WebGL2', W / 2, H / 2 - 12 * d);
+    g.font = `${11 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.globalAlpha = .6; g.fillText(rcS.why || 'Not supported by this browser or GPU', W / 2, H / 2 + 12 * d); g.restore();
+  }
+  function rcPaint(t, B, dt, live) {
+    const V = sv(), g = t.g; g.clearRect(0, 0, W, H);
+    const G = rcGL(); if (!G) { rcFail(t); return; }
+    const t0 = performance.now(), R = V.rcreact;
+    const w = Math.max(32, Math.round(W * V.rcscale)), h = Math.max(32, Math.round(H * V.rcscale));
+    if (rcS.cv.width !== w || rcS.cv.height !== h) { rcS.cv.width = w; rcS.cv.height = h; }
+    if (live) { rcAudio(V, B, dt); rcS.frame++; } else { rcS.lv.fill(0); rcS.tex.fill(0); rcS.kick = 0; rcS.loud = 0; rcS.treb = 0; }
+    const TAU = 2 * Math.PI;
+    rcS.time += dt;
+    rcS.cph = (rcS.cph + dt * 5 * V.rcspeed * (1 + 1.5 * R * rcS.loud)) % TAU;          // source: iTime*5
+    rcS.drift = (rcS.drift + dt * .08 * R * rcS.loud) % 1000;                           // slow drift of the angular fbm
+    rcS.spin = (rcS.spin + dt * V.rcrot * TAU / 60) % TAU;                               // Rotation in turns per minute
+    const pp = palParams(), abcd = PAL_ABCD[Math.round(pp.pal)] || PAL_ABCD[0], U = rcS.U;
+    G.bindVertexArray(rcS.vao); G.disable(G.BLEND); G.bindFramebuffer(G.FRAMEBUFFER, null); G.viewport(0, 0, w, h);
+    G.activeTexture(G.TEXTURE0); G.bindTexture(G.TEXTURE_2D, rcS.tx); G.texSubImage2D(G.TEXTURE_2D, 0, 0, 0, RC_NB, 1, G.RED, G.UNSIGNED_BYTE, rcS.tex);
+    G.uniform2f(U.res, w, h); G.uniform1f(U.time, rcS.time); G.uniform1f(U.cph, rcS.cph); G.uniform1f(U.drift, rcS.drift); G.uniform1f(U.spin, rcS.spin);
+    G.uniform1f(U.rdist, V.rcdist * (1 + .25 * R * rcS.kick)); G.uniform1f(U.tdist, V.rcdist); G.uniform1f(U.dens, V.rcdens); G.uniform1f(U.cmode, V.rccol);
+    G.uniform1f(U.pph, palPhase(pp)); G.uniform3fv(U.pa, abcd[0]); G.uniform3fv(U.pb, abcd[1]); G.uniform3fv(U.pc, abcd[2]); G.uniform3fv(U.pd, abcd[3]);
+    G.uniform1f(U.treb, Math.min(1, R * rcS.treb)); G.uniform1f(U.sparkt, Math.floor(rcS.time * 8)); G.uniform1f(U.react, R); G.uniform1f(U.op, V.rcop); G.uniform1f(U.key, V.rckey);
+    G.drawArrays(G.TRIANGLES, 0, 3);
+    g.save(); g.imageSmoothingEnabled = true; g.drawImage(rcS.cv, 0, 0, W, H); g.restore();
+    rcS.ms = performance.now() - t0;
+    rcS.info = { n: rcS.info.n + 1, frame: rcS.frame, time: rcS.time, size: [w, h], live, loud: rcS.loud, treb: rcS.treb, kick: rcS.kick, beats: rcS.beats, cph: rcS.cph, drift: rcS.drift, spin: rcS.spin, bands: Array.from(rcS.lv), pal: Math.round(pp.pal), ms: rcS.ms };
+    if (t.big && V.text) xyLabel(t, V, 'Ring Cells');
+  }
+  function rcFlat(t) { size(t); rcS.last = 0; rcPaint(t, null, 0, false); t.cv.classList.add('idle'); }
+  function rcFrame(t) {
+    bandSync(); if (!rcS.on || !running()) { rcFlat(t); if (src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); frames++; t.cv.classList.remove('idle'); const now = performance.now(), dt = rcS.last ? Math.min(.25, (now - rcS.last) / 1000) : 1 / 60; rcS.last = now;
+    rcS.an.getByteFrequencyData(rcS.bins); rcPaint(t, rcS.bins, reduce.matches ? 0 : dt, true); if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+
   /* ---- full-screen visual modes: add an entry here to add a mode (the small scope always shows mode 1) ---- */
   const MODES = [
     { id: 'wave', name: 'Waveform', draw: waveFrame, idle: waveFlat },
@@ -7966,7 +8195,8 @@ void main(){mainImage(yeOut,gl_FragCoord.xy);}
     { id: 'swirlyeyes', name: 'Swirly Eyes', draw: swFrame, idle: swFlat },
     { id: 'orbit', name: 'Orbit', draw: orbitFrame, idle: orbitFlat, taps: true },
     { id: 'murmuration', name: 'Murmuration', draw: muFrame, idle: muFlat },
-    { id: 'ysinember', name: 'Ysin Ember', draw: yeFrame, idle: yeFlat }
+    { id: 'ysinember', name: 'Ysin Ember', draw: yeFrame, idle: yeFlat },
+    { id: 'ringcells', name: 'Ring Cells', draw: rcFrame, idle: rcFlat }
   ];
   function modeIx() { const i = MODES.findIndex(m => m.id === S.meta.scopeMode); return i < 0 ? 0 : i; }
   const curMode = () => MODES[modeIx()];
@@ -9680,7 +9910,17 @@ void main(){mainImage(yeOut,gl_FragCoord.xy);}
     { id: 'yerot', group: 'Ysin Ember', modes: ['ysinember'], label: 'Rotation', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, title: 'The slow tilt of the whole picture (source on). Off keeps the wave horizontal.' },
     { id: 'yeop', group: 'Ysin Ember', modes: ['ysinember'], label: 'Opacity', min: 0, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', title: 'Below 100% reveals active feedback behind the picture.' },
     { id: 'yekey', group: 'Ysin Ember', modes: ['ysinember'], label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, title: 'Whole picture fades the complete scene. Dark only keeps the wave, flame and braid solid and reveals feedback through the black.' },
-    { id: 'yescale', group: 'Ysin Ember', modes: ['ysinember'], label: 'Internal resolution', min: .25, max: 1, step: .05, def: .75, fmt: x => Math.round(x * 100) + '%', title: 'Internal render resolution; lower is faster and softer. The audio state is kept.' }
+    { id: 'yescale', group: 'Ysin Ember', modes: ['ysinember'], label: 'Internal resolution', min: .25, max: 1, step: .05, def: .75, fmt: x => Math.round(x * 100) + '%', title: 'Internal render resolution; lower is faster and softer. The audio state is kept.' },
+    { id: 'rcreact', group: 'Ring Cells', modes: ['ringcells'], label: 'Audio reactivity', min: 0, max: 2, step: .05, def: 1, info: 'Ring Cells: Shadertoy shader supplied by the user (author not given); ported. Colours from the Palette section', fmt: x => x.toFixed(2) + '×', title: 'Each ring brightens with its frequency band (bass in the centre, treble at the edge), bass hits pulse the ring distortion, loudness speeds the colour animation and drifts the angular distortion, treble sparkles. 0 = the original, still picture logic.' },
+    { id: 'rcresp', group: 'Ring Cells', modes: ['ringcells'], label: 'Audio response', min: 0, max: 1, step: .01, def: .2, fmt: x => x.toFixed(2) + ' s', title: 'Release time of the band envelopes (attack is a quarter of it); 0 is immediate.' },
+    { id: 'rcdens', group: 'Ring Cells', modes: ['ringcells'], label: 'Ring density', min: 50, max: 1500, step: 10, def: 370, fmt: x => String(Math.round(x)), title: 'How many rings (source constant 370).' },
+    { id: 'rcdist', group: 'Ring Cells', modes: ['ringcells'], label: 'Distortion', min: 0, max: 2, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Strength of the fbm warping of the rings (1× = source; 0 = perfect circles).' },
+    { id: 'rcspeed', group: 'Ring Cells', modes: ['ringcells'], label: 'Colour speed', min: 0, max: 3, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Speed of the cells blending between their two colours (1× = source iTime*5); loudness adds to it.' },
+    { id: 'rcrot', group: 'Ring Cells', modes: ['ringcells'], label: 'Rotation', min: -10, max: 10, step: .1, def: 0, fmt: x => x ? x.toFixed(1) + ' rpm' : 'Off', title: 'Turns the whole picture, in turns per minute (source: still).' },
+    { id: 'rccol', group: 'Ring Cells', modes: ['ringcells'], label: 'Colours', type: 'choice', opts: ['Palette', 'Random (original)'], min: 0, max: 1, step: 1, def: 0, title: 'Palette: each cell takes two colours from the MyTunes palette chosen in the Palette section. Random: the source\u2019s hashed RGB colours.' },
+    { id: 'rcop', group: 'Ring Cells', modes: ['ringcells'], label: 'Opacity', min: 0, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', title: 'Below 100% reveals active feedback behind the rings.' },
+    { id: 'rckey', group: 'Ring Cells', modes: ['ringcells'], label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, title: 'Whole picture fades the complete scene. Dark only keeps bright cells solid and reveals feedback through the dark ones.' },
+    { id: 'rcscale', group: 'Ring Cells', modes: ['ringcells'], label: 'Internal resolution', min: .25, max: 1, step: .05, def: .75, fmt: x => Math.round(x * 100) + '%', title: 'Internal render resolution; lower is faster and softer (the rings are fine, so below 50% they alias).' }
   ];
   SCOPE_PARAMS.forEach(p => { if (p.type === 'choice') p.fmt = x => p.opts[x] || ''; });
   const SV0 = (() => { const o = {}; SCOPE_PARAMS.forEach(p => o[p.id] = p.def); o.xf = false; return o; })();
@@ -11611,9 +11851,9 @@ void main(){mainImage(yeOut,gl_FragCoord.xy);}
     migrateVig();
     srows.innerHTML = themeRow() + rowsHTML(SCOPE_PARAMS, sv(), 'sfs-'); preSync();
     const f = FX[fxIx()], has = hasParams(f), vigOn = fxIx() > 0;
-    vigSec.hidden = !vigOn; palSec.hidden = !vigOn;
-    if (vigOn) { vrows.innerHTML = rowsHTML(VIG_PARAMS, vigParams(), 'sfv-'); prowsPal.innerHTML = rowsHTML(PAL_PARAMS, palParams(), 'sfa-'); }
-    else { vrows.innerHTML = ''; prowsPal.innerHTML = ''; }
+    const palOn = vigOn || curMode().id === 'ringcells';   // r86: Ring Cells colours its cells from the palette, effect or not
+    vigSec.hidden = !vigOn; palSec.hidden = !palOn;
+    vrows.innerHTML = vigOn ? rowsHTML(VIG_PARAMS, vigParams(), 'sfv-') : ''; prowsPal.innerHTML = palOn ? rowsHTML(PAL_PARAMS, palParams(), 'sfa-') : '';
     fxSec.hidden = !has;
     if (has) { $('#sfpTitle').textContent = f.name; prows.innerHTML = rowsHTML(f.params, fxParams(f), 'sfp-'); const st = fxSt[f.id]; if (st && st.keep != null) effSync(f, st.keep); }
     else prows.innerHTML = '';
@@ -11678,7 +11918,8 @@ void main(){mainImage(yeOut,gl_FragCoord.xy);}
     if (!Object.keys(o).length) delete S.meta.scopeFxPal;
     panelRow(p, x, 'pal'); preSync();
     clearTimeout(paramT); paramT = setTimeout(saveMeta, 250);
-    if (fxShown && !raf) { settle = 0; fxIdle(); }
+    if (open && !raf && curMode().id === 'ringcells') flat(full);   // r86: Ring Cells is coloured by the palette: redraw the still picture
+    else if (fxShown && !raf) { settle = 0; fxIdle(); }
   }
   /* Round 39 / r77: presets. A preset is a snapshot of every scope setting (all SCOPE_PARAMS values, the Theme), the mode, the effect
      and that effect's settings; not the panel's place or folds. S saves the current settings as a new one, Shift+← → step through
@@ -12374,6 +12615,8 @@ void main(){mainImage(yeOut,gl_FragCoord.xy);}
       testAudio(v) { muS.test = v ? { bass: +v.bass || 0, mid: +v.mid || 0, treble: +v.treble || 0 } : null; }, kick() { muS.kick = true; }, restart() { muS.key = ''; muS.last = 0; } },
     ysinember: { info: () => ({ ...yeS.info }), canvas: () => yeS.cv, failed: () => yeS.failed, why: () => yeS.why, tapped: () => yeS.on, fsA: YE_A_FS, fs: YE_FS, read: () => yeRead(), glError: () => yeS.gl ? yeS.gl.getError() : -1, poison() { yeS.poison = true; },   // r84 (tests)
       analyser: () => yeS.an && { fft: yeS.an.fftSize, smooth: yeS.an.smoothingTimeConstant, min: yeS.an.minDecibels, max: yeS.an.maxDecibels }, spectrum: () => Array.from(yeS.tex.subarray(0, 512)), testSpectrum(v) { yeS.test = v ? Array.from({ length: 512 }, (_, i) => +v[i] || 0) : null; }, restart() { yeS.last = 0; }, setTime(t) { yeS.time = +t || 0; } },
+    ringcells: { info: () => ({ ...rcS.info }), canvas: () => rcS.cv, failed: () => rcS.failed, why: () => rcS.why, tapped: () => rcS.on, fs: RC_FS, glError: () => rcS.gl ? rcS.gl.getError() : -1,   // r86 (tests)
+      testLevels(v) { rcS.test = v == null ? null : { levels: Array.from({ length: RC_NB }, (_, i) => Math.max(0, Math.min(1, Array.isArray(v) ? +v[i] || 0 : +v || 0))) }; }, kick() { rcS.kickReq = true; }, setTime(t) { rcS.time = +t || 0; rcS.cph = (5 * rcS.time) % (2 * Math.PI); rcS.drift = 0; rcS.spin = 0; }, restart() { rcS.last = 0; } },
     swirlyeyes: { info: () => ({ ...swS.info }), canvas: () => swS.cv, failed: () => swS.failed, fs: SW_FS, tapped: () => swS.on, analyser: () => swS.an && { fft: swS.an.fftSize, smooth: swS.an.smoothingTimeConstant, min: swS.an.minDecibels, max: swS.an.maxDecibels }, spectrum: () => Array.from(swS.bins.subarray(0,512)), bass: () => swS.bass, reset() { swS.time=0; swS.last=0; swS.bass=0; }, testAudio(bins) { swS.test=bins?Uint8Array.from({length:512},(_,i)=>Math.max(0,Math.min(255,+bins[i]||0))):null; } },
     blobby: { info: () => ({ ...blS.info }), canvas: () => blS.cv, failed: () => blS.failed, fsA: BLOB_A_FS, fs: BLOB_FS, tapped: () => blS.on, analyser: () => blS.an && { fft: blS.an.fftSize, smooth: blS.an.smoothingTimeConstant, min: blS.an.minDecibels, max: blS.an.maxDecibels }, spectrum: () => Array.from(blS.bins.subarray(0,512)), reset() { blS.time=0; blS.last=0; blS.cur=0; if(blS.fbs)blS.fbs=null; }, testAudio(bins) { blS.test=bins?Uint8Array.from({length:512},(_,i)=>Math.max(0,Math.min(255,+bins[i]||0))):null; } },
     spikyball: { info: () => ({ ...sbS.info }), canvas: () => sbS.cv, failed: () => sbS.failed, fs: SPIKY_FS, tapped: () => sbS.on, analyser: () => sbS.an && { fft: sbS.an.fftSize, smooth: sbS.an.smoothingTimeConstant, min: sbS.an.minDecibels, max: sbS.an.maxDecibels }, spectrum: () => Array.from(sbS.bins.subarray(0,512)), texture: () => Array.from(sbS.tex), textureInfo: () => ({ size:[512,2], channels:1, wrap: 'clamp' }), megabass: () => sbS.info.megabass, reset() { sbS.time=0; sbS.last=0; }, testAudio(bins,wave) { sbS.test=bins?{bins:Uint8Array.from({length:512},(_,i)=>Math.max(0,Math.min(255,+bins[i]||0))),wave:Float32Array.from({length:512},(_,i)=>Math.max(-1,Math.min(1,+(wave||[])[i]||0)))}:null; } },
