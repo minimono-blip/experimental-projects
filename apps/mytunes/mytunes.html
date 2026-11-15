@@ -486,6 +486,23 @@ button.np-title:focus-visible{outline:2px solid var(--focus);outline-offset:2px;
 @media (max-width:700px){.scope-full .sf-mode{top:calc(max(16px,env(safe-area-inset-top)) + 30px)}}
 @media (prefers-reduced-motion: reduce){.scope-full .sf-mode,.scope-full .sf-mode.show{transition:none}}
 .scope-full[hidden]{display:none}
+/* r83: embedded visualiser — the same overlay laid over the song-list area (rect set from #visHost), no chrome, click = full screen */
+.scope-full.sf-emb{inset:auto;z-index:15;cursor:zoom-in;border-radius:10px;overflow:hidden;touch-action:auto}
+.scope-full.sf-emb.sf-idle{cursor:zoom-in}
+.scope-full.sf-emb .sf-meta,.scope-full.sf-emb .sf-fx,.scope-full.sf-emb .sf-panel,.scope-full.sf-emb .sf-gear,.scope-full.sf-emb .sf-close{display:none!important}
+.main.vis-on{display:flex;flex-direction:column;overflow:hidden}
+.main.vis-on .vis-bar{flex:none}
+.vis-bar .vis-name{color:var(--muted);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.vis-bar .vis-hint{margin-left:auto;color:var(--dim);font-size:12px;white-space:nowrap}
+.vis-host{flex:1;min-height:160px;border-radius:10px;background:var(--bg);border:1px solid var(--line);cursor:zoom-in;outline:none}
+.vis-host:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.vis-host .vis-off{display:grid;place-items:center;height:100%;color:var(--muted);padding:20px;text-align:center}
+.side-sub{font-size:10.5px;color:var(--dim);padding:6px 10px 2px 14px;letter-spacing:.4px}
+.side-vis .nav{padding:5px 10px;font-size:13px}
+.side-vis .nav .vis-dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--dim);opacity:.7}
+.side-vis .nav.active .vis-dot{background:var(--accent2,var(--accent));opacity:1}
+.side-vis .side-none{font-size:12px;color:var(--dim);padding:2px 10px 6px 14px}
+.side-h .vis-fold{font-size:11px;line-height:1}
 .scope-full .sf-fx{position:absolute;left:50%;top:calc(max(16px,env(safe-area-inset-top)) + 22px);transform:translateX(-50%);color:var(--muted);font-size:12px;letter-spacing:.4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .6s ease}
 .scope-full .sf-fx.show{opacity:.85;transition:opacity .12s ease}
 @media (max-width:700px){.scope-full .sf-fx{top:calc(max(16px,env(safe-area-inset-top)) + 52px)}}
@@ -3944,12 +3961,17 @@ function renderSidebar() {
   const albums = [...S.albums.values()].filter(a => !albumLayout().redirects[a.id]).sort((a, b) => cmp(a.name, b.name));
   h += albums.length ? albums.map(a => `<button class="nav${v.name === 'album' && v.key === a.id ? ' active' : ''}" data-action="open-album" data-key="${esc(a.id)}">${svg('star')}<span class="lbl">${esc(a.name)}</span><span class="cnt">${a.trackIds.length}</span></button>`).join('')
     : `<button class="nav" data-action="new-album">${svg('plus')}<span class="lbl">New album…</span></button>`;
+  h += sideVisHead() + '<div id="sideVis" class="side-vis"' + (S.meta.sideVisFold ? ' hidden' : '') + '></div>';   // r83: Visualiser presets
   h += `<div class="side-stats">${S.tracks.size.toLocaleString()} tracks · ${S.autoAlbums.length} albums<br>${S.linked ? '🟢 Folder linked' : S.tracks.size ? '🟠 Folder not linked' : ''}${missing ? `<br>⚠️ ${missing} missing` : ''}</div>`;
   $('#sidebar').innerHTML = h;
+  renderSideVis(true);
 }
 function renderMain() {
   closePopover();
   const m = $('#main');
+  m.classList.toggle('vis-on', S.view.name === 'vis');           // r83: embedded visualiser view
+  if (S.view.name === 'vis') return renderVisView();
+  visEmbed(null);
   if (!S.tracks.size && !S.albums.size) {
     S.lastList = [];
     m.innerHTML = `<div class="empty"><div class="big">🎧</div><h2>Your local music library</h2>
@@ -3967,6 +3989,63 @@ function renderMain() {
 function go(view) {
   if (view.name === 'album' && view.key !== S.searchAlbumKey) { S.albumTrackSearch = ''; S.searchAlbumKey = view.key; }
   S.view = view; S.limit = 400; S.sel.clear(); S.selAnchor = null; $('#main').scrollTop = 0; renderSidebar(); renderMain(); renderSelPanel(); }
+
+/* ---------- r83: Visualiser section in the sidebar + the embedded visualiser view ----------
+   Sidebar: every preset (Factory, then My presets — the order of the settings-panel dropdown), kept in sync from the scope's preSync()
+   and presetsIn(). Choosing one shows the visualiser in the song-list area: the full-screen overlay itself (same renderer, WebGL modes,
+   effects, vignette, palettes) laid over #visHost with no chrome; the player bar stays. Clicking it = clicking the small scope (full
+   screen); leaving full screen returns here; any other view tears it down (overlay hidden, render loop back to the small scope). */
+const scopeReady = () => { try { return typeof Scope === 'object' && !!Scope && typeof Scope.embed === 'function'; } catch (e) { return false; } };
+function visEmbed(host) { if (!scopeReady()) return false; return Scope.embed(host); }
+function visPresets() { if (!scopeReady()) return []; try { return Scope.presets(); } catch (e) { return []; } }
+function sideVisHead() {
+  const f = !!S.meta.sideVisFold;
+  return `<div class="side-h">Visualiser <button class="vis-fold" data-action="vis-fold" aria-expanded="${!f}" aria-controls="sideVis" title="${f ? 'Show' : 'Hide'} the visualiser presets">${f ? '▸' : '▾'}</button></div>`;
+}
+let sideVisSig = '';
+function renderSideVis(force, appliedId) {
+  if (S.view.name === 'vis' && appliedId && appliedId !== S.view.key) {      // a preset applied in full screen (Shift+← →, dropdown, save)
+    S.view.key = appliedId; const n = $('#main .vis-name'), p = visPresets().find(x => x.id === appliedId); if (n && p) n.textContent = p.name;
+  }
+  const box = document.getElementById('sideVis'); if (!box) return;
+  const L = visPresets(), key = S.view.name === 'vis' ? S.view.key : '';
+  const sig = L.map(p => p.id + '\u0001' + p.name).join('\u0002') + '|' + key;
+  if (!force && sig === sideVisSig && box.childElementCount) return;
+  sideVisSig = sig;
+  const btn = p => `<button class="nav${p.id === key ? ' active' : ''}" data-action="vis-preset" data-key="${esc(p.id)}" title="${esc(p.name)}${p.mode ? ' · ' + esc(p.mode) : ''}${p.id === key ? ' · click again to go back' : ''}"${p.id === key ? ' aria-pressed="true"' : ''}><span class="vis-dot" aria-hidden="true"></span><span class="lbl">${esc(p.name)}</span></button>`;
+  const F = L.filter(p => p.factory), U = L.filter(p => !p.factory);
+  box.innerHTML = '<div class="side-sub">Factory</div>' + F.map(btn).join('') + '<div class="side-sub">My presets</div>' +
+    (U.length ? U.map(btn).join('') : '<div class="side-none">None yet · press S in the visualiser to save one</div>');
+}
+function renderVisView() {
+  const m = $('#main'), p = visPresets().find(x => x.id === S.view.key);
+  m.innerHTML = `<div class="toolbar vis-bar"><h1>Visualiser</h1><span class="vis-name">${p ? esc(p.name) : ''}</span><span class="vis-hint">Click for full screen</span></div>` +
+    `<div class="vis-host" id="visHost" tabindex="0" role="button" aria-label="Visualiser${p ? ', ' + esc(p.name) : ''}. Press Enter for full screen"></div>`;
+  const host = $('#visHost');
+  if (!visEmbed(host)) host.innerHTML = '<div class="vis-off">The visualiser is turned off. Turn on the oscilloscope in Settings to see it here.</div>';
+}
+/* r85: re-clicking the highlighted preset closes the embedded visualiser and restores the view it was opened from (sidebar highlight,
+   scroll, row limit, selection; searches live in S and are untouched). The view is remembered when the visualiser is first entered
+   from a non-visualiser view; switching presets keeps it. A view that no longer exists (deleted album) falls back to All tracks. */
+let visPrev = null;
+function visSelect(id) {
+  const L = visPresets(), i = L.findIndex(p => p.id === id); if (i < 0) return;
+  if (S.view.name === 'vis' && S.view.key === id) return visBack();          // r85: same preset again → back, no re-apply
+  if (S.view.name !== 'vis') visPrev = { view: { ...S.view }, scroll: $('#main').scrollTop, limit: S.limit, sel: [...S.sel], anchor: S.selAnchor };
+  go({ name: 'vis', key: id });
+  if (scopeReady() && Scope.embedded()) Scope.presetApply(i);
+  renderSideVis(true);
+}
+function visBack() {
+  const p = visPrev; visPrev = null;
+  let v = p && p.view && p.view.name !== 'vis' ? p.view : null;
+  if (v && v.name === 'album' && !getAlbum(v.key)) v = null;
+  if (!v) { go({ name: 'tracks' }); return; }
+  if (v.name === 'album' && v.key !== S.searchAlbumKey) { S.albumTrackSearch = ''; S.searchAlbumKey = v.key; }
+  S.view = v; S.limit = Math.max(400, p.limit || 400); S.sel.clear(); p.sel.forEach(x => { if (S.tracks.has(x)) S.sel.add(x); }); S.selAnchor = p.anchor;
+  const m = $('#main'); renderSidebar(); renderMain(); renderSelPanel();
+  m.scrollTop = p.scroll; requestAnimationFrame(() => { if (S.view === v && Math.abs(m.scrollTop - p.scroll) > 1) m.scrollTop = p.scroll; });
+}
 
 function renderAlbumsView() {
   if (albumLayout().manual && !S.meta.albumSortChoice) S.albumSort = 'manual';
@@ -4763,6 +4842,8 @@ function bindEvents() {
       case 'download-library': closePopover(); if (!S.tracks.size && !S.albums.size) toast('Nothing to save yet. Import a folder first.', 'info'); else saveLibrary('download'); break;
       case 'forget-save-place': FSA.file = null; if (el.dataset.dir) FSA.dir = null; fsaStore(); closePopover(); toast('Forgot where to save. ' + saveWhere(), 'info', 5000); break;
       case 'go': e.preventDefault(); go({ name: d.view }); break;
+      case 'vis-preset': e.preventDefault(); visSelect(d.key); break;   // r83
+      case 'vis-fold': { e.preventDefault(); S.meta.sideVisFold = !S.meta.sideVisFold; saveMeta(); const b = $('#sideVis'); if (b) b.hidden = !!S.meta.sideVisFold; el.setAttribute('aria-expanded', String(!S.meta.sideVisFold)); el.textContent = S.meta.sideVisFold ? '▸' : '▾'; el.title = (S.meta.sideVisFold ? 'Show' : 'Hide') + ' the visualiser presets'; break; }
       case 'open-album': go({ name: 'album', key: d.key }); break;
       case 'play-album': case 'shuffle-album': {
         e.stopPropagation();
@@ -5133,6 +5214,8 @@ const Scope = (() => {
     sbSync();                                // r61: Spiky Ball FFT tap (Shadertoy iChannel0)
     blSync();                                // r63: Blobby Buffer A / Image FFT tap
     swSync();                                // r64: Swirly Eyes bass analyser tap
+    muSync();                                // r81: Murmuration FFT tap
+    yeSync();                                // r84: Ysin Ember FFT tap (Shadertoy music texture)
     const want = !!src && enabled() && open && (!!curMode().taps || fxTaps()) && !document.hidden;   // (+ an effect that reacts to the bands)   // Bands and Overlay
     if (want === bandsOn) return;
     if (want) {
@@ -6602,6 +6685,1263 @@ void main(){
     if (!reduce.matches) raf = requestAnimationFrame(frame);
   }
 
+  /* r81: Murmuration by BichoPragmatico (Shadertoy, "PALINODE — a two-hearted organism"); ported.
+     Verbatim source: test/r81/murmuration-shadertoy.glsl. Four passes as in Shadertoy, WebGL2 only (uint, texelFetch, bit ops):
+     Buffer A = boid state, RGBA32F ping-pong (needs EXT_color_buffer_float). Compact state texture MU_SW texels wide instead
+     of canvas-sized; texel 0/1 and 2+2*id layout, iFrame / resolution / BIRD_COUNT signature resets kept exactly.
+     Buffer B = tile visibility bitmask atlas (cols*GROUPS × rows RGBA32F). Image = analytic birds + filmic tone map.
+     Audio replaces the mouse 'excitement': bass/loudness → excitement (turbulence, orbit rate, attractor pull), loudness →
+     attractor tempo and travel, bass onsets → a decaying attractor nudge (the source spring smooths it), treble → glow + trail.
+     Reactivity 0 = the original autonomous organism. [ = mode 22.
+     r82: YIN_YANG_SEPARATION / VORTEX_STRENGTH / CAMERA_DISTANCE are uniforms driven by smoothed audio × Audio reactivity ×
+     per-parameter depth (R=0 → 0.5 / 1.0 / 7.4 exactly): separation opens with mid+loudness (→0.85), vortex rises with bass
+     (→1.8; birds already integrate their own phase, so the orbit speeds up without jumping), the camera breathes in on loud
+     passages and bass hits (→6.5, attack τ0.7 s / release τ1.8 s; one value per frame shared by Buffer B and Image so binning matches).
+     Travel: travelShift() translates the whole organism with the attractor (guide, attractor pull and containment centre all
+     follow it), clamped to the visible half-extent at the current camera distance; Travel 1× = original, louder → a bit more. */
+  const MU_SW = 256, MU_COUNTS = [512, 1024, 2048];
+  const MU_HEAD = `#version 300 es
+precision highp float;precision highp int;precision highp sampler2D;
+uniform vec2 u_res,u_nudge;uniform vec4 u_mouse;uniform int u_sw,u_frame;
+uniform float u_dt,u_time,u_auto,u_range,u_excite,u_size,u_trail,u_glow,u_speed,u_op,u_key,u_sep,u_vortex,u_cam,u_travel;
+uniform sampler2D u_a,u_b;
+`;
+  const MU_COMMON = `// PALINODE -- a two-hearted organism. Paste this into Shadertoy's Common tab.
+// BIRD_COUNT is defined per program (512 / 1024 / 2048).
+#define NEIGHBOR_SAMPLES 24      // 12 for speed; 32 for stronger local interaction.
+#define BIRD_SIZE u_size    // Wing scale in pixels at 720p.
+const float FLOCK_SCALE = 1.5;   // Render scale; does not change simulation stability.
+const float MOUSE_STRENGTH = 1.0;
+const float COHESION = 0.65;
+const float ALIGNMENT = 1.15;
+const float SEPARATION = 0.85;
+#define VORTEX_STRENGTH u_vortex
+const float TURBULENCE = 0.2;
+const float FRACTALITY = 0.40;
+const float DEPTH = 3.5;
+#define TRAIL_LENGTH u_trail // Seconds of velocity extrapolation for analytic trails.
+#define GLOW u_glow
+#define SPEED u_speed         // Simulation time multiplier; try 0.5 .. 1.5.
+#define YIN_YANG_SEPARATION u_sep
+#define CAMERA_DISTANCE u_cam
+const float EXPOSURE = 1.10;
+const float TAU = 6.28318530718;
+const int HALF_FLOCK = BIRD_COUNT / 2;
+const int GROUPS = (BIRD_COUNT + 63) / 64;
+// Preferred tile width; tileSpan() also ensures the atlas fits at high counts.
+const int TILE_SIZE = 32;
+float hash11(float p) {
+    p = fract(p * 0.1031);
+    p *= p + 33.33;
+    p *= p + p;
+    return fract(p);
+}
+vec3 safeUnit(vec3 p) { return p * inversesqrt(max(dot(p,p), 1e-8)); }
+vec3 limitLength(vec3 p, float m) {
+    return p * min(1.0, m / max(length(p), 1e-5));
+}
+mat2 rot(float a) { float c=cos(a), s=sin(a); return mat2(c,s,-s,c); }
+ivec2 address(int n, int width) { return ivec2(n % width, n / width); }
+vec4 state(sampler2D tex, int n) {
+    return texelFetch(tex, address(n, textureSize(tex,0).x), 0);
+}
+int tileSpan(vec2 resolution) {
+    int w=int(resolution.x);
+    int capacity=max(1,w/GROUPS);
+    return max(TILE_SIZE,(w+capacity-1)/capacity);
+}
+int tileColumns(vec2 resolution) {
+    int span = tileSpan(resolution);
+    return (int(resolution.x) + span - 1) / span;
+}
+float sideOf(int id) { return id < HALF_FLOCK ? 1.0 : -1.0; }
+float laneOf(int id) { return hash11(float(id) + 17.17); }
+float orbitRate(int id) {
+    return sideOf(id) * VORTEX_STRENGTH * (0.42 + 0.25*(1.0-laneOf(id)));
+}
+// World-space orientation of the behavioral field, not a camera trick.
+vec3 fieldFrame(vec3 p, vec2 mouse, float t) {
+    p.yz = rot(0.25 + 0.18*sin(t*0.113) + mouse.y*0.74*MOUSE_STRENGTH)*p.yz;
+    p.xz = rot(0.25*sin(t*0.071) + mouse.x*0.95*MOUSE_STRENGTH)*p.xz;
+    p.xy = rot(0.18*sin(t*0.057) + 0.07*t)*p.xy;
+    return p;
+}
+// r82 Travel: whole-organism translation following the attractor, kept inside the visible half-extent
+// at the current camera distance (0.362 = 0.5 / (0.92 * FLOCK_SCALE)); u_travel = Travel - 1 (0 = original).
+vec2 travelShift(vec2 m) {
+    float aspect = u_res.x/u_res.y;
+    vec2 lim = max(vec2(0.0), vec2(0.362*aspect*CAMERA_DISTANCE-2.6, 0.362*CAMERA_DISTANCE-2.3-0.8*(YIN_YANG_SEPARATION-0.5)));
+    return clamp(u_travel*vec2(2.0*min(aspect,2.4)/1.78, 1.0)*m, -lim, lim);
+}
+// A moving family of nested streamlines. These are steering guides;
+// actual positions and velocities persist and deviate through boid forces.
+vec3 guide(int id, float a, float t, vec2 mouse) {
+    float s = sideOf(id), lane = laneOf(id);
+    float breath = 0.5 + 0.5*sin(t*0.173 + 0.7*sin(t*0.097));
+    float opening = YIN_YANG_SEPARATION * (0.76+0.27*sin(t*0.137));
+    // Smooth density bands gather birds into nested ribbons.
+    float shell = lane + 0.035*sin(lane*TAU*4.0);
+    float r = 0.19 + 1.25*sqrt(max(0.0,shell));
+    // Comma-shaped cross section; the two commas wind in opposite directions.
+    r *= 0.82 + 0.23*cos(a - 0.45*sin(t*0.127));
+    float a2 = 2.0*a + s*t*0.19;
+    float a5 = 5.0*a - s*t*0.31 + lane*4.0;
+    float a11 = 11.0*a + s*t*0.43;
+    r += FRACTALITY*(0.13*sin(a2)+0.055*sin(a5)+0.022*sin(a11));
+    vec3 p = vec3(r*sin(a), opening+r*cos(a), 0.0);
+    // Curls inside curls, with animated toroidal thickness and helical depth.
+    float coil = 3.0*a + s*t*0.37 + lane*TAU;
+    float tube = FRACTALITY*(0.065+0.12*breath)*(0.4+0.6*lane);
+    p += tube*vec3(cos(coil)*sin(a), cos(coil)*cos(a), sin(coil));
+    p.z += (0.24+0.30*breath)*sin(a+s*t*0.163)*(0.4+0.6*lane);
+    p.z += FRACTALITY*0.12*sin(a2+lane*5.0);
+    p.x += 0.24*sin(t*0.101)*sin(2.0*a)*(0.3+lane);
+    p.xy *= s;
+    // Differential winding interlocks both lobes into one S-shaped organism.
+    p.xy = rot(1.6*exp(-0.42*dot(p.xy,p.xy)))*p.xy;
+    p.z *= DEPTH;
+    p = fieldFrame(p, mouse, t);
+    // Mild center drift plus directional strain, rather than cursor translation.
+    vec3 pull = vec3(mouse*0.75, 0.20*sin(t*0.09));
+    p += MOUSE_STRENGTH*(0.19*pull + 0.10*pull*dot(p,pull));
+    p.xy += travelShift(mouse); // r82
+    return p;
+}
+// Analytic curl of a trigonometric vector potential; divergence-free per octave.
+vec3 curlField(vec3 p, float t) {
+    vec3 f=vec3(0.0);
+    float amp=0.64;
+    for(int k=0;k<3;k++) {
+        vec3 q=p + vec3(t*0.13,-t*0.11,t*0.17);
+        vec3 c=vec3(-sin(q.y)-cos(q.z),
+                    -sin(q.z)-cos(q.x),
+                    -sin(q.x)-cos(q.y));
+        // Rotate the vector back from each octave's permuted coordinates.
+        if(k==1) c=c.zxy;
+        if(k==2) c=c.yzx;
+        f += amp*c;
+        p=p.yzx*2.03+vec3(1.7,4.1,2.3);
+        amp*=0.44*FRACTALITY;
+    }
+    return f;
+}
+vec3 viewPoint(vec3 p) {
+    p *= FLOCK_SCALE;
+    p.xz = rot(-0.16)*p.xz;
+    return p;
+}
+vec2 projectPoint(vec3 p, vec2 resolution) {
+    float z=max(0.65,CAMERA_DISTANCE-p.z);
+    return 0.5*resolution + (0.92*resolution.y/z)*p.xy;
+}
+// This exact same footprint is used for binning and drawing: no missing tile edges.
+struct Bird {
+    vec2 head;
+    vec2 tail;
+    vec2 forward;
+    float size;
+    float halo;
+    float depth;
+    float energy;
+    float density;
+    float seed;
+};
+Bird projectedBird(sampler2D tex, int id, vec2 resolution) {
+    vec4 p=state(tex,2+2*id), v=state(tex,3+2*id);
+    Bird b;
+    vec3 q=viewPoint(p.xyz), w=viewPoint(v.xyz);
+    b.head=projectPoint(q,resolution);
+    vec2 motion=projectPoint(q+w*0.035,resolution)-b.head;
+    b.forward=motion/max(length(motion),1e-4);
+    if(dot(motion,motion)<1e-8) b.forward=vec2(1,0);
+    float z=max(0.65,CAMERA_DISTANCE-q.z);
+    float scale=resolution.y/720.0;
+    b.seed=hash11(float(id)+91.3);
+    b.size=clamp(BIRD_SIZE*scale*(CAMERA_DISTANCE/z)*(0.68+0.65*b.seed),0.48,4.5);
+    b.tail=b.head-limitLength(vec3(b.head-projectPoint(q-w*TRAIL_LENGTH,resolution),0),18.0*scale).xy;
+    b.halo=6.0*b.size+1.5;
+    b.depth=clamp(CAMERA_DISTANCE/z,0.45,1.7);
+    b.energy=clamp(length(v.xyz)*0.48,0.18,1.4);
+    b.density=v.w;
+    return b;
+}
+float segmentDistance(vec2 p, vec2 a, vec2 b) {
+    vec2 d=b-a;
+    return length(p-a-d*clamp(dot(p-a,d)/max(dot(d,d),1e-6),0.0,1.0));
+}
+// GLSL ES 3.00-compatible lowest set bit index (no findLSB extension).
+int lowestBit(uint n) {
+    int r=0;
+    if((n & 65535u)==0u) { n >>= 16; r+=16; }
+    if((n & 255u)==0u) { n >>= 8; r+=8; }
+    if((n & 15u)==0u) { n >>= 4; r+=4; }
+    if((n & 3u)==0u) { n >>= 2; r+=2; }
+    if((n & 1u)==0u) r+=1;
+    return r;
+}
+`;
+  const MU_A_FS = `// u_a = Buffer A (self), nearest, clamp, no mipmaps.
+// Texel 0: smoothed mouse.xy, mouse velocity.zw.
+// Texel 1: simulation clock, width, height, configuration signature.
+// Then two RGBA32F texels/bird: (position, phase), (velocity, density).
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    int index=int(fragCoord.x)+int(fragCoord.y)*u_sw; // r81: compact state texture
+    fragColor=vec4(0);
+    if(index>=2+2*BIRD_COUNT) return;
+    vec4 meta=state(u_a,1);
+    float signature=float(BIRD_COUNT)+0.125;
+    bool reset=u_frame==0 || abs(meta.y-u_res.x)>0.5 ||
+        abs(meta.z-u_res.y)>0.5 || abs(meta.w-signature)>0.01;
+    float realDt=clamp(u_dt,0.0,1.0/30.0);
+    float dt=realDt*clamp(SPEED,0.0,2.0);
+    vec4 control=reset ? vec4(0) : state(u_a,0);
+    // Autonomous attractor. These two values control its travel and tempo.
+    const float AUTO_RANGE = 0.85;
+    const float AUTO_SPEED = 0.75;
+    float autoTime = reset ? 0.0 : u_auto; // r81: clock*AUTO_SPEED, tempo scaled by loudness on the CPU
+    vec2 target = u_nudge + AUTO_RANGE * u_range * vec2( // r81: beat nudge, loudness travel
+        0.72*sin(autoTime*0.23 + 0.65*sin(autoTime*0.071))
+        + 0.22*sin(autoTime*0.419),
+        0.64*sin(autoTime*0.193 + 0.80*sin(autoTime*0.053))
+        + 0.21*sin(autoTime*0.317)
+    );
+    // Dragging temporarily takes control. Release resumes autonomous steering.
+    // The existing spring below makes both transitions smooth and inertial.
+    if(u_mouse.z > 0.0)
+        target = clamp(2.0*u_mouse.xy/u_res.xy-1.0,-1.0,1.0);
+    if(index==0) {
+        // Exact critically damped spring step: stable across varying frame times.
+        float omega=3.2;
+        vec2 e=control.xy-target;
+        vec2 j=control.zw+omega*e;
+        float decay=exp(-omega*realDt);
+        fragColor=vec4(target+(e+j*realDt)*decay,
+                       (control.zw-omega*j*realDt)*decay);
+        return;
+    }
+    float t=reset ? 0.0 : meta.x;
+    if(index==1) {
+        fragColor=vec4(t+dt,u_res.xy,signature);
+        return;
+    }
+    int id=(index-2)/2;
+    float seed=hash11(float(id)+0.71);
+    float rate=orbitRate(id);
+    if(reset) {
+        float a=TAU*(float(id % HALF_FLOCK)+0.35*seed)/float(HALF_FLOCK);
+        vec3 p=guide(id,a,0.0,vec2(0));
+        vec3 v=(guide(id,a+rate*0.01,0.01,vec2(0))-p)/0.01;
+        fragColor=((index-2)%2==0) ? vec4(p,a) : vec4(v,0.0);
+        return;
+    }
+    vec4 P=state(u_a,2+2*id), V=state(u_a,3+2*id);
+    vec3 p=P.xyz, v=V.xyz;
+    vec2 mouse=control.xy;
+    float excitement=min(length(control.zw)+u_excite,1.5); // r81: + audio excitement
+    float a=P.w;
+    rate*=1.0+0.18*excitement+0.065*sin(t*0.61+seed*TAU);
+    vec3 goal=guide(id,a,t,mouse);
+    vec3 stream=(guide(id,a+rate*0.012,t+0.012,mouse)-goal)/0.012;
+    vec3 cohesion=vec3(0), alignment=vec3(0), separation=vec3(0);
+    float weight=0.0, closeCount=0.0;
+    int base=(id/HALF_FLOCK)*HALF_FLOCK;
+    // Half stable phase-neighbors, half changing whole-flock probes.
+    // The distance test makes these genuine sampled local interactions.
+    for(int k=0;k<NEIGHBOR_SAMPLES;k++) {
+        int j;
+        if(k<NEIGHBOR_SAMPLES/2) {
+            int offset=(k/2+1)*((k%2==0) ? 1 : -1);
+            j=base+(id-base+offset+HALF_FLOCK)%HALF_FLOCK;
+        } else {
+            float h=hash11(float(id)*1.31+float(k)*19.73+floor(t*8.0)*0.73);
+            j=min(BIRD_COUNT-1,int(h*float(BIRD_COUNT)));
+        }
+        if(j==id) continue;
+        vec3 d=state(u_a,2+2*j).xyz-p;
+        float d2=dot(d,d);
+        float w=1.0-smoothstep(0.025,0.58*0.58,d2);
+        cohesion+=d*w;
+        alignment+=(state(u_a,3+2*j).xyz-v)*w;
+        weight+=w;
+        float near=1.0-smoothstep(0.0,0.13*0.13,d2);
+        separation-=d*(near/max(d2,0.0025));
+        closeCount+=near;
+    }
+    cohesion/=max(weight,1.0);
+    alignment/=max(weight,1.0);
+    separation=limitLength(separation,2.0);
+    // A damped spring to moving streamlines provides structure without overwriting state.
+    vec3 force=5.0*(goal-p)+3.0*(stream-v);
+    force+=COHESION*cohesion+ALIGNMENT*alignment+SEPARATION*separation;
+    force+=TURBULENCE*(1.0+0.55*excitement)*curlField(p*1.65,t);
+    vec3 toMouse=vec3(mouse*1.6+travelShift(mouse),0.3*sin(t*0.17))-p; // r82: pull follows the travelling organism
+    force+=MOUSE_STRENGTH*(0.12+0.38*excitement)*toMouse/(0.8+dot(toMouse,toMouse));
+    // Soft containment, no teleporting or hard walls.
+    vec3 home=p-vec3(travelShift(mouse),0.0); // r82: containment centred on the travelling organism
+    force-=safeUnit(home)*max(0.0,length(home)-3.3)*4.0;
+    force=limitLength(force,12.0);
+    v=limitLength(v+force*dt,3.8);
+    p+=v*dt;
+    // Keep phase bounded for long performances; density gently slows crowded streams.
+    a=mod(a+rate*dt*(1.0-0.07*clamp(closeCount,0.0,2.0)),TAU);
+    float density=mix(V.w,clamp(weight/5.0,0.0,1.0),1.0-exp(-dt*3.0));
+    fragColor=((index-2)%2==0) ? vec4(p,a) : vec4(v,density);
+}
+out vec4 muOut;
+void main(){mainImage(muOut,gl_FragCoord.xy);}
+`;
+  const MU_B_FS = `// u_a = Buffer A.
+//
+// Visibility atlas:
+// each RGBA texel stores four numeric 16-bit masks,
+// representing 64 birds for one screen tile.
+// Ordinary floats preserve these integers exactly in RGBA32F.
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    fragColor = vec4(0);
+    ivec2 pixel = ivec2(fragCoord);
+    int cols = tileColumns(u_res.xy);
+    int span = tileSpan(u_res.xy);
+    int rows = (int(u_res.y)+span-1)/span;
+    if(pixel.x>=cols*GROUPS || pixel.y>=rows) return;
+    int group = pixel.x/cols;
+    ivec2 tile = ivec2(pixel.x%cols,pixel.y);
+    vec2 lo = vec2(tile*span);
+    vec2 hi = lo+float(span);
+    uvec4 masks = uvec4(0);
+    for(int k=0; k<64; k++) {
+        int id = group*64+k;
+        if(id>=BIRD_COUNT) break;
+        Bird b = projectedBird(u_a,id,u_res.xy);
+        vec2 bLo = min(b.head,b.tail)-b.halo;
+        vec2 bHi = max(b.head,b.tail)+b.halo;
+        if(all(greaterThanEqual(bHi,lo)) &&
+           all(lessThanEqual(bLo,hi))) {
+            masks[k/16] |= 1u << uint(k%16);
+        }
+    }
+    fragColor = vec4(masks);
+}
+out vec4 muOut;
+void main(){mainImage(muOut,gl_FragCoord.xy);}
+`;
+  const MU_FS = `// u_a = Buffer A.
+// u_b = Buffer B.
+vec3 drawBird(vec2 pixel, Bird b, int id, float t) {
+    vec2 q = pixel-b.head;
+    vec2 perp = vec2(-b.forward.y,b.forward.x);
+    vec2 local = vec2(
+        dot(q,b.forward),dot(q,perp)
+    );
+    float flap = sin(
+        t*(8.0+2.0*b.seed)+b.seed*TAU
+    );
+    float wing = b.size*(1.25+0.45*flap);
+    vec2 tip = vec2(-0.65*b.size,wing);
+    float wings = min(
+        segmentDistance(local,vec2(0.6*b.size,0),tip),
+        segmentDistance(
+            local,vec2(0.6*b.size,0),tip*vec2(1,-1)
+        )
+    );
+    float body = segmentDistance(
+        local,vec2(-0.8*b.size,0),vec2(0.7*b.size,0)
+    );
+    float ink = 1.0-smoothstep(
+        0.18,0.95,min(wings,body)
+    );
+    float dotCore = exp(
+        -dot(q,q)/max(0.65*b.size*b.size,0.2)
+    );
+    float core = mix(
+        dotCore,ink,smoothstep(0.65,1.4,b.size)
+    );
+    float trailD = segmentDistance(pixel,b.tail,b.head);
+    float along = clamp(
+        dot(pixel-b.tail,b.head-b.tail) /
+        max(dot(b.head-b.tail,b.head-b.tail),1e-5),
+        0.0,1.0
+    );
+    float trail = exp(
+        -trailD*trailD/max(0.45*b.size*b.size,0.2)
+    )*along*0.24;
+    trail *= smoothstep(0.0,1.0,length(b.head-b.tail));
+    float halo = exp(
+        -dot(q,q)/(5.0*b.size*b.size)
+    )*0.085*GLOW;
+    halo *= 1.0-smoothstep(
+        4.0*b.size,6.0*b.size,length(q)
+    );
+    vec3 cyan = vec3(0.31,0.72,0.87);
+    vec3 lilac = vec3(0.58,0.1,0.82);
+    vec3 hue = id<HALF_FLOCK ? cyan : lilac;
+    hue = mix(
+        hue,vec3(0.85,0.88,0.95),
+        0.24+0.2*b.energy
+    );
+    float accent = pow(
+        max(0.0,sin(b.seed*37.0+t*0.13)),24.0
+    )*0.32;
+    hue = mix(hue,vec3(0.95,0.61,0.30),accent);
+    float light = (0.40+0.60*b.depth) *
+                  (0.62+0.32*b.energy+0.15*b.density);
+    return hue*light*(core*0.85+trail+halo);
+}
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 uv = (
+        fragCoord-0.5*u_res.xy
+    )/u_res.y;
+    vec3 color = vec3(0.0025,0.004,0.010);
+    color += vec3(0.007,0.009,0.022) *
+             exp(-3.5*dot(uv,uv));
+    ivec2 tile = ivec2(fragCoord)/tileSpan(u_res.xy);
+    int cols = tileColumns(u_res.xy);
+    float t = state(u_a,1).x;
+    vec3 flock = vec3(0);
+    for(int g=0; g<GROUPS; g++) {
+        uvec4 masks = uvec4(
+            texelFetch(
+                u_b,
+                ivec2(g*cols+tile.x,tile.y),0
+            )+0.5
+        );
+        for(int lane=0; lane<4; lane++) {
+            uint mask = masks[lane];
+            for(int k=0; k<16; k++) {
+                if(mask==0u) break;
+                int bit = lowestBit(mask);
+                mask &= mask-1u;
+                int id = g*64+lane*16+bit;
+                Bird b = projectedBird(u_a,id,u_res.xy);
+                if(any(greaterThan(
+                    abs(fragCoord-b.head),
+                    vec2(b.halo)+abs(b.head-b.tail)
+                ))) continue;
+                flock += drawBird(fragCoord,b,id,t);
+            }
+        }
+    }
+    color += flock;
+    float vignette = 1.0 -
+        0.42*smoothstep(0.15,0.85,length(uv));
+    color *= EXPOSURE*vignette;
+    // Filmic shoulder and display gamma.
+    color = (color*(2.51*color+0.03)) /
+            (color*(2.43*color+0.59)+0.14);
+    color = pow(
+        clamp(color,0.0,1.0),vec3(1.0/2.2)
+    );
+    color += (
+        hash11(
+            dot(fragCoord,vec2(0.06711,0.00584))+
+            fract(u_time)*0.01
+        )-0.5
+    )/255.0;
+    color = clamp(color,0.0,1.0); // r81: Opacity / See-through like the other shader modes
+    float alpha = u_key>0.5 ? mix(u_op,1.0,smoothstep(0.08,0.35,dot(color,vec3(0.2126,0.7152,0.0722)))) : u_op;
+    fragColor = vec4(color*alpha,alpha);
+}
+out vec4 muOut;
+void main(){mainImage(muOut,gl_FragCoord.xy);}
+`;
+  const muS = { cv: document.createElement('canvas'), gl: null, failed: false, why: '', on: false, an: null, bins: new Uint8Array(1024), progs: {}, st: null, at: null, cur: 0, frame: 0, auto: 0, sim: 0, time: 0, last: 0, key: '',
+    bass: 0, mid: 0, treb: 0, loud: 0, fast: 0, slow: 0, beatT: 0, beats: 0, nudge: [0, 0], test: null, kick: false, ms: 0, info: { n: 0 },
+    sepE: 0, vortE: 0, camE: 0, punch: 0, sep: .5, vortex: 1, cam: 7.4, travel: 0, pin: null };
+  function muSync() {
+    const want = !!src && enabled() && open && curMode().id === 'murmuration' && !document.hidden; if (want === muS.on) return;
+    if (want) { if (!muS.an) { muS.an = ac.createAnalyser(); muS.an.fftSize = 2048; muS.an.minDecibels = -100; muS.an.maxDecibels = -30; muS.an.smoothingTimeConstant = .6; } src.connect(muS.an); muS.on = true; }
+    else { if (muS.an) try { src.disconnect(muS.an); } catch (e) {} muS.on = false; }
+  }
+  function muGL() {
+    if (muS.gl || muS.failed) return muS.gl;
+    try {
+      const g = muS.cv.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: false, preserveDrawingBuffer: true });
+      if (!g) throw new Error('WebGL2 unavailable');
+      if (!g.getExtension('EXT_color_buffer_float')) throw new Error('float render targets (EXT_color_buffer_float) unavailable');
+      muS.vao = g.createVertexArray(); g.bindVertexArray(muS.vao);
+      g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer()); g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW);
+      g.enableVertexAttribArray(0); g.vertexAttribPointer(0, 2, g.FLOAT, false, 0, 0);
+      muS.gl = g; muS.progs = {}; muS.st = null; muS.at = null;
+      muS.cv.addEventListener('webglcontextlost', e => { e.preventDefault(); muS.gl = null; muS.progs = {}; muS.st = null; muS.at = null; muS.frame = 0; });
+      muProgs(g, MU_COUNTS[1]);
+    } catch (e) { muS.failed = true; muS.why = e.message; muS.gl = null; console.warn('Murmuration unavailable:', e.message); }
+    return muS.gl;
+  }
+  function muProgs(g, n) {
+    if (muS.progs[n]) return muS.progs[n];
+    const shader = (kind, text) => { const s = g.createShader(kind); g.shaderSource(s, text); g.compileShader(s); if (!g.getShaderParameter(s, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(s)); return s; };
+    const vs = shader(g.VERTEX_SHADER, '#version 300 es\nin vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}');
+    const head = MU_HEAD + `#define BIRD_COUNT ${n}\n` + MU_COMMON;
+    const link = body => { const p = g.createProgram(); g.attachShader(p, vs); g.attachShader(p, shader(g.FRAGMENT_SHADER, head + body)); g.bindAttribLocation(p, 0, 'p'); g.linkProgram(p); if (!g.getProgramParameter(p, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(p));
+      const U = {}; for (const k of ['res', 'nudge', 'mouse', 'sw', 'frame', 'dt', 'time', 'auto', 'range', 'excite', 'size', 'trail', 'glow', 'speed', 'op', 'key', 'sep', 'vortex', 'cam', 'travel', 'a', 'b']) U[k] = g.getUniformLocation(p, 'u_' + k);
+      g.useProgram(p); if (U.a) g.uniform1i(U.a, 0); if (U.b) g.uniform1i(U.b, 1); return { p, U }; };
+    return (muS.progs[n] = { a: link(MU_A_FS), b: link(MU_B_FS), i: link(MU_FS) });
+  }
+  function muTex(g, w, h) {
+    const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); g.texImage2D(g.TEXTURE_2D, 0, g.RGBA32F, w, h, 0, g.RGBA, g.FLOAT, null);
+    for (const k of [g.TEXTURE_MIN_FILTER, g.TEXTURE_MAG_FILTER]) g.texParameteri(g.TEXTURE_2D, k, g.NEAREST);
+    for (const k of [g.TEXTURE_WRAP_S, g.TEXTURE_WRAP_T]) g.texParameteri(g.TEXTURE_2D, k, g.CLAMP_TO_EDGE);
+    const f = g.createFramebuffer(); g.bindFramebuffer(g.FRAMEBUFFER, f); g.framebufferTexture2D(g.FRAMEBUFFER, g.COLOR_ATTACHMENT0, g.TEXTURE_2D, t, 0);
+    if (g.checkFramebufferStatus(g.FRAMEBUFFER) !== g.FRAMEBUFFER_COMPLETE) throw new Error('float framebuffer incomplete');
+    return { t, f };
+  }
+  function muAtlas(w, h, n) {                // same integer maths as tileSpan / tileColumns in Common
+    const groups = Math.ceil(n / 64), cap = Math.max(1, Math.floor(w / groups)), span = Math.max(32, Math.ceil(w / cap));
+    const cols = Math.ceil(w / span), rows = Math.ceil(h / span); return { span, cols, rows, aw: cols * groups, ah: rows };
+  }
+  function muAlloc(g, w, h, n) {
+    const key = w + 'x' + h + ':' + n; if (muS.st && muS.key === key) return true;
+    const free = o => { if (o) for (const b of [].concat(o)) { g.deleteFramebuffer(b.f); g.deleteTexture(b.t); } };
+    free(muS.st); free(muS.at);
+    const sh = Math.ceil((2 + 2 * n) / MU_SW), A = muAtlas(w, h, n);
+    muS.st = [muTex(g, MU_SW, sh), muTex(g, MU_SW, sh)]; muS.at = muTex(g, A.aw, A.ah); muS.atl = A; muS.sh = sh;
+    g.bindFramebuffer(g.FRAMEBUFFER, null);
+    muS.key = key; muS.frame = 0; muS.auto = 0; muS.sim = 0; muS.cur = 0; muS.nudge = [0, 0]; muS.camE = 0; muS.punch = 0;   // Shadertoy resets on iFrame 0 / resize / count
+    return true;
+  }
+  function muBands(B) {                       // byte FFT → bass / mid / treble levels 0..1
+    if (!B) return [0, 0, 0];
+    const hz = (ac ? ac.sampleRate : 48000) / 2048, avg = (lo, hi) => { const a = Math.max(1, Math.round(lo / hz)), b = Math.min(511, Math.max(a, Math.round(hi / hz))); let s = 0; for (let i = a; i <= b; i++) s += B[i]; return s / (255 * (b - a + 1)); };
+    return [avg(30, 160), avg(300, 2000), avg(4000, 12000)];
+  }
+  function muAudio(V, B, dt) {
+    let [b, m, tr] = muS.test ? [muS.test.bass || 0, muS.test.mid || 0, muS.test.treble || 0] : muBands(B);
+    const f = tau => tau <= 0 ? 1 : 1 - Math.exp(-dt / tau), sm = Math.max(.001, V.musmooth);
+    muS.bass += (b - muS.bass) * f(sm); muS.mid += (m - muS.mid) * f(sm); muS.treb += (tr - muS.treb) * f(sm * 1.5);
+    muS.loud = .5 * muS.bass + .3 * muS.mid + .2 * muS.treb;
+    muS.fast += (b - muS.fast) * f(.04); muS.slow += (b - muS.slow) * f(.6);
+    muS.beatT += dt; const R = V.mureact;
+    const onset = muS.kick || (dt > 0 && muS.fast > muS.slow * 1.22 + .04 && muS.fast > .22 && muS.beatT > .28);
+    if (onset) {
+      muS.kick = false; muS.beatT = 0; muS.beats++; muS.punch = Math.min(1, muS.punch + .45);
+      const a = Math.random() * Math.PI * 2, s = .32 * R * Math.min(1.5, .6 + muS.fast);
+      muS.nudge[0] = Math.max(-.6, Math.min(.6, muS.nudge[0] + Math.cos(a) * s)); muS.nudge[1] = Math.max(-.6, Math.min(.6, muS.nudge[1] + Math.sin(a) * s));
+    }
+    const k = Math.exp(-dt / .7); muS.nudge[0] *= k; muS.nudge[1] *= k; muS.punch *= Math.exp(-dt / .5);
+    // r82: slow envelopes for the structural parameters (no popping); camera uses a slower release so it breathes
+    muS.sepE += (Math.min(1, 1.6 * (.6 * muS.mid + .4 * muS.loud)) - muS.sepE) * f(.8);
+    muS.vortE += (Math.min(1, 1.5 * muS.bass) - muS.vortE) * f(.5);
+    const camT = Math.min(1, 1.5 * muS.loud + .6 * muS.punch); muS.camE += (camT - muS.camE) * f(camT > muS.camE ? .7 : 1.8);
+    const cl = x => Math.max(0, Math.min(1, x));
+    muS.sep = .5 + .35 * cl(R * V.musepr * muS.sepE);
+    muS.vortex = 1 + .8 * cl(R * V.muvortr * muS.vortE);
+    muS.cam = 7.4 - .9 * cl(R * V.mucamr * muS.camE);
+    muS.travel = Math.max(0, V.mutravel * (1 + .35 * R * muS.loud) - 1);
+    return { excite: Math.min(1.5, R * (1.1 * muS.bass + .5 * muS.loud)), tempo: 1 + 1.4 * R * muS.loud, range: 1 + .22 * R * muS.loud, glow: 1 + .9 * R * muS.treb, trail: 1 + .7 * R * muS.treb };
+  }
+  function muFail(t, V) {
+    const g = t.g, d = D; g.save(); g.fillStyle = col.label; g.globalAlpha = .85; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `${15 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.fillText('Murmuration needs WebGL2 with float render targets', W / 2, H / 2 - 12 * d);
+    g.font = `${11 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.globalAlpha = .6; g.fillText(muS.why || 'Not supported by this browser or GPU', W / 2, H / 2 + 12 * d); g.restore();
+  }
+  function muPaint(t, B, dt, live) {
+    const V = sv(), g = t.g; g.clearRect(0, 0, W, H);
+    let G = muGL(); const n = MU_COUNTS[V.mubirds] || 1024;
+    if (G) { try { muProgs(G, n); } catch (e) { muS.failed = true; muS.why = e.message; muS.gl = G = null; console.warn('Murmuration unavailable:', e.message); } }
+    if (!G) { muFail(t, V); return; }
+    const t0 = performance.now(), P = muS.progs[n];
+    const w = Math.max(64, Math.round(W * V.muscale)), h = Math.max(64, Math.round(H * V.muscale));
+    if (muS.cv.width !== w || muS.cv.height !== h) { muS.cv.width = w; muS.cv.height = h; }
+    try { muAlloc(G, w, h, n); } catch (e) { muS.failed = true; muS.why = e.message; muS.gl = null; console.warn('Murmuration unavailable:', e.message); muFail(t, V); return; }
+    const realDt = Math.min(1 / 30, Math.max(0, dt)), au = muAudio(V, B, Math.min(.25, Math.max(0, dt))), simDt = realDt * Math.min(2, Math.max(0, V.muspeed));
+    if (muS.frame > 0) { muS.auto += simDt * .75 * au.tempo; muS.sim += simDt; }
+    muS.time += dt;
+    const set = U => {
+      G.uniform2f(U.res, w, h); G.uniform2f(U.nudge, muS.nudge[0], muS.nudge[1]); if (muS.pin) G.uniform4f(U.mouse, (muS.pin[0] + 1) / 2 * w, (muS.pin[1] + 1) / 2 * h, 1, 0); else G.uniform4f(U.mouse, 0, 0, 0, 0);
+      G.uniform1i(U.sw, MU_SW); G.uniform1i(U.frame, muS.frame); G.uniform1f(U.dt, realDt); G.uniform1f(U.time, muS.time);
+      G.uniform1f(U.auto, muS.auto); G.uniform1f(U.range, au.range); G.uniform1f(U.excite, au.excite);
+      G.uniform1f(U.size, V.musize); G.uniform1f(U.trail, V.mutrail * au.trail); G.uniform1f(U.glow, V.muglow * au.glow);
+      G.uniform1f(U.speed, V.muspeed); G.uniform1f(U.op, V.muop); G.uniform1f(U.key, V.mukey);
+      G.uniform1f(U.sep, muS.sep); G.uniform1f(U.vortex, muS.vortex); G.uniform1f(U.cam, muS.cam); G.uniform1f(U.travel, muS.travel);
+    };
+    G.bindVertexArray(muS.vao); G.disable(G.BLEND);
+    // Buffer A (self feedback): read st[cur], write st[1-cur]
+    const dst = 1 - muS.cur;
+    G.bindFramebuffer(G.FRAMEBUFFER, muS.st[dst].f); G.viewport(0, 0, MU_SW, muS.sh); G.useProgram(P.a.p); set(P.a.U);
+    G.activeTexture(G.TEXTURE1); G.bindTexture(G.TEXTURE_2D, null);
+    G.activeTexture(G.TEXTURE0); G.bindTexture(G.TEXTURE_2D, muS.st[muS.cur].t); G.drawArrays(G.TRIANGLES, 0, 3); muS.cur = dst;
+    // Buffer B: tile atlas from the new state
+    G.bindFramebuffer(G.FRAMEBUFFER, muS.at.f); G.viewport(0, 0, muS.atl.aw, muS.atl.ah); G.useProgram(P.b.p); set(P.b.U);
+    G.bindTexture(G.TEXTURE_2D, muS.st[muS.cur].t); G.drawArrays(G.TRIANGLES, 0, 3);
+    // Image → canvas
+    G.bindFramebuffer(G.FRAMEBUFFER, null); G.viewport(0, 0, w, h); G.useProgram(P.i.p); set(P.i.U);
+    G.activeTexture(G.TEXTURE1); G.bindTexture(G.TEXTURE_2D, muS.at.t); G.activeTexture(G.TEXTURE0); G.bindTexture(G.TEXTURE_2D, muS.st[muS.cur].t);
+    G.drawArrays(G.TRIANGLES, 0, 3); muS.frame++;
+    g.save(); g.imageSmoothingEnabled = true; g.drawImage(muS.cv, 0, 0, W, H); g.restore();
+    muS.ms = performance.now() - t0;
+    muS.info = { n: muS.info.n + 1, frame: muS.frame, sim: muS.sim, auto: muS.auto, time: muS.time, size: [w, h], birds: n, atlas: [muS.atl.aw, muS.atl.ah], span: muS.atl.span, state: [MU_SW, muS.sh],
+      bass: muS.bass, mid: muS.mid, treble: muS.treb, loud: muS.loud, excite: au.excite, tempo: au.tempo, range: au.range, glow: V.muglow * au.glow, trail: V.mutrail * au.trail, beats: muS.beats, nudge: [...muS.nudge], live, ms: muS.ms, sep: muS.sep, vortex: muS.vortex, cam: muS.cam, travel: muS.travel, travelSet: V.mutravel };
+    if (t.big && V.text) xyLabel(t, V, 'Murmuration · BichoPragmatico');
+  }
+  function muFlat(t) { size(t); muS.last = 0; muPaint(t, null, 0, false); t.cv.classList.add('idle'); }
+  function muFrame(t) {
+    bandSync(); if (!muS.on || !running()) { muFlat(t); if (src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); frames++; t.cv.classList.remove('idle'); const now = performance.now(), dt = muS.last ? Math.min(.25, (now - muS.last) / 1000) : 1 / 60; muS.last = now;
+    muS.an.getByteFrequencyData(muS.bins); muPaint(t, muS.bins.subarray(0, 512), reduce.matches ? 0 : dt, true); if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+  function muRead() {                         // test hook: current Buffer A state (clock, control, first birds)
+    const G = muS.gl; if (!G || !muS.st) return null;
+    const px = new Float32Array(MU_SW * 4); G.bindFramebuffer(G.FRAMEBUFFER, muS.st[muS.cur].f); G.readPixels(0, 0, MU_SW, 1, G.RGBA, G.FLOAT, px); G.bindFramebuffer(G.FRAMEBUFFER, null);
+    return { control: Array.from(px.subarray(0, 4)), meta: Array.from(px.subarray(4, 8)), birds: Array.from({ length: 8 }, (_, i) => Array.from(px.subarray(8 + i * 8, 8 + i * 8 + 8))) };
+  }
+  function muProject() {                      // r82 test hook: every bird projected exactly as projectedBird() (current camera)
+    const G = muS.gl; if (!G || !muS.st) return null;
+    const n = MU_COUNTS[sv().mubirds] || 1024, px = new Float32Array(MU_SW * muS.sh * 4), w = muS.cv.width, h = muS.cv.height, c = Math.cos(-.16), s = Math.sin(-.16);
+    G.bindFramebuffer(G.FRAMEBUFFER, muS.st[muS.cur].f); G.readPixels(0, 0, MU_SW, muS.sh, G.RGBA, G.FLOAT, px); G.bindFramebuffer(G.FRAMEBUFFER, null);
+    let sx = 0, sy = 0, on = 0, n0 = 0; const XS = [], YS = [];
+    for (let id = 0; id < n; id++) {
+      const o = (2 + 2 * id) * 4; if (o + 3 >= px.length) break;
+      const x = px[o] * 1.5, y = px[o + 1] * 1.5, z = px[o + 2] * 1.5, X = c * x - s * z, Z = s * x + c * z, k = .92 * h / Math.max(.65, muS.cam - Z);
+      const hx = .5 * w + k * X, hy = .5 * h + k * y; sx += hx / w; sy += hy / h; n0++; XS.push(hx / w); YS.push(hy / h); if (hx >= 0 && hx <= w && hy >= 0 && hy <= h) on++;
+    }
+    XS.sort((a, b) => a - b); YS.sort((a, b) => a - b); const pc = (A, f) => A[Math.min(A.length - 1, Math.floor(f * A.length))];
+    return { n: n0, cx: sx / n0, cy: sy / n0, onScreen: on / n0, cam: muS.cam, x01: pc(XS, .01), x99: pc(XS, .99), y01: pc(YS, .01), y99: pc(YS, .99) };
+  }
+
+  /* r84: Ysin Ember Mix by pwasiewi (GPL-3.0-or-later, shadertoy.com/view/7ctSDB); ported. Reference copy of the source and its
+     provenance: test/r84/ysin-ember-shadertoy.glsl; the shaders below are generated from it by test/r84/build.py (listed substitutions).
+     Two passes as in Shadertoy, WebGL2 (needs EXT_color_buffer_float):
+     Buffer A = the audio integrator, a 9 × 1 RGBA32F ping-pong state texture (the source keeps nine state columns in a canvas-sized
+     buffer and reads column k at x = (2k+1)/18; with a 9-texel texture and NEAREST that is texel k exactly, and iResolution is 9 × 1 for
+     this pass, so the column split U.x/iResolution.x*9 is unchanged). Poison guard kept verbatim. iChannel1 = its own previous frame,
+     iChannel0 = the Shadertoy music texture: 512 × 2 R8, row 0 = spectrum (512 linear bins over 0..11025 Hz, AnalyserNode fftSize 2048,
+     smoothing 0.8, −100..−30 dB → 0..255, resampled from the context's bin width so x = 1 is 11025 Hz at 44.1 or 48 kHz), row 1 = waveform.
+     Image = the wave, flame and six-strand braid; iChannel1 = Buffer A (this frame's state). iTime / iTimeDelta are the real clock
+     (frozen while idle, when Buffer A is not run). Extras, all at the original by default: Audio gain (spectrum × gain), Braid size
+     (braidMax), Flame intensity, Main-wave scale (the source's 0.25 knob), Rotation; Opacity / See-through / Internal resolution as
+     in the other shader modes. */
+  const YE_HEAD = `#version 300 es
+precision highp float;precision highp int;precision highp sampler2D;
+uniform vec2 u_res;uniform float u_time,u_dt,u_braid,u_flame,u_wave,u_rot,u_op,u_key;
+uniform sampler2D u_audio,u_state;
+`;
+  const YE_A_FS = `// Audio integrator for Ysin_Ember_Mix: six band drives for the braid,
+// @channels audio, bufferA
+// a percussion onset detector, and the phases the wave flows on.
+//
+// Shadertoy port (Buffer A tab there): https://www.shadertoy.com/view/7ctSDB
+//
+// ===========================================================================
+// TUNING - the audio half. The visual knobs are in the main file.
+//
+//   band(lo, hi) ranges   Six log-spaced bands, centres 55/140/360/900/2300/
+//                         5800 Hz, half-width +-0.675 octave - so they TILE
+//                         the spectrum, edge to edge, with no overlap.
+//                         x = frequency / 11025 (the texture is the first 512
+//                         of 1024 bins of a 2048-point FFT, LINEAR, so x=1 is
+//                         11 kHz). To move a strand's territory: x = Hz/11025.
+//                         Overlap was swept from gaps to +-1.58 octave and
+//                         changed NOTHING beyond the error bars, so the
+//                         simplest covering was kept. See the note by the
+//                         attention wave below.
+//
+//   envelope .45 / .12    Attack / release of each band's fast envelope.
+//                         Higher attack = hits land harder; higher release =
+//                         less flicker but a lazier strand.
+//
+//   mean  dt/4.           Time constant of the per-band reference, in
+//                         seconds (4 s here). This is the AGC: shorter makes
+//                         a strand adapt within a phrase (so a long loud
+//                         passage stops driving it), longer keeps whole
+//                         sections expressive. Below ~1.5 s the braid starts
+//                         ignoring build-ups.
+//
+//   seed                  Do not remove: an all-zero state means the buffer
+//                         was never written, and starting the means at 0
+//                         makes every band read as far above average for the
+//                         first seconds - the braid then swings off-screen
+//                         until they catch up.
+//
+//   E compression 1-exp(-2.5*E), Es smoothing .05
+//                         Full-band fill. Drives the FLAME, the flow speed
+//                         and ampG. Raise 2.5 to make quiet tracks fill more;
+//                         raise .05 for a twitchier flame.
+//
+//   phase rates (1.2, .23, .11, .07, .7, .5) and r = (.35 + 5.0*Es)*dt*3
+//                         The main wave's flow: .35 = speed in silence, 5.0 =
+//                         how much the music accelerates it. Phases only ever
+//                         advance, so the wave never runs backwards.
+// ===========================================================================
+
+float aTap(float x){ return texture(u_audio, vec2(x, .25)).r; }
+
+// mean of four taps spread over one band's range
+float band(float lo, float hi){
+    return .25*( aTap(mix(lo, hi, .125)) + aTap(mix(lo, hi, .375))
+               + aTap(mix(lo, hi, .625)) + aTap(mix(lo, hi, .875)) );
+}
+
+void mainImage(out vec4 C, in vec2 U)
+{
+    vec4 sA = texture(u_state, vec2(1./18., .5));
+    vec4 sB = texture(u_state, vec2(3./18., .5));
+    vec4 sF0 = texture(u_state, vec2(5./18., .5));
+    vec4 sF1 = texture(u_state, vec2(7./18., .5));
+    vec4 sM0 = texture(u_state, vec2(9./18., .5));
+    vec4 sM1 = texture(u_state, vec2(11./18., .5));
+    vec4 sP  = texture(u_state, vec2(13./18., .5));   // percussion state
+    vec4 sD0 = texture(u_state, vec2(15./18., .5));   // smoothed drives 0..3
+    vec4 sD1 = texture(u_state, vec2(17./18., .5));
+
+    // --- POISON GUARD: recover from a non-finite state --------------------
+    // The engine NEVER clears this buffer once created: ensureBufferFBOs()
+    // returns early unless the size changed, and the glClear lives only in the
+    // creation branch. So the state survives a shader switch, a recompile,
+    // everything short of a resize or a plasmashell restart.
+    //
+    // That turns any single NaN/Inf into a PERMANENT black wallpaper: mix()
+    // and mod() propagate it, and every seed test here is a COMPARISON, which
+    // is false for NaN - so the buffer can never re-seed itself and the next
+    // shader you load inherits the poison too.
+    //
+    // Cheapest total check: sum the whole state into one float. If that is not
+    // finite (or has run away), zero every state vector - the existing seed
+    // tests below then fire on their own and rebuild it in one frame.
+    float poison = dot((sA + sB + sF0 + sF1 + sM0 + sM1 + sP + sD0 + sD1), vec4(1.));
+    // legit state sums to at most a few hundred (phases wrap at 2pi), so
+    // 1e5 catches a runaway that is still technically finite
+    if (isnan(poison) || isinf(poison) || abs(poison) > 1e5) {
+        sA = vec4(0.);
+        sB = vec4(0.);
+        sF0 = vec4(0.);
+        sF1 = vec4(0.);
+        sM0 = vec4(0.);
+        sM1 = vec4(0.);
+        sP = vec4(0.);
+        sD0 = vec4(0.);
+        sD1 = vec4(0.);
+    }
+   // smoothed drives 4,5
+
+    // full-band fill: unchanged, still drives the flame and the flow speed
+    float E = 0.;
+    for (int i = 0; i < 12; i++)
+        E += aTap(.02 + float(i)*.08);
+    E /= 12.;
+    E = 1. - exp(-2.5*E);
+    float Es = mix(sB.b, E, .05);
+
+    // NO OVERLAP: the centres sit 1.35 octave apart, so a half-width of
+    // +-0.675 octave makes each band end exactly where the next begins - the
+    // six tile the spectrum instead of sharing it. This is the far end of the
+    // experiment: _01 is +-0.9 octave, _02 is +-1.35.
+    //
+    // Measured against the other two on one 5 s excerpt, the honest answer is
+    // that the differences are SMALL: the strands sit slightly further apart
+    // here (mean spread 0.101 vs 0.098 for _01 and 0.092 for _02), and once
+    // the common loudness breath is subtracted, nothing else separates the
+    // three beyond the noise of such a short sample. Trust the eye over the
+    // numbers on this one - and the reason the braid does not fall apart
+    // without overlap is that the AGC keeps every strand near its own
+    // average, which is a stronger coupling than band sharing ever was.
+    float b0 = band(.0031, .0080);   //   34 -   88 Hz
+    float b1 = band(.0080, .0203);   //   88 -  224 Hz
+    float b2 = band(.0204, .0521);   //  225 -  575 Hz
+    float b3 = band(.0511, .1304);   //  564 - 1437 Hz
+    float b4 = band(.1306, .3332);   // 1440 - 3673 Hz
+    float b5 = band(.3294, .8401);   // 3632 - 9263 Hz
+
+    float dt = clamp(u_dt, 0., .05);
+
+    // --- percussion: onset detection, not level -----------------------------
+    // A drum is a sudden RISE, so the level says nothing (a steady bass line
+    // sits as high as a kick). Two bands, because a kit lives in two places:
+    // 44-121 Hz for the kick, 3.9-9.4 kHz for snare/hats. The reference
+    // tracks at ~0.25 s and a small threshold keeps ordinary wobble out;
+    // instant attack, ~0.13 s decay. These are the constants measured for
+    // Ysin_Ember: above .25 about a fifth of the time, ~180 hits/min.
+    float kb = .25*( aTap(.0045) + aTap(.0065) + aTap(.0085) + aTap(.0105) );
+    float hb = .25*( aTap(.38) + aTap(.50) + aTap(.65) + aTap(.80) );
+    float kr = mix(sP.y, kb, clamp(dt/.25, 0., 1.));
+    float hr = mix(sP.w, hb, clamp(dt/.25, 0., 1.));
+    float dec = exp(-dt/.13);
+    float kp = max(clamp((kb - kr - .015)*5., 0., 1.), sP.x*dec);
+    float hp = max(clamp((hb - hr - .015)*5., 0., 1.), sP.z*dec);
+
+
+    // fast envelope per band: quick attack so a hit is visible, slower
+    // release so a strand does not flicker between frames
+    // The spare slot of f1 carries the expanded PERCUSSION PULSE. It costs
+    // no extra state and buys the thing the main wave wants: aM1.z below is
+    // that pulse averaged over ~4 s, i.e. how present the drums are in this
+    // passage ("pressure"), as opposed to a single hit. d1.z is unused, so
+    // nothing else changes.
+    float pulseNow = clamp((kp + .55*hp) * 2.2, 0., 1.);
+    vec4 f0 = vec4(b0, b1, b2, b3), f1 = vec4(b4, b5, pulseNow, 1.);
+    vec4 aF0 = mix(sF0, f0, mix(vec4(.12), vec4(.45), step(sF0, f0)));
+    vec4 aF1 = mix(sF1, f1, mix(vec4(.12), vec4(.45), step(sF1, f1)));
+
+    // slow mean per band (~4 s): the reference each strand is judged against.
+    // This is the whole point of the Mix variant - a treble strand on a
+    // string quartet and a bass strand on techno both sit near their own
+    // average, so both dance instead of one pinning and one sleeping.
+    //
+    // SEEDED on the first frame. An all-zero state means "buffer never
+    // written": starting the mean at 0 would make every band read as far
+    // above its own average for the first seconds, every strand would pin at
+    // full drive, and the braid would swing off-screen until the means caught
+    // up. Jumping straight to the current level costs nothing and removes
+    // that opening kick.
+    float sm = clamp(dt/4., 0., 1.);
+    bool  seed = dot(sM0, vec4(1.)) + dot(sM1, vec4(1.)) < 1e-4;
+    vec4 aM0 = seed ? f0 : mix(sM0, f0, sm);
+    vec4 aM1 = seed ? f1 : mix(sM1, f1, sm);
+
+    // THE DRIVE, finished here instead of in the main pass.
+    //
+    // Two steps, both measured on a real track rather than guessed:
+    //  1. EXPAND. The raw drive (deviation from the band's own mean) only ever
+    //     used about a fifth of the screen range - it sat between .5 and .7
+    //     and never reached either end. smoothstep(.30,.85) maps the part that
+    //     is actually used onto the full 0..1, which nearly doubles the
+    //     visible motion WITHOUT touching the signal's shape.
+    //  2. SMOOTH, after expanding. Expansion multiplies the frame-to-frame
+    //     noise along with the signal, so on its own it doubles the jitter
+    //     (5.1 -> 10.5 in mean |second difference|). A one-pole at ~0.11 s
+    //     removes that again and costs almost nothing in range.
+    // Measured net effect vs the previous version: on-screen swing per strand
+    // 0.211 -> ~0.36 (+70%), jitter 5.1 -> ~2.7 (-47%), strand-to-strand
+    // spread 0.101 -> 0.16. More expression, less chaos - which is the point.
+    vec4 rawD0 = clamp((aF0 - aM0)*2.6 + .38, 0., 1.);
+    vec4 rawD1 = clamp((aF1 - aM1)*2.6 + .38, 0., 1.);
+    vec4 aD0 = mix(sD0, smoothstep(vec4(.30), vec4(.85), rawD0), .15);
+    vec4 aD1 = mix(sD1, smoothstep(vec4(.30), vec4(.85), rawD1), .15);
+
+    float r = (.35 + 5.0*Es) * dt * 3.;
+    const float TAU = 6.2831853;
+
+    // The ATTENTION WAVE's phase. Why it exists at all is a measurement
+    // result: sweeping the band half-width from a gap-leaving .38 octave to a
+    // heavily overlapping 1.58 showed NO significant difference in any metric
+    // (swing .144-.181 with error bars of +-.11, effective independent strands
+    // 1.9-2.3 with +-.5). Music's spectral envelope moves too coherently for
+    // band geometry to separate the strands, and the two signal-domain fixes
+    // tried next made it worse: staggering the per-band time constants bought
+    // 0.1 s of sequencing, and a neighbour-to-neighbour cascade dropped
+    // independence from 3.5 to 1.7 while producing no lag at all.
+    //
+    // So the sequencing is choreographed instead of extracted: one slow phase,
+    // advancing with the music like every other phase here, walks along the
+    // six strands. Measured at rate .18 / depth .28 / step 1.15 rad: sweep
+    // period ~3 s, 0.45 s between neighbouring strands, and jitter DOWN 24%
+    // (2.35 -> 1.79) because a slow common modulation damps the fast common
+    // motion. Swing is unchanged.
+    float swp = mod(sD1.z + .18*r, TAU);
+    aD1 = vec4(aD1.x, aD1.y, swp, (aTap(.45)+aTap(.65))*.5);  // w = treb export
+    vec4 A = vec4( mod(sA.x + 1.2*r, TAU),
+                   mod(sA.y + .23*r, TAU),
+                   mod(sA.z + .11*r, TAU),
+                   mod(sA.w + .07*r, TAU) );
+    vec4 B = vec4( mod(sB.x + .7*r, TAU),
+                   mod(sB.y + .5*r, TAU),
+                   Es, E );
+
+    vec4 P = vec4(kp, kr, hp, hr);
+    float fx = U.x / u_res.x * 9.;
+    C = (fx < 1.) ? A : (fx < 2.) ? B : (fx < 3.) ? aF0
+      : (fx < 4.) ? aF1 : (fx < 5.) ? aM0 : (fx < 6.) ? aM1
+      : (fx < 7.) ? P : (fx < 8.) ? aD0 : aD1;
+}
+out vec4 yeOut;
+void main(){mainImage(yeOut,gl_FragCoord.xy);}
+`;
+  const YE_FS = `// Ysin_Ember_Mix - the audio-reactive Ysin with the braid spread across
+// @channels audio, bufferA
+// the spectrum: each of the six strands follows its own frequency band (low
+// to high, bass on the darkest strand), the whole braid breathes with the
+// mix, and the main wave answers the drums. The paired
+// Ysin_Ember_Mix_bufferA.frag holds the bands, their AGC and all the
+// per-frame state; the engine finds it BY NAME, so a copy must rename both.
+//
+// Shadertoy port: https://www.shadertoy.com/view/7ctSDB
+//
+// Where it differs from Ysin_Ember: that one keeps a single mids-driven
+// braid and its original yellow flame; this one splits the braid six ways,
+// lets the flame answer the beat as well, and carries the attention wave that
+// walks activity along the strands.
+//
+// ===========================================================================
+// TUNING - what to turn, and what it does. Everything here is safe to nudge;
+// the numbers in the main-wave block below are not (that half is shared with
+// Ysin_Ember and kept identical on purpose).
+//
+//   braidMax = .82        Ceiling on how far a strand leaves the axis. The
+//                         screen is uv.y in [-1,1] and the main wave stops at
+//                         .82, so .9 is the practical maximum - past that the
+//                         braid clips through the top and bottom edges. The
+//                         tanh below only bends the peak, so raising this
+//                         mostly buys headroom, not visible size.
+//
+//   swing  (.18 + .75*band)
+//                         .18 = how much a strand moves when ITS band is
+//                         quiet (raise for a livelier braid overall, lower
+//                         for stillness between hits); .75 = how much its own
+//                         band adds (raise for more contrast BETWEEN strands,
+//                         which is the whole point of this variant).
+//
+//   tremble = .30*band    The fast shiver - what used to be the vocal-driven
+//                         wobble, now per band. Raise for nervier strands.
+//   tremble rate (3.1*speed + 2.2)  and  (1.9*height)
+//                         How fast the shiver runs in time and along x.
+//
+//   ampG = .45 + .55*Es   The braid as a body breathing with the mix: .45 is
+//                         its size in silence, .55 how much loudness inflates
+//                         it. Keep .45+.55 <= 1.0 or peaks live in the tanh.
+//
+//   strand brightness (.18 + 1.7*b)
+//                         .18 = glow of an idle strand, 1.7 = how hard a busy
+//                         band lights its own strand. Drop 1.7 if the braid
+//                         out-shines the main wave on loud tracks.
+//
+//   drive  clamp((f-m)*2.6 + .38, 0, 1)
+//                         2.6 = sensitivity to a band sitting above its own
+//                         average (higher = twitchier, and it clips sooner);
+//                         .38 = the baseline every strand keeps while its
+//                         band is merely average.
+//   gate S(.03, .12, Es)  Where silence ends and the braid wakes up. Raise
+//                         the pair to make quiet passages calmer.
+//
+//   per strand: speed 1.+ti, height 4.+ti, colour vec3(.2+ti*.7, .2+ti*.4, .3)
+//                         ti runs 0..1 over the six strands, so these keep the
+//                         Discoteq gradient: strand 0 = bass = darkest/slowest.
+//                         Swap the colour line to re-map the spectrum look.
+// ===========================================================================
+
+// Ysin_Ember_NoAudio - Mist5 + Discoteq companion lines; amplitude morphs the shape, no zoom
+// (mist ported from the blue rectangles shadertoy: fbm + ripple + reciprocal
+//  coloring; the flow frame rotates and meanders so directions keep changing)
+
+const vec3 bgColor = vec3(.42,.26,.02);
+const float noiseIntensity = 2.8;
+const float noiseDefinition = .6;
+const vec2 glowPos = vec2(-2.,0.);
+
+float random(vec2 co){ return fract(sin(dot(co.xy, vec2(12.9898,78.233)))*43758.5453); }
+vec2 gradv(vec2 i){ float a=random(i)*6.2831853; return vec2(cos(a),sin(a)); }
+float noise(in vec2 p){
+    p *= noiseIntensity;
+    vec2 i=floor(p), f=fract(p);
+    vec2 u=f*f*f*(f*(f*6.-15.)+10.);
+    float a=dot(gradv(i),f),            b=dot(gradv(i+vec2(1,0)),f-vec2(1,0)),
+          c=dot(gradv(i+vec2(0,1)),f-vec2(0,1)), e=dot(gradv(i+vec2(1,1)),f-vec2(1,1));
+    return .5+.95*mix(mix(a,b,u.x), mix(c,e,u.x), u.y);
+}
+mat2 rotate2d(float a){ return mat2(cos(a),-sin(a),sin(a),cos(a)); }
+
+// 3D noise from Flame (anatole duprat - XT95/2013, CC BY-NC-SA 3.0)
+float fnoise3(vec3 p){
+    vec3 i = floor(p);
+    vec4 a = dot(i, vec3(1., 57., 21.)) + vec4(0., 57., 21., 78.);
+    vec3 f = cos((p-i)*acos(-1.))*(-.5)+.5;
+    a = mix(sin(cos(a)*a), sin(cos(1.+a)*(1.+a)), f.x);
+    a.xy = mix(a.xz, a.yw, f.y);
+    return mix(a.x, a.y, f.z);
+}
+
+#define S smoothstep
+
+// One braid strand. 'band' is this strand's own normalised band level and
+// 'amp' the whole-mix loudness, so the strand swings wider when its band is
+// busy AND the braid as a body breathes with the track. 'band' also feeds a
+// second, faster term: that is the tremble the vocals used to drive alone.
+// Hard ceiling on how far a strand may travel from the axis. The screen is
+// uv.y in [-1,1], so anything past this leaves through the top or bottom;
+// the main wave limits itself the same way (.82*tanh) and the braid must not
+// out-swing it. tanh only bends the top of the range, so the strands keep
+// their differences and only the peaks are held back.
+#define braidMax u_braid   // r84: Braid size (source .82)
+
+vec4 Line(vec2 uv, float speed, float height, vec3 col, float band, float amp) {
+    float mid = .25 + .75*S(1.6, 0., abs(uv.x));   // widest mid-screen
+    float swing   = sin(u_time*speed + uv.x*height) * (.18 + .75*band) * amp;
+    float tremble = .30 * band * sin(u_time*(3.1*speed + 2.2) + uv.x*(1.9*height));
+    uv.y += braidMax * tanh(mid * (swing + tremble) / braidMax);
+    // junctions: early, gentle blur ramp + strong dissolve = subtle fade-out
+    float blur = .008 + .12 * S(.75, 1.78, abs(uv.x));   // floor = anti-aliasing
+    float melt = 1. - .75*S(1.15, 1.78, abs(uv.x));
+    return vec4(S(blur, 0., abs(uv.y) - .006) * col * .6 * melt, 1.0);
+}
+
+// --- audio: NONE here - the buffer exports treb (main-wave sparkle, its
+// only image-side use) in a spare state component, so on Shadertoy the
+// music is bound ONCE, on Buffer A. u_state = Buffer A.
+
+void mainImage(out vec4 C, in vec2 U){
+    vec2 R=u_res.xy;
+    vec2 uv = U/R*2.-1.; uv.x *= R.x/R.y;
+    float t=u_time;
+
+    float treb = texture(u_state, vec2(17./18., .5)).w;   // main-wave sparkle, unchanged
+
+    // integrator state from buffer A (six columns; see that file)
+    vec4 sA  = texture(u_state, vec2( 1./18., .5));
+    vec4 sB  = texture(u_state, vec2( 3./18., .5));
+    vec4 m1  = texture(u_state, vec2(11./18., .5));   // slow means b4,b5
+    // The drive is finished in the buffer now (expanded, then smoothed);
+    // reading it here keeps the main pass free of per-frame state.
+    vec4 sd0 = texture(u_state, vec2(15./18., .5));   // drives b0..b3
+    vec4 sd1 = texture(u_state, vec2(17./18., .5));   // drives b4,b5
+    float Es = sB.b;
+    // percussion pulses: kick leads, snare/hats add a lighter tick
+    vec4 sP = texture(u_state, vec2(13./18., .5));
+    // Expanded before use. The raw envelope was MEASURED on the running
+    // desktop (a debug bar whose length was the pulse): it reads ~0.07-0.16
+    // between hits and reaches ~0.5 on strong ones. At that scale the first
+    // version of the flick below came out ~6 px tall - present in the maths,
+    // invisible on the screen. x2.2 puts ordinary hits in the visible range
+    // and lets strong ones saturate.
+    float pulse = clamp((sP.x + .55*sP.z) * 2.2, 0., 1.);
+    // Drum PRESSURE: the same pulse averaged over ~4 s (buffer column 5's
+    // spare slot). A single hit flicks the wave; this says whether the
+    // passage has drums at all, and scales how far the wave swings.
+    float press = clamp(m1.z, 0., 1.);
+
+    // Each strand is judged against ITS OWN running average, not against the
+    // other bands: a band sitting above its mean is "busy" whatever its
+    // absolute level, which is what makes this work on any material. Silence
+    // still stops everything - the gate rides the full-band fill.
+    float gate = S(.03, .12, Es);
+    float swp = sd1.z;          // attention-wave phase, read BEFORE the gate
+    vec4 d0 = sd0 * gate;
+    vec4 d1 = sd1 * gate;
+    float ampG = .45 + .55*Es;               // the braid as a body breathes
+
+    float angS = u_rot*.35*sin(.03*t+2.);   // r84: Rotation on/off
+    vec3 color = vec3(0.);
+
+    // --- main wave: identical to Ysin_Ember ---------------------------
+    vec2 p = rotate2d(angS)*uv;
+    float k = 6.28318/2.6;
+    float env = S(1.5, .1, abs(p.x));
+    // WHERE THE BIG SWINGS COME FROM.
+    // Until now: three morph phases out of buffer A (sA.y/z/w), free-running
+    // sines. The music only set how FAST they turned (the phase rate carries
+    // Es), so the wave went through its whole repertoire - including its
+    // widest shapes - whatever the track was doing. That is the "evolves to
+    // max on its own" the eye picks up on.
+    //
+    // Now each harmonic's SIZE is bound to the part of the spectrum it stands
+    // for, and the morph phase only decides how that size is spent (including
+    // its sign, which is what flips the waveform's character):
+    //   a1, the fundamental  <- lows   (22-357 Hz)
+    //   a2, second harmonic  <- mids   (141-1437 Hz)
+    //   a3, third harmonic   <- highs  (902-9263 Hz)
+    // A bass-heavy passage draws one broad arc; a bright, busy one breaks the
+    // line into ripples; near-silence leaves a small calm wave, because every
+    // drive falls to zero through the gate.
+    float lo = .5*(d0.x + d0.y);
+    float md = .5*(d0.z + d0.w);
+    float hi = .5*(d1.x + d1.y);
+    float a1 = (.26 + .34*lo) + .18*sin(sA.y)*(.35 + .65*lo);
+    float a2 = .18*sin(sA.z + 2.) * (.30 + .95*md);
+    float a3 = .11*sin(sA.w + 4.) * (.25 + 1.05*hi);
+    float y = env*( a1*sin(k*p.x - sA.x)
+                  + a2*sin(2.*k*p.x + sB.x)
+                  + a3*sin(3.*k*p.x - sB.y + 1.) );
+    // How far the wave swings follows the drums: a busy passage opens it up,
+    // a drumless one keeps it low. .60 is its size with no percussion at all;
+    // press is a ~4 s average, so this is a slow opening and closing, not a
+    // per-beat jump (that is the *= 1+.20*pulse below).
+    y *= .60 + .95*press;
+    // The drum flick, in two parts because one alone does not read: a brief
+    // WIDENING of the whole wave (that is what the eye catches on a beat) and
+    // a fast ripple travelling along it (that is what makes it a drum rather
+    // than a swell). Both are applied BEFORE the limiter, so a heavy beat
+    // cannot push the crest off screen.
+    y *= 1. + .20*pulse;
+
+    // TEST KNOB: a quarter of the original slow swing (halved twice), so the
+    // main line runs well inside the braid rather than arcing over it.
+    // Applied BEFORE the tremble below, so the drum flick keeps its absolute
+    // size and now dominates the line's motion. Set back to 1. to undo.
+    y *= u_wave;   // r84: Main-wave scale (source .25)
+    // NOT multiplied by env, on purpose: env pins the wave to the axis at the
+    // edges, so an env-shaped ripple only shivers in the middle third. Left
+    // bare, the tremble runs the WHOLE length of the line - at the edges it
+    // wobbles around the axis instead of around a crest, which is exactly
+    // where the wave is otherwise motionless.
+    // 1.9x the original .11. The flame still carries most of the beat, but the
+    // wave keeps a visible tremble of its own.
+    // .155, chosen by measurement rather than taste. Two criteria met the same
+    // number: it is the midpoint of the .103/.206 pair that bracketed it, and
+    // it is the largest tremble whose 95th-percentile crest (.236) still sits
+    // at or below the braid's MIDDLE strand (.239 median, measured frame by
+    // frame on a real track). So the wave's strongest beats reach into the
+    // braid's body without ever rising through it - at no value up to .206
+    // does the line actually cross the braid, because the x.25 scale keeps it
+    // low; if the line should be more present, that scale is the knob, not
+    // this one.
+    y += .155 * pulse * sin(4.5*k*p.x - 7.0*t);
+    y = .82*tanh(y/.82);   // taller swing, soft-limited so the crest never leaves the screen
+    // the flame packet's geometry is needed BEFORE the core is drawn: the core
+    // colour depends on whether the fire is passing over it
+    float dy = p.y - y;                              // height above the curve
+    float xc = -2.2 + mod(.55*t, 4.4);               // sweep position
+    float sweep = exp(-pow((p.x - xc)*1.1, 2.));
+
+    float d = abs(p.y - y);
+    float w = (.75+.35*sin(.35*t - 2.)) * (.85+.40*sin(k*.8*p.x + .9*t));
+    w = clamp(w, .25, 1.5);
+    float wd = d/w;
+    // Under the flame the core takes the FIRE's colour instead of going white.
+    // The reciprocal term peaks well above 1, so core + root + bridge used to
+    // clip every channel at once - and three saturated channels are white by
+    // definition, however warm each of them was on its own.
+    vec3 coreCol = mix(vec3(.55,.42,.10), vec3(.95,.34,.04), .8*sweep);
+    color += coreCol*(.007*(1.+.9*treb+.6*pulse)/(wd+.006));  // core; treble sparkle + beat
+    color += vec3(.42,.28,.04)*.005/(wd*wd*20.+.030); // halo, dim
+
+    // flitting flame packet racing along the wave (Flame noise + palette)
+    float turb = fnoise3(vec3(p.x*2.5, dy*3. - 2.2*t, .6*t));
+    // The flame is what answers the drums now: its height still follows the
+    // smoothed band fill (the slow part), and the pulse doubles it on a hit -
+    // so where the wave used to shake, the fire shoots instead.
+    float fh = (.30*sweep + .04)*(.35 + 2.8*Es)*(1. + 1.0*pulse);
+    float fire = clamp((fh - dy - .12*turb)/fh, 0., 1.);
+    // The base is the WEAKEST part, but not empty: fading it to zero left a
+    // black band between the line and the flame body. The ramp therefore runs
+    // down to a FLOOR (.22) rather than to nothing, so the gap carries a dim
+    // ember veil - the wave core and the braid still show through it, which is
+    // what makes the fire read as translucent instead of painted on.
+    float baseRamp = smoothstep(-.01, .14, dy);
+    fire *= mix(.22, 1., baseRamp) * smoothstep(0., .15, sweep);
+    fire *= fire;
+    // amber rather than yellow: green pulled down relative to red, and the
+    // whole body dimmed - intensity was what made it look like paint. Down at
+    // the base the colour also loses saturation, so the veil filling the gap
+    // reads as smoke lit from within rather than as a second flame.
+    vec3 bodyCol = mix(vec3(.30, .20, .12), vec3(.62, .32, .10), baseRamp);
+    color += fire * bodyCol * (1. + .5*pulse) * u_flame;   // r84: Flame intensity   // flame body, brighter on the beat
+    color += fire*fire*fire * vec3(.50, .32, .14) * u_flame;   // hot inner tongue, dimmed
+
+    // The bridge over the dark band between the line and the flame body.
+    // Needed as its OWN term because 'fire' is squared above: the .22 floor
+    // there comes out as ~.05 on screen, which against black is still black.
+    // This one is not squared, so what is written is what is seen. Copper,
+    // not yellow - green and blue pulled right down - and it peaks in the gap
+    // (around .06 above the curve), fading out by the time the body starts.
+    float bridge = sweep * smoothstep(-.03, .04, dy) * smoothstep(.26, .05, dy);
+    color += bridge * vec3(.34, .17, .07) * (.85 + .6*pulse) * u_flame;
+    // the blue root of the original Flame, kept as a hint only: at .7 it was
+    // the main thing turning the line cold-white wherever the fire passed
+    color += smoothstep(.025, 0., abs(dy)) * sweep * vec3(.15,.45,1.2)*.16 * u_flame; // blue root
+
+    // --- braid: strand i belongs to band i, dark/low -> bright/high --------
+    for (int i = 0; i < 6; i++){
+        float ti = float(i)/5.;                      // speeds and colours as before
+        float b = (i == 0) ? d0.x : (i == 1) ? d0.y : (i == 2) ? d0.z
+                : (i == 3) ? d0.w : (i == 4) ? d1.x : d1.y;
+        // The attention wave: the same slow phase reaches each strand a little
+        // later, so a change in the music travels along the braid instead of
+        // hitting all six at once. This is the "one after another" look, and
+        // it is choreography, not data - the bands themselves carry no such
+        // ordering (see the buffer's header for the measurements).
+        b *= max(0., .72 + .28*sin(swp - float(i)*1.15));
+        color += Line(p, 1.+ti, 4.+ti, vec3(.2+ti*.7, .2+ti*.4, .3), b, ampG).rgb
+               * (.18 + 1.7*b);
+    }
+
+    color = clamp(color, 0., 1.);   // r84: Opacity / See-through like the other shader modes
+    float alpha = u_key>0.5 ? mix(u_op,1.0,smoothstep(0.08,0.35,dot(color,vec3(0.2126,0.7152,0.0722)))) : u_op;
+    C = vec4(color*alpha, alpha);
+}
+out vec4 yeOut;
+void main(){mainImage(yeOut,gl_FragCoord.xy);}
+`;
+  const yeS = { cv: document.createElement('canvas'), gl: null, failed: false, why: '', on: false, an: null, bins: new Uint8Array(1024), wav: new Uint8Array(2048), tex: new Uint8Array(1024),
+    st: null, cur: 0, frame: 0, time: 0, dt: 0, last: 0, test: null, poison: false, ms: 0, info: { n: 0 } };
+  function yeSync() {
+    const want = !!src && enabled() && open && curMode().id === 'ysinember' && !document.hidden; if (want === yeS.on) return;
+    if (want) { if (!yeS.an) { yeS.an = ac.createAnalyser(); yeS.an.fftSize = 2048; yeS.an.minDecibels = -100; yeS.an.maxDecibels = -30; yeS.an.smoothingTimeConstant = .8; } src.connect(yeS.an); yeS.on = true; }
+    else { if (yeS.an) try { src.disconnect(yeS.an); } catch (e) {} yeS.on = false; }
+  }
+  function yeGL() {
+    if (yeS.gl || yeS.failed) return yeS.gl;
+    try {
+      const g = yeS.cv.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: false, preserveDrawingBuffer: true });
+      if (!g) throw new Error('WebGL2 unavailable');
+      if (!g.getExtension('EXT_color_buffer_float')) throw new Error('float render targets (EXT_color_buffer_float) unavailable');
+      const shader = (kind, text) => { const s = g.createShader(kind); g.shaderSource(s, text); g.compileShader(s); if (!g.getShaderParameter(s, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(s)); return s; };
+      const vs = shader(g.VERTEX_SHADER, '#version 300 es\nin vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}');
+      const link = body => { const p = g.createProgram(); g.attachShader(p, vs); g.attachShader(p, shader(g.FRAGMENT_SHADER, YE_HEAD + body)); g.bindAttribLocation(p, 0, 'p'); g.linkProgram(p); if (!g.getProgramParameter(p, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(p));
+        const U = {}; for (const k of ['res', 'time', 'dt', 'braid', 'flame', 'wave', 'rot', 'op', 'key', 'audio', 'state']) U[k] = g.getUniformLocation(p, 'u_' + k);
+        g.useProgram(p); if (U.audio) g.uniform1i(U.audio, 0); if (U.state) g.uniform1i(U.state, 1); return { p, U }; };
+      yeS.vao = g.createVertexArray(); g.bindVertexArray(yeS.vao);
+      g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer()); g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW);
+      g.enableVertexAttribArray(0); g.vertexAttribPointer(0, 2, g.FLOAT, false, 0, 0);
+      yeS.A = link(YE_A_FS); yeS.I = link(YE_FS);
+      yeS.tx = g.createTexture(); g.bindTexture(g.TEXTURE_2D, yeS.tx); g.pixelStorei(g.UNPACK_ALIGNMENT, 1);
+      g.texImage2D(g.TEXTURE_2D, 0, g.R8, 512, 2, 0, g.RED, g.UNSIGNED_BYTE, yeS.tex);
+      for (const k of [g.TEXTURE_WRAP_S, g.TEXTURE_WRAP_T]) g.texParameteri(g.TEXTURE_2D, k, g.CLAMP_TO_EDGE);
+      for (const k of [g.TEXTURE_MIN_FILTER, g.TEXTURE_MAG_FILTER]) g.texParameteri(g.TEXTURE_2D, k, g.LINEAR);   // Shadertoy's music input filters linearly
+      const st = () => { const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); g.texImage2D(g.TEXTURE_2D, 0, g.RGBA32F, 9, 1, 0, g.RGBA, g.FLOAT, null);
+        for (const k of [g.TEXTURE_MIN_FILTER, g.TEXTURE_MAG_FILTER]) g.texParameteri(g.TEXTURE_2D, k, g.NEAREST);
+        for (const k of [g.TEXTURE_WRAP_S, g.TEXTURE_WRAP_T]) g.texParameteri(g.TEXTURE_2D, k, g.CLAMP_TO_EDGE);
+        const f = g.createFramebuffer(); g.bindFramebuffer(g.FRAMEBUFFER, f); g.framebufferTexture2D(g.FRAMEBUFFER, g.COLOR_ATTACHMENT0, g.TEXTURE_2D, t, 0);
+        if (g.checkFramebufferStatus(g.FRAMEBUFFER) !== g.FRAMEBUFFER_COMPLETE) throw new Error('float framebuffer incomplete');
+        g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT); return { t, f }; };   // Shadertoy buffers start at zero
+      yeS.st = [st(), st()]; g.bindFramebuffer(g.FRAMEBUFFER, null); yeS.cur = 0; yeS.frame = 0;
+      yeS.gl = g;
+      yeS.cv.addEventListener('webglcontextlost', e => { e.preventDefault(); yeS.gl = null; yeS.st = null; yeS.frame = 0; });
+    } catch (e) { yeS.failed = true; yeS.why = e.message; yeS.gl = null; console.warn('Ysin Ember unavailable:', e.message); }
+    return yeS.gl;
+  }
+  function yeFill(B, Wv, gain) {               // Shadertoy music texture: x = 1 ↔ 11025 Hz whatever the sample rate
+    const T = yeS.tex, k = 44100 / ((ac && ac.sampleRate) || 44100);
+    for (let i = 0; i < 512; i++) {
+      let v = 0;
+      if (yeS.test) v = +yeS.test[i] || 0;
+      else if (B) { const x = i * k, a = Math.floor(x), f = x - a; v = (B[a] || 0) * (1 - f) + (B[a + 1] || 0) * f; }
+      T[i] = Math.max(0, Math.min(255, Math.round(v * gain)));
+      T[512 + i] = Wv ? Wv[i] : 128;
+    }
+  }
+  function yeFail(t) {
+    const g = t.g, d = D; g.save(); g.fillStyle = col.label; g.globalAlpha = .85; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `${15 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.fillText('Ysin Ember needs WebGL2 with float render targets', W / 2, H / 2 - 12 * d);
+    g.font = `${11 * d}px system-ui, -apple-system, "Segoe UI", sans-serif`; g.globalAlpha = .6; g.fillText(yeS.why || 'Not supported by this browser or GPU', W / 2, H / 2 + 12 * d); g.restore();
+  }
+  function yePaint(t, B, Wv, dt, live) {
+    const V = sv(), g = t.g; g.clearRect(0, 0, W, H);
+    const G = yeGL(); if (!G || !yeS.st) { yeFail(t); return; }
+    const t0 = performance.now();
+    const w = Math.max(32, Math.round(W * V.yescale)), h = Math.max(32, Math.round(H * V.yescale));
+    if (yeS.cv.width !== w || yeS.cv.height !== h) { yeS.cv.width = w; yeS.cv.height = h; }
+    G.bindVertexArray(yeS.vao); G.disable(G.BLEND);
+    if (yeS.poison) {                          // test hook: one non-finite texel in the live state
+      yeS.poison = false; G.bindTexture(G.TEXTURE_2D, yeS.st[yeS.cur].t); G.texSubImage2D(G.TEXTURE_2D, 0, 4, 0, 1, 1, G.RGBA, G.FLOAT, new Float32Array([NaN, Infinity, NaN, 1]));
+    }
+    if (live) {                                 // Buffer A: read st[cur] (iChannel1) + music (iChannel0), write st[1-cur]
+      yeS.time += dt; yeS.dt = dt; yeFill(B, Wv, V.yegain);
+      G.activeTexture(G.TEXTURE0); G.bindTexture(G.TEXTURE_2D, yeS.tx); G.texSubImage2D(G.TEXTURE_2D, 0, 0, 0, 512, 2, G.RED, G.UNSIGNED_BYTE, yeS.tex);
+      const dst = 1 - yeS.cur, U = yeS.A.U;
+      G.bindFramebuffer(G.FRAMEBUFFER, yeS.st[dst].f); G.viewport(0, 0, 9, 1); G.useProgram(yeS.A.p);
+      G.uniform2f(U.res, 9, 1); G.uniform1f(U.time, yeS.time); G.uniform1f(U.dt, dt);
+      G.activeTexture(G.TEXTURE1); G.bindTexture(G.TEXTURE_2D, yeS.st[yeS.cur].t); G.drawArrays(G.TRIANGLES, 0, 3); yeS.cur = dst; yeS.frame++;
+    }
+    const U = yeS.I.U;                          // Image: iChannel1 = Buffer A
+    G.bindFramebuffer(G.FRAMEBUFFER, null); G.viewport(0, 0, w, h); G.useProgram(yeS.I.p);
+    G.uniform2f(U.res, w, h); G.uniform1f(U.time, yeS.time); G.uniform1f(U.dt, live ? dt : 0);
+    G.uniform1f(U.braid, V.yebraid); G.uniform1f(U.flame, V.yeflame); G.uniform1f(U.wave, V.yewave); G.uniform1f(U.rot, V.yerot ? 1 : 0); G.uniform1f(U.op, V.yeop); G.uniform1f(U.key, V.yekey);
+    G.activeTexture(G.TEXTURE1); G.bindTexture(G.TEXTURE_2D, yeS.st[yeS.cur].t); G.activeTexture(G.TEXTURE0);
+    G.drawArrays(G.TRIANGLES, 0, 3);
+    g.save(); g.imageSmoothingEnabled = true; g.drawImage(yeS.cv, 0, 0, W, H); g.restore();
+    yeS.ms = performance.now() - t0;
+    let peak = 0; for (let i = 0; i < 512; i++) peak = Math.max(peak, yeS.tex[i]);
+    yeS.info = { n: yeS.info.n + 1, frame: yeS.frame, time: yeS.time, dt: yeS.dt, size: [w, h], state: [9, 1], live, peak, gain: V.yegain, sr: ac ? ac.sampleRate : 0, ms: yeS.ms };
+    if (t.big && V.text) xyLabel(t, V, 'Ysin Ember · pwasiewi');
+  }
+  function yeFlat(t) { size(t); yeS.last = 0; yePaint(t, null, null, 0, false); t.cv.classList.add('idle'); }
+  function yeFrame(t) {
+    bandSync(); if (!yeS.on || !running()) { yeFlat(t); if (src && !reduce.matches) raf = requestAnimationFrame(frame); return; }
+    size(t); frames++; t.cv.classList.remove('idle'); const now = performance.now(), dt = yeS.last ? Math.min(.25, (now - yeS.last) / 1000) : 1 / 60; yeS.last = now;
+    yeS.an.getByteFrequencyData(yeS.bins); yeS.an.getByteTimeDomainData(yeS.wav); yePaint(t, yeS.bins, yeS.wav, reduce.matches ? 0 : dt, true); if (!reduce.matches) raf = requestAnimationFrame(frame);
+  }
+  function yeRead() {                          // test hook: the nine state columns
+    const G = yeS.gl; if (!G || !yeS.st) return null;
+    const px = new Float32Array(36); G.bindFramebuffer(G.FRAMEBUFFER, yeS.st[yeS.cur].f); G.readPixels(0, 0, 9, 1, G.RGBA, G.FLOAT, px); G.bindFramebuffer(G.FRAMEBUFFER, null);
+    return Array.from({ length: 9 }, (_, i) => Array.from(px.subarray(i * 4, i * 4 + 4)));
+  }
+
   /* ---- full-screen visual modes: add an entry here to add a mode (the small scope always shows mode 1) ---- */
   const MODES = [
     { id: 'wave', name: 'Waveform', draw: waveFrame, idle: waveFlat },
@@ -6624,7 +7964,9 @@ void main(){
     { id: 'spikyball', name: 'Spiky Ball', draw: sbFrame, idle: sbFlat },
     { id: 'blobby', name: 'Blobby', draw: blFrame, idle: blFlat },
     { id: 'swirlyeyes', name: 'Swirly Eyes', draw: swFrame, idle: swFlat },
-    { id: 'orbit', name: 'Orbit', draw: orbitFrame, idle: orbitFlat, taps: true }
+    { id: 'orbit', name: 'Orbit', draw: orbitFrame, idle: orbitFlat, taps: true },
+    { id: 'murmuration', name: 'Murmuration', draw: muFrame, idle: muFlat },
+    { id: 'ysinember', name: 'Ysin Ember', draw: yeFrame, idle: yeFlat }
   ];
   function modeIx() { const i = MODES.findIndex(m => m.id === S.meta.scopeMode); return i < 0 ? 0 : i; }
   const curMode = () => MODES[modeIx()];
@@ -6866,6 +8208,7 @@ void main(){
   let frames = 0;
   function frame() {                        // the one draw loop: paints whichever scope is visible, in its mode, then its effect
     raf = 0;
+    if (emb) embRect();                      // r83: follow the song-list area (banner, resize, panel moves)
     const t = tgt(), d = viewT(t); inFrame = true;
     try { if (audio.paused || document.hidden || !enabled()) flat(d); else withPal(d, () => drawerFor(d).draw(d)); if (d !== t) compose(); } finally { inFrame = false; }
     if (t.big) t.cv.classList.contains('idle') && !bzDrift(t) && !czDrift(t) && !tzDrift(t) && !tsDrift(t) ? fxIdle() : fxStep();   // a drifting Bounce / Curves / Triangle / Title keeps its trails
@@ -8315,7 +9658,29 @@ void main(){
     { id: 'oxspeed', group: 'Orbit', label: 'Motion speed', min: 0, max: 3, step: .05, def: 1, modes: ['orbit'], fmt: x => x.toFixed(2) + '×', title: 'Base wander speed of the treble XY figure. 0 parks it.' },
     { id: 'oxsens', group: 'Orbit', label: 'Loudness sensitivity', min: 0, max: 2, step: .05, def: 1, modes: ['orbit'], fmt: x => x.toFixed(2) + '×', title: 'How much overall loudness speeds up the wander. 0 keeps a constant slow drift.' },
     { id: 'oxpersist', group: 'Orbit', label: 'Trail', min: 0, max: 2, step: .05, def: .35, modes: ['orbit'], fmt: x => x ? x.toFixed(2) + ' s' : 'Off', title: 'Phosphor fade of the treble XY trace. 0 draws only the current sweep.' },
-    { id: 'oxdelay', group: 'Orbit', label: 'XY delay', min: .1, max: 8, step: .05, def: 1, modes: ['orbit'], fmt: x => x.toFixed(2) + ' ms', title: 'Delay between the two axes of the mono treble Lissajous (sample vs delayed sample).' }
+    { id: 'oxdelay', group: 'Orbit', label: 'XY delay', min: .1, max: 8, step: .05, def: 1, modes: ['orbit'], fmt: x => x.toFixed(2) + ' ms', title: 'Delay between the two axes of the mono treble Lissajous (sample vs delayed sample).' },
+    { id: 'mureact', group: 'Murmuration', label: 'Audio reactivity', min: 0, max: 2, step: .05, def: 1, modes: ['murmuration'], info: 'Murmuration by BichoPragmatico (Shadertoy); ported', fmt: x => x.toFixed(2) + '×', title: 'Bass and loudness excite the flock (turbulence, orbit rate, attractor pull and tempo), bass hits nudge the attractor, treble lifts glow and trails. 0 restores the autonomous original.' },
+    { id: 'musmooth', group: 'Murmuration', label: 'Audio response', min: 0, max: 1, step: .01, def: .15, modes: ['murmuration'], fmt: x => x.toFixed(2) + ' s', title: 'Follow time of the bass / mid / treble envelopes; 0 is immediate.' },
+    { id: 'mubirds', group: 'Murmuration', label: 'Birds', type: 'choice', opts: ['512', '1024', '2048'], min: 0, max: 2, step: 1, def: 1, modes: ['murmuration'], title: 'Flock size (source BIRD_COUNT 1024). Changing it restarts the flock, as in the original.' },
+    { id: 'muspeed', group: 'Murmuration', label: 'Speed', min: 0, max: 2, step: .05, def: 1.5, modes: ['murmuration'], fmt: x => x.toFixed(2) + '×', title: 'Simulation time multiplier; source SPEED 1.5. 0 freezes the flock.' },
+    { id: 'musize', group: 'Murmuration', label: 'Bird size', min: 1, max: 6, step: .05, def: 2.82, modes: ['murmuration'], fmt: x => x.toFixed(2) + ' px', title: 'Wing scale in pixels at 720p; source BIRD_SIZE 2.82.' },
+    { id: 'muglow', group: 'Murmuration', label: 'Glow', min: 0, max: 3, step: .05, def: .95, modes: ['murmuration'], fmt: x => x.toFixed(2), title: 'Halo around each bird; source GLOW 0.95. Treble raises it with Audio reactivity.' },
+    { id: 'mutrail', group: 'Murmuration', label: 'Trail', min: 0, max: .5, step: .005, def: .165, modes: ['murmuration'], fmt: x => x ? x.toFixed(3) + ' s' : 'Off', title: 'Seconds of velocity extrapolation for the analytic trails; source TRAIL_LENGTH 0.165. Treble lengthens them with Audio reactivity.' },
+    { id: 'muop', group: 'Murmuration', label: 'Opacity', min: 0, max: 1, step: .01, def: 1, modes: ['murmuration'], fmt: x => Math.round(x * 100) + '%', title: 'Below 100% reveals active feedback behind the flock.' },
+    { id: 'mukey', group: 'Murmuration', label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, modes: ['murmuration'], title: 'Whole picture fades the complete scene. Dark only keeps the birds solid and reveals feedback through the night sky' },
+    { id: 'muscale', group: 'Murmuration', label: 'Internal resolution', min: .25, max: 1, step: .05, def: .75, modes: ['murmuration'], fmt: x => Math.round(x * 100) + '%', title: 'Internal render resolution; bird size follows it, so lower is faster and softer. Changing it restarts the flock (Shadertoy resets on resize).' },
+    { id: 'mutravel', group: 'Murmuration', label: 'Travel', min: 1, max: 4, step: .05, def: 2, modes: ['murmuration'], fmt: x => x.toFixed(2) + '×', title: 'How far the whole flock wanders around the screen with the attractor. 1× is the original (mostly centred); louder music adds a little. Kept on screen at the current camera distance.' },
+    { id: 'musepr', group: 'Murmuration', label: 'Separation reactivity', min: 0, max: 2, step: .05, def: 1, modes: ['murmuration'], fmt: x => x.toFixed(2) + '×', title: 'Mids and loudness open the gap between the two hearts (YIN_YANG_SEPARATION 0.5 → up to 0.85). 0 keeps the source 0.5.' },
+    { id: 'muvortr', group: 'Murmuration', label: 'Vortex reactivity', min: 0, max: 2, step: .05, def: 1, modes: ['murmuration'], fmt: x => x.toFixed(2) + '×', title: 'Bass spins the two vortices faster (VORTEX_STRENGTH 1.0 → up to 1.8) without jumps. 0 keeps the source 1.0.' },
+    { id: 'mucamr', group: 'Murmuration', label: 'Camera zoom reactivity', min: 0, max: 2, step: .05, def: 1, modes: ['murmuration'], fmt: x => x.toFixed(2) + '×', title: 'Loud passages and bass hits breathe the camera in (CAMERA_DISTANCE 7.4 → down to 6.5). 0 keeps the source 7.4.' },
+    { id: 'yegain', group: 'Ysin Ember', modes: ['ysinember'], label: 'Audio gain', min: 0, max: 4, step: .05, def: 1, info: 'Ysin Ember Mix by pwasiewi (GPL-3.0-or-later, shadertoy.com/view/7ctSDB); ported', fmt: x => x.toFixed(2) + '×', title: 'Multiplies the spectrum texture the shader listens to (1× = Shadertoy levels). Raise for quiet tracks, lower if the braid pins.' },
+    { id: 'yebraid', group: 'Ysin Ember', modes: ['ysinember'], label: 'Braid size', min: .2, max: .9, step: .01, def: .82, fmt: x => x.toFixed(2), title: 'Ceiling on how far a strand leaves the axis (source braidMax .82; past .9 the braid clips the screen edges).' },
+    { id: 'yeflame', group: 'Ysin Ember', modes: ['ysinember'], label: 'Flame intensity', min: 0, max: 2, step: .05, def: 1, fmt: x => x.toFixed(2) + '×', title: 'Brightness of the flame packet racing along the wave (body, inner tongue, copper bridge, blue root). 1× = original, 0 hides it.' },
+    { id: 'yewave', group: 'Ysin Ember', modes: ['ysinember'], label: 'Main-wave scale', min: .1, max: 1, step: .01, def: .25, fmt: x => x.toFixed(2), title: 'Swing of the main line (the source\u2019s .25 knob). Higher arcs it over the braid; the drum tremble keeps its size.' },
+    { id: 'yerot', group: 'Ysin Ember', modes: ['ysinember'], label: 'Rotation', type: 'toggle', min: 0, max: 1, step: 1, def: 1, fmt: onOff, title: 'The slow tilt of the whole picture (source on). Off keeps the wave horizontal.' },
+    { id: 'yeop', group: 'Ysin Ember', modes: ['ysinember'], label: 'Opacity', min: 0, max: 1, step: .01, def: 1, fmt: x => Math.round(x * 100) + '%', title: 'Below 100% reveals active feedback behind the picture.' },
+    { id: 'yekey', group: 'Ysin Ember', modes: ['ysinember'], label: 'See-through', type: 'choice', opts: ['Whole picture', 'Dark only'], min: 0, max: 1, step: 1, def: 0, title: 'Whole picture fades the complete scene. Dark only keeps the wave, flame and braid solid and reveals feedback through the black.' },
+    { id: 'yescale', group: 'Ysin Ember', modes: ['ysinember'], label: 'Internal resolution', min: .25, max: 1, step: .05, def: .75, fmt: x => Math.round(x * 100) + '%', title: 'Internal render resolution; lower is faster and softer. The audio state is kept.' }
   ];
   SCOPE_PARAMS.forEach(p => { if (p.type === 'choice') p.fmt = x => p.opts[x] || ''; });
   const SV0 = (() => { const o = {}; SCOPE_PARAMS.forEach(p => o[p.id] = p.def); o.xf = false; return o; })();
@@ -10444,6 +11809,7 @@ void main(){
   }
   let preN = -1;
   function preSync(full) {
+    if (typeof renderSideVis === 'function') { const L = preAll(); renderSideVis(false, preAt >= 0 && preAt < L.length ? L[preAt].id : null); }   // r83: sidebar presets
     const sel = $('#sfpPreset'); if (!sel || !panelOpen) return;
     const L = preAll(), U = preUserList(), m = preCur(), t = m >= 0 ? m : (preAt >= 0 && preAt < L.length ? preAt : -1);
     const cur = t >= 0 ? `— Current (changed from “${L[t].name}”) —` : '— Current (custom) —';
@@ -10496,6 +11862,7 @@ void main(){
     }
     preMigrate();
     if (open && panelOpen) preSync(true);
+    if (typeof renderSideVis === 'function') renderSideVis(true);   // r83
     return n;
   }
   function setView(id, x) {
@@ -10776,12 +12143,50 @@ void main(){
     const t = typeof currentTrack === 'function' ? currentTrack() : null;
     $('#sfMeta').innerHTML = t ? `<b>${esc(t.title || '')}</b>${t.artist ? ' · ' + esc(t.artist) : ''}` : 'Nothing playing';
   }
+  /* r83: embedded mode. emb = the Visualiser view wants the overlay over embHost; sf-emb class = currently shown embedded (vs full screen). */
+  let emb = false, embHost = null, embRO = null;
+  const embShown = () => open && fs.classList.contains('sf-emb');
+  function embRect() {
+    if (!embShown() || !embHost || !embHost.isConnected) return;
+    const r = embHost.getBoundingClientRect(), s = fs.style, px = v => Math.round(v) + 'px';
+    if (s.left !== px(r.left)) s.left = px(r.left); if (s.top !== px(r.top)) s.top = px(r.top);
+    if (s.width !== px(r.width)) s.width = px(r.width); if (s.height !== px(r.height)) s.height = px(r.height);
+  }
+  function embClear() { const s = fs.style; s.left = s.top = s.width = s.height = ''; }
+  function embOn(host) {
+    if (!enabled() || !host) return false;
+    if (embRO && embHost && embHost !== host) embRO.unobserve(embHost);
+    embHost = host;
+    if (!embRO && typeof ResizeObserver === 'function') embRO = new ResizeObserver(() => { embRect(); if (embShown() && !raf) flat(full); });
+    if (embRO) embRO.observe(host);
+    if (!emb) { emb = true; addEventListener('resize', embRect); }
+    if (!open) {                               // like expand(), minus the Fullscreen API, focus and chrome
+      fs.classList.add('sf-emb'); open = true; fs.hidden = false; embRect(); meta(); svC = null; dispSync();
+      if (an) { an.fftSize = 8192; buf = new Float32Array(an.fftSize); }
+      if (raf) { cancelAnimationFrame(raf); raf = 0; }
+      bandSync(); fxApply(); gear.hidden = true;
+      flat(small); flat(full); start();
+    } else embRect();
+    return true;
+  }
+  function embOff() {
+    if (!emb) return;
+    emb = false; removeEventListener('resize', embRect);
+    if (embRO) embRO.disconnect(); embHost = null;
+    if (open && fs.classList.contains('sf-emb')) { fs.classList.remove('sf-emb'); embClear(); collapse(true); }
+  }
   function expand() {
+    if (embShown()) {                          // r83: embedded → full screen, as if the small scope had been clicked
+      fs.classList.remove('sf-emb'); embClear(); meta(); gearSync(); idleReveal(true); fs.focus({ preventScroll: true });
+      const rq = fs.requestFullscreen || fs.webkitRequestFullscreen; wentFs = false;
+      if (rq) { try { const p = rq.call(fs, { navigationUI: 'hide' }); wentFs = true; if (p && p.catch) p.catch(() => { wentFs = false; }); } catch (e) { wentFs = false; } }
+      return;
+    }
     if (open || !enabled()) return;
     open = true; fs.hidden = false; meta(); svC = null; dispSync();
     if (an) { an.fftSize = 8192; buf = new Float32Array(an.fftSize); }
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
-    $('#scopeFull .sf-n').textContent = MODES.length > 20 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home, \\, ]' : MODES.length > 19 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home, \\' : MODES.length > 18 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home' : MODES.length > 17 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn' : MODES.length > 16 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp' : MODES.length > 15 ? '9, 0, -, =, ⌫, ⌦, End, Ins' : MODES.length > 14 ? '9, 0, -, =, ⌫, ⌦, End' : MODES.length > 13 ? '9, 0, -, =, ⌫, ⌦' : MODES.length > 12 ? '9, 0, -, =, ⌫' : MODES.length > 11 ? '9, 0, -, =' : MODES.length > 10 ? '9, 0, -' : MODES.length > 9 ? '9, 0' : MODES.length;   // r41: key 0 is mode 10; r42: - is mode 11
+    $('#scopeFull .sf-n').textContent = MODES.length > 21 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home, \\, ], [' : MODES.length > 20 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home, \\, ]' : MODES.length > 19 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home, \\' : MODES.length > 18 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn, Home' : MODES.length > 17 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp, PgDn' : MODES.length > 16 ? '9, 0, -, =, ⌫, ⌦, End, Ins, PgUp' : MODES.length > 15 ? '9, 0, -, =, ⌫, ⌦, End, Ins' : MODES.length > 14 ? '9, 0, -, =, ⌫, ⌦, End' : MODES.length > 13 ? '9, 0, -, =, ⌫, ⌦' : MODES.length > 12 ? '9, 0, -, =, ⌫' : MODES.length > 11 ? '9, 0, -, =' : MODES.length > 10 ? '9, 0, -' : MODES.length > 9 ? '9, 0' : MODES.length;   // r41: key 0 is mode 10; r42: - is mode 11
     bandSync();
     if (!fxApply() && fxIx() > 0 && !reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} isn’t available here (no WebGL) · None`, 2600);   // the choice is kept for next time
     else if (fxIx() > 0 && reduce.matches) fxLabel(`Effect: ${FX[fxIx()].name} · off while reduced motion is on`, 2200);
@@ -10793,8 +12198,18 @@ void main(){
     wentFs = false;
     if (rq) { try { const p = rq.call(fs, { navigationUI: 'hide' }); wentFs = true; if (p && p.catch) p.catch(() => { wentFs = false; }); } catch (e) { wentFs = false; } }
   }
-  function collapse() {
+  function collapse(quiet) {
     if (!open) return;
+    if (emb && !fs.classList.contains('sf-emb')) {   // r83: leaving full screen returns to the embedded view
+      panelShow(false); idleClear(); gear.hidden = true;
+      clearTimeout(modeT); $('#sfMode').classList.remove('show'); clearTimeout(fxLabelT); sfFx.classList.remove('show');
+      if (fsEl()) { const ex = document.exitFullscreen || document.webkitExitFullscreen; try { const p = ex && ex.call(document); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
+      wentFs = false; fs.classList.add('sf-emb'); embRect();
+      if (raf) { cancelAnimationFrame(raf); raf = 0; }
+      flat(full); start();
+      if (embHost && embHost.isConnected) embHost.focus({ preventScroll: true });
+      return;
+    }
     panelShow(false);
     idleClear();                              // r76
     open = false; fs.hidden = true; bandSync(); fxApply(); gear.hidden = true;
@@ -10804,7 +12219,7 @@ void main(){
     wentFs = false;
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
     flat(small); start();
-    refocus();
+    if (!quiet) refocus();
   }
   function refocus() {                      // back to the small scope (again once the browser has left fullscreen, which drops focus)
     if (btn.hidden) return;
@@ -10812,9 +12227,9 @@ void main(){
     setTimeout(() => { if (!open && (!document.activeElement || document.activeElement === document.body)) btn.focus({ preventScroll: true }); }, 120);
   }
   btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); expand(); });
-  fs.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (Date.now() - swipeAt < 600) return; if (panelOpen) return panelShow(false); collapse(); });
+  fs.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (embShown()) { expand(); return; } if (Date.now() - swipeAt < 600) return; if (panelOpen) return panelShow(false); collapse(); });
   window.addEventListener('keydown', e => {       // while open, these keys belong to the view: Esc / Space close, ← → and 1–9 switch modes, ↑ ↓ effects
-    if (!open || anyDlgOpen()) return;              // Enter opens / closes the settings panel; Esc closes it first (r39: a dialog keeps its keys)
+    if (!open || embShown() || anyDlgOpen()) return;              // (r83: embedded view keeps the app's keys) Enter opens / closes the settings panel; Esc closes it first (r39: a dialog keeps its keys)
     idleActivity(e);                              // r76: any key resets idle hide
     if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); if (panelOpen) panelShow(false); else collapse(); return; }
     const sp = e.key === ' ' || e.code === 'Space';
@@ -10865,12 +12280,13 @@ void main(){
     if (e.key === 'Home' && n >= 19 && !(e.target && e.target.classList && e.target.classList.contains('sfp-grip'))) { e.preventDefault(); e.stopImmediatePropagation(); setMode(18); return; } // r63: Home = Blobby
     if (e.key === '\\' && n >= 20) { e.preventDefault(); e.stopImmediatePropagation(); setMode(19); return; } // r64: \\ = Swirly Eyes
     if (e.key === ']' && n >= 21) { e.preventDefault(); e.stopImmediatePropagation(); setMode(20); return; } // r80: ] = Orbit
+    if (e.key === '[' && n >= 22) { e.preventDefault(); e.stopImmediatePropagation(); setMode(21); return; } // r81: [ = Murmuration
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); e.stopImmediatePropagation(); setFxAndSync(fxIx() + (e.key === 'ArrowUp' ? 1 : -1)); return; }
     const k = (e.key || '').toLowerCase();
     if (k === 'g' || k === 't') { e.preventDefault(); e.stopImmediatePropagation(); const id = k === 'g' ? 'grid' : 'text', on = !sv()[id]; setView(id, on ? 1 : 0); modeToast((k === 'g' ? 'Grid' : 'Text') + ': ' + (on ? 'On' : 'Off')); }
   }, true);
   // touch: a horizontal swipe changes mode (left = next), a vertical one the effect (up = next); neither is a tap-to-close
-  fs.addEventListener('pointerdown', e => { sw = e.pointerType !== 'mouse' && !panel.contains(e.target) && e.target !== gear ? { x: e.clientX, y: e.clientY, id: e.pointerId } : null; });
+  fs.addEventListener('pointerdown', e => { sw = !embShown() && e.pointerType !== 'mouse' && !panel.contains(e.target) && e.target !== gear ? { x: e.clientX, y: e.clientY, id: e.pointerId } : null; });
   fs.addEventListener('pointercancel', () => { sw = null; });
   fs.addEventListener('pointerup', e => {
     if (!sw || e.pointerId !== sw.id) return;
@@ -10946,6 +12362,7 @@ void main(){
       xf: () => tsCur && (({ sc, rot, cx, cy }) => ({ sc, rot, cx, cy }))(tsXf(tsCur, 0)), hold(on) { tsHold = !!on; }, reset() { tsTau = 0; tsT = 0; }, clear() { tsCache.clear(); tsCur = tsOld = null; tsWant = ''; tsFade = 1; },
       worker: () => tsW === null ? 'unstarted' : tsW ? 'on' : 'off', drifting: () => tsDrift(full) },
     panelPos: () => ({ saved: ppos && { ...ppos }, ...(panelOpen ? posNow() : {}), home: !panel.querySelector('.sfp-home').hidden }),   // (tests) r38
+    embed: host => host ? embOn(host) : (embOff(), false), embedded: () => emb, embShown: () => embShown(), embHost: () => embHost, isOpen: () => open, expand: () => expand(), collapse: () => collapse(),   // r83
     idleHidden: () => !!sfIdleOn, idleMs: (n) => { if (typeof n === 'number' && n >= 0) IDLE_MS = n; return IDLE_MS; }, idleArm, idleReveal, idleClear,   // r76
     brushInfo: () => ({ ...brInfo }), brushSprite: (b, c, px) => brSprite(c, px, b), presetsOut, presetsIn, presets: () => preAll().map(p => ({ ...p })), factoryPresets: () => FACTORY_PRESETS.map(p => ({ id: p.id, origId: p.origId, name: p.name, factory: true, mode: p.mode, effect: p.effect })), presetCur: () => preCur(), presetSave: () => preSave(), presetApply: i => preApply(i), presetStep: d => preStep(d), brushGlyphs: () => [...brGly.keys()], brushText: () => brTxt.join(''),   // (tests) brush b's sprite in colour c, px across
     linePal: () => { const p = linePal(sv()); return { line: p.line, base: p.base, bands: [...p.bands], theme: p === col }; },
@@ -10953,6 +12370,10 @@ void main(){
     liquidmetal: { a: LM_A_FS, b: LM_B_FS, fs: LM_FS },
     plasticcream: { a: PC_A_FS, fs: PC_FS },   // r65: expose shaders for Transparency / Beat checks
     fractalfeedback: { a: FRF_A_FS, fs: FRF_FS },
+    murmuration: { info: () => ({ ...muS.info }), canvas: () => muS.cv, failed: () => muS.failed, why: () => muS.why, tapped: () => muS.on, project: () => muProject(), pin(x, y) { muS.pin = x == null ? null : [Math.max(-1, Math.min(1, +x)), Math.max(-1, Math.min(1, +y))]; }, fsA: MU_A_FS, fsB: MU_B_FS, fs: MU_FS, common: MU_COMMON, read: () => muRead(), glError: () => muS.gl ? muS.gl.getError() : -1,
+      testAudio(v) { muS.test = v ? { bass: +v.bass || 0, mid: +v.mid || 0, treble: +v.treble || 0 } : null; }, kick() { muS.kick = true; }, restart() { muS.key = ''; muS.last = 0; } },
+    ysinember: { info: () => ({ ...yeS.info }), canvas: () => yeS.cv, failed: () => yeS.failed, why: () => yeS.why, tapped: () => yeS.on, fsA: YE_A_FS, fs: YE_FS, read: () => yeRead(), glError: () => yeS.gl ? yeS.gl.getError() : -1, poison() { yeS.poison = true; },   // r84 (tests)
+      analyser: () => yeS.an && { fft: yeS.an.fftSize, smooth: yeS.an.smoothingTimeConstant, min: yeS.an.minDecibels, max: yeS.an.maxDecibels }, spectrum: () => Array.from(yeS.tex.subarray(0, 512)), testSpectrum(v) { yeS.test = v ? Array.from({ length: 512 }, (_, i) => +v[i] || 0) : null; }, restart() { yeS.last = 0; }, setTime(t) { yeS.time = +t || 0; } },
     swirlyeyes: { info: () => ({ ...swS.info }), canvas: () => swS.cv, failed: () => swS.failed, fs: SW_FS, tapped: () => swS.on, analyser: () => swS.an && { fft: swS.an.fftSize, smooth: swS.an.smoothingTimeConstant, min: swS.an.minDecibels, max: swS.an.maxDecibels }, spectrum: () => Array.from(swS.bins.subarray(0,512)), bass: () => swS.bass, reset() { swS.time=0; swS.last=0; swS.bass=0; }, testAudio(bins) { swS.test=bins?Uint8Array.from({length:512},(_,i)=>Math.max(0,Math.min(255,+bins[i]||0))):null; } },
     blobby: { info: () => ({ ...blS.info }), canvas: () => blS.cv, failed: () => blS.failed, fsA: BLOB_A_FS, fs: BLOB_FS, tapped: () => blS.on, analyser: () => blS.an && { fft: blS.an.fftSize, smooth: blS.an.smoothingTimeConstant, min: blS.an.minDecibels, max: blS.an.maxDecibels }, spectrum: () => Array.from(blS.bins.subarray(0,512)), reset() { blS.time=0; blS.last=0; blS.cur=0; if(blS.fbs)blS.fbs=null; }, testAudio(bins) { blS.test=bins?Uint8Array.from({length:512},(_,i)=>Math.max(0,Math.min(255,+bins[i]||0))):null; } },
     spikyball: { info: () => ({ ...sbS.info }), canvas: () => sbS.cv, failed: () => sbS.failed, fs: SPIKY_FS, tapped: () => sbS.on, analyser: () => sbS.an && { fft: sbS.an.fftSize, smooth: sbS.an.smoothingTimeConstant, min: sbS.an.minDecibels, max: sbS.an.maxDecibels }, spectrum: () => Array.from(sbS.bins.subarray(0,512)), texture: () => Array.from(sbS.tex), textureInfo: () => ({ size:[512,2], channels:1, wrap: 'clamp' }), megabass: () => sbS.info.megabass, reset() { sbS.time=0; sbS.last=0; }, testAudio(bins,wave) { sbS.test=bins?{bins:Uint8Array.from({length:512},(_,i)=>Math.max(0,Math.min(255,+bins[i]||0))),wave:Float32Array.from({length:512},(_,i)=>Math.max(-1,Math.min(1,+(wave||[])[i]||0)))}:null; } },
