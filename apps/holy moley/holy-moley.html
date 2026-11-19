@@ -12,12 +12,14 @@
        font-weight:bold;font-size:clamp(16px,1.5vw,28px);letter-spacing:1px;text-shadow:0 2px 0 #000,0 0 6px #000;pointer-events:none;user-select:none}
   #hud .lbl{color:#f4c27a;font-size:0.7em;margin-right:6px}
   #lives span{display:inline-block;margin-right:3px;color:#ff4d5e}
-  #fs{position:absolute;top:8px;right:10px;width:42px;height:42px;border-radius:10px;border:2px solid rgba(255,255,255,.55);
+  #fs{position:absolute;top:8px;right:10px;z-index:9!important;width:42px;height:42px;border-radius:10px;border:2px solid rgba(255,255,255,.55);
       background:rgba(20,10,5,.55);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:5}
   #fs:hover{background:rgba(80,45,20,.8)}
   #fs svg{width:24px;height:24px}
   #msg{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;user-select:none;
        text-shadow:0 3px 0 #000,0 0 12px #000;transition:opacity .3s}
+  #msg h1.lvlname{white-space:nowrap;font-size:clamp(26px,min(7vw,11vh),76px);animation:lvlIn .6s ease-out}
+  @keyframes lvlIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
   #msg h1{margin:0;font-size:clamp(34px,7vw,76px);color:#ffd166;letter-spacing:3px}
   #msg p{margin:8px 0 0;font-size:clamp(14px,2.2vw,22px)}
   #edBtn{position:absolute;top:8px;right:60px;width:42px;height:42px;border-radius:10px;border:2px solid rgba(255,255,255,.55);
@@ -31,9 +33,25 @@
   #edBar button:hover,#modal button:hover{background:#5a3a22}
   #edBar .play,#modal .play,#menu .play{background:#2f7a3a;border-color:#59b96a;color:#fff}
   #edBar .play:hover,#menu .play:hover{background:#3a944a}
-  #edBar .tool{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 5px;font-size:11px;min-width:46px}
-  #edBar .tool canvas{width:30px;height:30px;border-radius:5px;display:block}
-  #edBar .tool.on{background:#c7862f;border-color:#ffd38a;color:#1d0f05}
+  /* tile palette: its own draggable panel; --ps = scale vs the old toolbar tiles (2 = double, shrunk only to fit small screens) */
+  #edPal{--ps:2;position:absolute;left:10px;bottom:34px;z-index:7;background:rgba(25,14,8,.88);border:1px solid rgba(255,214,150,.45);border-radius:calc(8px*var(--ps));
+      box-shadow:0 6px 18px rgba(0,0,0,.45);user-select:none;-webkit-user-select:none;touch-action:none;max-width:calc(100% - 20px)}
+  #edPalHead{display:flex;align-items:center;gap:calc(4px*var(--ps));padding:calc(3px*var(--ps)) calc(5px*var(--ps));cursor:grab;touch-action:none;
+      font-weight:bold;font-size:calc(8px*var(--ps));letter-spacing:.12em;color:#ffd38a;border-bottom:1px solid rgba(255,214,150,.25)}
+  #edPal.drag #edPalHead{cursor:grabbing} #edPal.drag{box-shadow:0 10px 26px rgba(0,0,0,.6);opacity:.96}
+  #edPalHead .grip{font-size:1.25em;line-height:1;opacity:.8;letter-spacing:0}
+  #edPalHead .ttl{flex:1}
+  #edPalReset{background:none;border:none;color:#ffd38a;font-size:1.1em;padding:0 .25em;cursor:pointer;line-height:1;opacity:.75}
+  #edPalReset:hover{opacity:1}
+  #tools{display:grid;grid-template-columns:repeat(var(--pcols,6),auto);gap:calc(4px*var(--ps));padding:calc(4px*var(--ps))}
+  #tools .tool{display:flex;flex-direction:column;align-items:center;gap:calc(2px*var(--ps));padding:calc(4px*var(--ps)) calc(5px*var(--ps));font-size:calc(11px*var(--ps));
+      min-width:calc(46px*var(--ps));background:#3a2516;color:#fbe9cf;border:1px solid #6b4a2e;border-radius:calc(7px*var(--ps));font-weight:bold;cursor:pointer;touch-action:manipulation}
+  #tools .tool:hover{background:#5a3a22}
+  #tools .tool canvas{width:calc(30px*var(--ps));height:calc(30px*var(--ps));border-radius:calc(5px*var(--ps));display:block}
+  #tools .tool.on{background:#c7862f;border-color:#ffd38a;color:#1d0f05}
+  #edZoomGrp{gap:8px!important;padding:2px 10px!important}
+  #edBar input#edZoom{width:150px;height:30px;padding:0;margin:0;cursor:pointer;accent-color:#c7862f;background:transparent;border:none;touch-action:none}
+  #edZoomPct{min-width:3.2em;text-align:right;font-weight:bold;font-size:13px;color:#fbe9cf;font-variant-numeric:tabular-nums}
   #edExit{background:rgba(25,14,8,.82)!important}
   #edHint{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:12px;color:#f0dcc0;text-shadow:0 1px 0 #000;pointer-events:none}
   #edToast{position:absolute;left:50%;bottom:36px;transform:translateX(-50%);background:rgba(20,10,5,.9);border:1px solid #c7862f;border-radius:8px;padding:8px 14px;font-weight:bold;opacity:0;transition:opacity .3s;pointer-events:none}
@@ -60,6 +78,41 @@
   @keyframes tpulse{0%{transform:scale(1);text-shadow:0 2px 0 #000,0 0 6px #000}15%{transform:scale(1.28);text-shadow:0 2px 0 #000,0 0 16px #ff2020}60%{transform:scale(1.0);text-shadow:0 2px 0 #000,0 0 6px #000}}
   #edBar input.num{width:54px;text-align:center}
   #edBar .glbl{font-size:12px;color:#f4c27a;font-weight:bold;padding:0 2px 0 4px}
+  html,body,#wrap,#gl{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  #padBtn{position:absolute;top:8px;right:110px;width:42px;height:42px;border-radius:10px;border:2px solid rgba(255,255,255,.55);
+      background:rgba(20,10,5,.55);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:5}
+  #padBtn:hover{background:rgba(80,45,20,.8)} #padBtn svg{width:26px;height:26px} #padBtn.on{border-color:#ffc96b;color:#ffd98a;background:rgba(90,52,18,.8)}
+  #dpad{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:max(30px,calc(env(safe-area-inset-bottom) + 22px));
+      width:min(37vmin,186px);height:min(37vmin,186px);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px;z-index:7;
+      touch-action:none;opacity:.78}
+  #dpad[hidden]{display:none}
+  body.padOn #help{left:calc(min(37vmin,186px) + 26px);right:8px}   /* help text moves right of the pad instead of under it */
+  #dpad button{touch-action:none;border-radius:14px;border:2px solid rgba(255,235,200,.55);background:rgba(25,14,8,.42);color:#fbe9cf;
+      display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
+  #dpad button svg{width:52%;height:52%;pointer-events:none}
+  #dpad button.down{background:rgba(255,190,90,.6);border-color:#ffd98a;color:#fff;transform:scale(.94)}
+  #dpad .hub{border-radius:50%;margin:22%;background:rgba(25,14,8,.3);border:2px solid rgba(255,235,200,.25);pointer-events:none}
+  #intro{position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;
+      padding:clamp(6px,2.2vh,26px) 10px 0;gap:clamp(3px,1.3vh,14px);user-select:none;-webkit-user-select:none;
+      background:radial-gradient(ellipse at 50% 28%,rgba(78,46,22,.985) 0%,rgba(36,20,10,.99) 55%,rgba(12,7,4,1) 100%)}
+  #intro[hidden]{display:none}
+  @media (max-aspect-ratio:4/5){#intro{padding-top:58px}}   /* portrait phones: keep the title clear of the full-screen button */
+  #introTitle{margin:0;font-weight:900;letter-spacing:.06em;line-height:1;font-size:clamp(30px,min(11vw,13vh),128px);white-space:nowrap;
+      background:linear-gradient(180deg,#fff3c4 0%,#ffd166 38%,#e08a1e 70%,#a3500f 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+      filter:drop-shadow(0 3px 0 #3a1c08) drop-shadow(0 0 14px rgba(255,170,60,.45));animation:ttl 3.2s ease-in-out infinite}
+  @keyframes ttl{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  #chase{width:min(100%,1400px);height:clamp(64px,min(28vh,44vw),300px);display:block;flex:0 0 auto}
+  #introBtns{display:flex;gap:clamp(8px,2vw,18px);flex:0 0 auto}
+  #introBtns button{font-family:inherit;font-size:clamp(14px,min(2.4vw,4vh),24px);font-weight:bold;padding:.45em 1.2em;border-radius:12px;border:2px solid #c7862f;
+      background:rgba(40,22,10,.9);color:#fbe9cf;cursor:pointer;touch-action:manipulation}
+  #introBtns button:hover,#introBtns button:focus-visible{background:rgba(90,55,25,.95);outline:none}
+  #introBtns .play{background:#2f7a3a;border-color:#59b96a;color:#fff} #introBtns .play:hover{background:#3a944a}
+  #howto{position:relative;flex:1 1 0;min-height:40px;width:min(780px,94vw);overflow:hidden;touch-action:none;cursor:ns-resize;
+      -webkit-mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent)}
+  #howtoIn{position:absolute;left:0;right:0;top:0;will-change:transform}
+  .ht{padding-bottom:2.2em;text-align:center;color:#f1dfc4;font-size:clamp(12px,min(1.9vw,3.4vh),19px);line-height:1.45;text-shadow:0 1px 0 #000}
+  .ht h3{margin:.9em 0 .25em;color:#ffcf7a;font-size:1.12em;letter-spacing:.08em}
+  .ht p{margin:.18em 0} .ht b{color:#fff}
   #help{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:clamp(12px,0.9vw,17px);color:#e8d3b5;text-shadow:0 1px 0 #000;pointer-events:none;opacity:.85}
 </style>
 </head>
@@ -74,27 +127,58 @@
     <div id="timeBox"><span class="lbl">TIME</span><span id="time">3:00</span></div>
   </div>
   <button id="fs" title="Toggle full screen (F)" aria-label="Toggle full screen"></button>
+  <button id="padBtn" title="On-screen arrow pad (G)" aria-label="Toggle on-screen arrow pad" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10a5 5 0 0 1 5 5v1a4 4 0 0 1-7 2.6L14 14h-4l-1 1.6A4 4 0 0 1 2 13v-1a5 5 0 0 1 5-5z"/><path d="M7 10v4M5 12h4"/><circle cx="16" cy="11" r=".6" fill="currentColor"/><circle cx="18" cy="13" r=".6" fill="currentColor"/></svg></button>
+  <div id="dpad" hidden aria-label="Arrow pad"><span></span><button data-d="0,-1" aria-label="Up"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l8 10h-5v6H9v-6H4z"/></svg></button><span></span><button data-d="-1,0" aria-label="Left"><svg style="transform:rotate(-90deg)" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l8 10h-5v6H9v-6H4z"/></svg></button><span class="hub"></span><button data-d="1,0" aria-label="Right"><svg style="transform:rotate(90deg)" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l8 10h-5v6H9v-6H4z"/></svg></button><span></span><button data-d="0,1" aria-label="Down"><svg style="transform:rotate(180deg)" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l8 10h-5v6H9v-6H4z"/></svg></button><span></span></div>
   <button id="edBtn" class="corner" title="Level editor (E)" aria-label="Level editor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/><path d="M14 6l3 3"/></svg></button>
   <div id="testBar" hidden><span>TEST PLAY</span><button id="tbBack">✎ Back to editor <small>(E)</small></button></div>
   <div id="editor" hidden>
     <div id="edBar">
-      <div class="grp" id="tools"></div>
       <div class="grp"><button id="edNew" title="New earth level">New</button><button id="edPlay" class="play" title="Play-test this level (Enter)">▶ Play</button></div>
       <div class="grp"><input id="edName" placeholder="Level name" maxlength="40"><select id="edSlot" title="Save slot"></select><button id="edSave">Save</button><button id="edLoad">Load</button></div>
       <div class="grp"><button id="edExport" title="Export as JSON / code">Export</button><button id="edImport" title="Import JSON / code">Import</button></div>
       <div class="grp" id="edSizeGrp" title="Play-area size in cells. Width: columns (10–200). Height: underground rows between the 3-row sky strip and the bedrock row (6–120). Grows/crops at the right and bottom edges."><span class="glbl">W</span><input id="edW" class="num" type="number" min="10" max="200" step="1"><span class="glbl">H</span><input id="edH" class="num" type="number" min="6" max="120" step="1"><button id="edResize">Resize</button></div>
       <div class="grp" title="Time limit for this level (m:ss or seconds, 0:10–99:59). When it runs out it is game over."><span class="glbl">⏱</span><input id="edTime" class="num" value="3:00" maxlength="6"></div>
       <div class="grp"><button id="edRoots" title="Decorative roots on/off (saved with the level)">Roots: on</button></div>
-      <div class="grp"><button id="edZout" title="Zoom out (-)">−</button><button id="edZin" title="Zoom in (+)">+</button></div>
+      <div class="grp" id="edZoomGrp" title="Zoom (also Ctrl+wheel or +/−)"><span class="glbl">🔍</span><input id="edZoom" type="range" min="35" max="160" step="1" value="70" aria-label="Zoom"><span id="edZoomPct">70%</span></div>
       <button id="edExit" title="Leave the editor (back to the random levels)">✕ Exit</button>
     </div>
-    <div id="edHint">Left-drag: paint &nbsp;•&nbsp; Right-drag: earth &nbsp;•&nbsp; Arrows / WASD / wheel: pan (Shift+wheel sideways) &nbsp;•&nbsp; Ctrl+wheel or +/−: zoom &nbsp;•&nbsp; 1–9, 0, C: tools &nbsp;•&nbsp; Enter: play</div>
+    <div id="edPal"><div id="edPalHead" title="Drag to move the tile palette (double-click to put it back bottom-left)"><span class="grip">⠿</span><span class="ttl">TILES</span><button id="edPalReset" title="Reset palette position">⟲</button></div><div id="tools"></div></div>
+    <div id="edHint">Left-drag: paint &nbsp;•&nbsp; Right-drag: earth &nbsp;•&nbsp; Arrows / WASD / wheel: pan (Shift+wheel sideways) &nbsp;•&nbsp; Ctrl+wheel, +/− or slider: zoom &nbsp;•&nbsp; drag TILES bar: move palette &nbsp;•&nbsp; 1–9, 0, C: tools &nbsp;•&nbsp; Enter: play</div>
     <div id="edToast"></div>
   </div>
-  <div id="menu" hidden><button id="mPlay" class="play">▶ Play</button><button id="mEditor">✎ Level editor</button></div>
+  <div id="menu" hidden></div>
+  <div id="intro" hidden><h1 id="introTitle">Holy Moley</h1><canvas id="chase"></canvas>
+    <div id="introBtns"><button id="mPlay" class="play">▶ Start Game</button><button id="mEditor">✎ Level Editor</button></div>
+    <div id="howto"><div id="howtoIn"><div class="ht"><h3>HOW TO PLAY</h3>
+<p>Dig for crystals deep underground and reach the exit before the clock runs out.</p>
+<h3>CONTROLS</h3>
+<p><b>Arrow keys / WASD</b> — walk and dig</p><p><b>Touch</b> — swipe to move one cell</p>
+<p><b>G</b> or the 🎮 button — on-screen arrow pad (hold to keep moving)</p>
+<p><b>P</b> pause &nbsp;•&nbsp; <b>V</b> air-flow effect &nbsp;•&nbsp; <b>F</b> full screen &nbsp;•&nbsp; <b>H / Esc</b> this menu &nbsp;•&nbsp; <b>E</b> level editor</p>
+<h3>DIGGING</h3><p>Moley digs through earth; tunnels stay open. Brick, coal and bedrock can't be dug.</p>
+<h3>BOULDERS</h3><p>Don't dig under rocks for long — they wobble, then fall and squash you.</p><p>Push a boulder sideways into open space. Boulders roll off other boulders.</p>
+<h3>CRYSTALS &amp; THE EXIT</h3><p>Collect every crystal. The exit stays dark and locked until the last one is gone —</p><p>then it lights up: walk in to clear the level and earn a bonus.</p>
+<h3>BOMBS &amp; NUKES</h3><p>Bombs explode when they land after a fall or get caught in a blast (3 × 3).</p><p>☢ Nukes blast everything within 5 cells.</p>
+<h3>COAL</h3><p>Coal burns! It is solid like brick, but explosions set it alight. Fire spreads along a seam</p><p>and burnt coal crumbles into a gap — whatever rests on it falls.</p>
+<h3>TERMITES</h3><p>Termites crawl along tunnel floors and up and down shaft walls. Touching one costs a life.</p><p>Drop a boulder on a termite to blow it up like a bomb.</p>
+<h3>TIME &amp; LIVES</h3><p>Each level has a time limit (3:00). A warning sounds at 0:30 and the last 10 s tick away.</p><p>Run out of time and it's game over. You have 3 lives; losing one restarts the level.</p>
+<h3>LEVEL EDITOR</h3><p>Paint your own levels with earth, tunnels, boulders, crystals, bombs, nukes, brick, coal and termites,</p><p>set the size and time limit, save, export / import and play-test them.</p></div><div class="ht" aria-hidden="true"><h3>HOW TO PLAY</h3>
+<p>Dig for crystals deep underground and reach the exit before the clock runs out.</p>
+<h3>CONTROLS</h3>
+<p><b>Arrow keys / WASD</b> — walk and dig</p><p><b>Touch</b> — swipe to move one cell</p>
+<p><b>G</b> or the 🎮 button — on-screen arrow pad (hold to keep moving)</p>
+<p><b>P</b> pause &nbsp;•&nbsp; <b>V</b> air-flow effect &nbsp;•&nbsp; <b>F</b> full screen &nbsp;•&nbsp; <b>H / Esc</b> this menu &nbsp;•&nbsp; <b>E</b> level editor</p>
+<h3>DIGGING</h3><p>Moley digs through earth; tunnels stay open. Brick, coal and bedrock can't be dug.</p>
+<h3>BOULDERS</h3><p>Don't dig under rocks for long — they wobble, then fall and squash you.</p><p>Push a boulder sideways into open space. Boulders roll off other boulders.</p>
+<h3>CRYSTALS &amp; THE EXIT</h3><p>Collect every crystal. The exit stays dark and locked until the last one is gone —</p><p>then it lights up: walk in to clear the level and earn a bonus.</p>
+<h3>BOMBS &amp; NUKES</h3><p>Bombs explode when they land after a fall or get caught in a blast (3 × 3).</p><p>☢ Nukes blast everything within 5 cells.</p>
+<h3>COAL</h3><p>Coal burns! It is solid like brick, but explosions set it alight. Fire spreads along a seam</p><p>and burnt coal crumbles into a gap — whatever rests on it falls.</p>
+<h3>TERMITES</h3><p>Termites crawl along tunnel floors and up and down shaft walls. Touching one costs a life.</p><p>Drop a boulder on a termite to blow it up like a bomb.</p>
+<h3>TIME &amp; LIVES</h3><p>Each level has a time limit (3:00). A warning sounds at 0:30 and the last 10 s tick away.</p><p>Run out of time and it's game over. You have 3 lives; losing one restarts the level.</p>
+<h3>LEVEL EDITOR</h3><p>Paint your own levels with earth, tunnels, boulders, crystals, bombs, nukes, brick, coal and termites,</p><p>set the size and time limit, save, export / import and play-test them.</p></div></div></div></div>
   <div id="modal" hidden><div class="box"><h2 id="mTitle"></h2><div id="mBody"></div><div class="row" id="mBtns"></div></div></div>
   <div id="msg"></div>
-  <div id="help">Arrow keys / WASD to dig &nbsp;•&nbsp; Don't dig under rocks for long! &nbsp;•&nbsp; Collect every crystal to light the exit &nbsp;•&nbsp; Bombs &amp; ☢ nukes explode if dropped &nbsp;•&nbsp; Avoid termites — drop a boulder on one to blow it up &nbsp;•&nbsp; Coal burns: explosions set it alight &nbsp;•&nbsp; F = full screen &nbsp;•&nbsp; P = pause &nbsp;•&nbsp; V = air effect</div>
+  <div id="help">H / Esc: menu &amp; how to play &nbsp;•&nbsp; P: pause &nbsp;•&nbsp; G: arrow pad</div>
   <div id="airToast"></div>
 </div>
 <script>
@@ -149,6 +233,8 @@ const TSW = 256, TSH = 160, TBASE = 150;
 const TERM_DRAW = 1.10;   // slot drawn 1.10 cells wide: the body+antennae (x 14..241 of 256) then spans ~0.98 of a cell   // atlas slot size and the feet baseline row in a slot
 
 // ---------------------------------------------------------------- utilities
+const NOINTRO=/nointro/i.test(location.hash);   // test hook: '#nointro' skips the title screen and the level-start fly-in (old behaviour)
+const INTRO={on:false,t:0,phase:'moleyR',pt:0,loops:0,scroll:0,hold:0,log:[],ents:[]};
 function mulberry(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
 function hash2(x,y){let h=(x*374761393+y*668265263)|0;h=(h^(h>>>13))*1274126177|0;return (h^(h>>>16))>>>0;}
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -1057,48 +1143,115 @@ const NUKE_R=5;   // nuke blast: every cell with dx*dx+dy*dy <= 25
 const isRock=r=>!!r&&(r.kind==='rock'||isBombKind(r.kind));   // heavy objects: boulders, bombs and nukes (block Moley, pushable, crush)
 const inB=(x,y)=>x>=0&&y>=0&&x<W&&y<H;
 // ---------------------------------------------------------------- termites
-function addTermite(x,y,dir){const t={x,y,tx:x,dir:dir||1,move:false,mt:0,turn:null,wait:0,animT:0,dead:false,fused:false,fuse:0,falling:false,fy:y,vy:0};G.termites.push(t);return t;}
-function termiteX(t){return t.move?t.x+(t.tx-t.x)*Math.min(1,t.mt/TERMITE_STEP):t.x;}
-function termiteY(t){return t.falling?t.fy:t.y;}   // falling: smooth position; t.y tracks the cell it is in
-function termiteIn(x,y){return G.termites.some(t=>!t.dead&&t.y===y&&(t.x===x||(t.move&&t.tx===x)));}
-function termiteSolid(x,y){   // ground a termite can stand on: earth, brick, bedrock or a resting object
+// Surface-following crawler. State: cell (x,y) + feet normal n (which neighbour it stands on: floor [0,1], left wall [-1,0],
+// right wall [1,0]) + travel tangent td (perpendicular to n). Ceilings are not used (termites never hang upside down), which also
+// keeps them from circling round a tunnel's perimeter. Each step: straight on along the surface, wrap round an outer corner
+// (floor -> down a shaft wall, or wall top -> floor), or rotate in place at an inner corner (floor -> up a wall, shaft wall ->
+// bottom floor), or step down off a wall that ends just above a floor (one-way: a shaft opening into a tunnel's ceiling).
+// No legal step = dead end: in-place turn animation and back the same way.
+const TN_FLOOR=[0,1],TN_L=[-1,0],TN_R=[1,0];
+function tnAng(n){return n[1]>0?0:n[1]<0?Math.PI:n[0]<0?Math.PI/2:-Math.PI/2;}   // sprite rotation that puts the feet on n
+function tnDelta(a0,a1){let d=a1-a0;while(d>Math.PI)d-=2*Math.PI;while(d<=-Math.PI)d+=2*Math.PI;return d;}
+function addTermite(x,y,dir){const t={x,y,tx:x,ty:y,dir:dir||1,n:[0,1],td:[dir||1,0],move:false,mv:null,mt:0,turn:null,wait:0,animT:0,dead:false,fused:false,fuse:0,falling:false,fy:y,vy:0,fa:0,occ:[[x,y]],seen:new Set()};
+  G.termites.push(t);return t;}
+function termitePose(t){   // [x, y, angle]: interpolated cell position (top-left convention, like the grid) and sprite rotation
+  if(t.falling)return [t.x,t.fy,t.fa];
+  const mv=t.mv;if(!mv)return [t.x,t.y,tnAng(t.n)];
+  let u=Math.min(1,t.mt/mv.dur);
+  for(const sg of mv.segs){if(u<=sg.w||sg===mv.segs[mv.segs.length-1])return sg.f(Math.min(1,u/sg.w));u-=sg.w;}}
+function termiteX(t){return termitePose(t)[0];}
+function termiteY(t){return termitePose(t)[1];}
+function termiteIn(x,y){return G.termites.some(t=>!t.dead&&((t.x===x&&t.y===y)||t.occ.some(c=>c[0]===x&&c[1]===y)));}
+function terrainSolid(x,y){if(!inB(x,y))return true;const g=G.grid[idx(x,y)];return g===EARTH||isWall(g)||g===BEDROCK;}
+function termiteSolid(x,y){   // ground a termite can stand on: earth, brick, coal, bedrock or a resting object
   if(!inB(x,y))return false;const g=G.grid[idx(x,y)];return g===EARTH||isWall(g)||g===BEDROCK||!!G.rockAt[idx(x,y)];}
-function termiteCanWalk(x,y,self){   // existing tunnel only, never the sky row / open air; needs ground directly beneath; objects block it
+function tSurf(x,y,n){   // can feet on side n rest on cell (x,y)? terrain always; resting objects only as a floor (never climbed)
+  if(terrainSolid(x,y))return true;if(n[1]!==1)return false;const o=G.rockAt[idx(x,y)];return !!o&&o.state!=='falling';}
+function termiteOpen(x,y,self){   // a tunnel cell it may occupy: fully dug, below the sky row, no object, no other termite
   if(!inB(x,y)||y<SURF||y>=H-1)return false;const j=idx(x,y);
   if(G.grid[j]!==DUG||G.dugAmt[j]<1)return false;
   if(G.rockAt[j]||fallingOccupies(x,y))return false;
-  if(G.termites.some(t=>t!==self&&!t.dead&&t.y===y&&(t.x===x||(t.move&&t.tx===x))))return false;
-  return termiteSolid(x,y+1);}
-function termiteInitDir(t){t.dir=termiteCanWalk(t.x+1,t.y,t)?1:termiteCanWalk(t.x-1,t.y,t)?-1:1;}
+  return !G.termites.some(t=>t!==self&&!t.dead&&((t.x===x&&t.y===y)||t.occ.some(c=>c[0]===x&&c[1]===y)));}
+function termiteCanWalk(x,y,self){return termiteOpen(x,y,self)&&termiteSolid(x,y+1);}   // floor-walkable (kept for the editor/tests)
+function termiteNext(t){   // the next legal step along the surface, or null at a dead end
+  const [x,y]=[t.x,t.y],n=t.n,td=t.td,ax=x+td[0],ay=y+td[1];
+  if(terrainSolid(ax,ay)){   // inner corner: wall/floor ahead -> rotate onto it, but only if the new way on is open (no ceilings)
+    const n2=[td[0],td[1]],td2=[-n[0],-n[1]];if(n2[1]<0)return null;
+    if(!termiteOpen(x+td2[0],y+td2[1],t))return null;
+    return {kind:'inner',to:[x,y],n:n2,td:td2};}
+  if(!termiteOpen(ax,ay,t))return null;   // object / other termite / sky / half-dug cell ahead: blocked
+  if(tSurf(ax+n[0],ay+n[1],n))return {kind:'straight',to:[ax,ay],n,td};
+  const bx=ax+n[0],by=ay+n[1],n2=[-td[0],-td[1]];   // outer corner: surface ends -> wrap round it
+  if(n2[1]<0){   // crawling down a wall that ends (shaft opening into a tunnel's ceiling): step down onto the floor below if there is one
+    if(tSurf(ax,ay+1,TN_FLOOR))return {kind:'drop',to:[ax,ay],n:TN_FLOOR,td:[-n[0],0]};
+    return null;}
+  if(!termiteOpen(bx,by,t)||!tSurf(bx+n2[0],by+n2[1],n2))return null;
+  return {kind:'outer',to:[bx,by],via:[ax,ay],n:n2,td:[n[0],n[1]]};}
+function termiteStart(t,st){   // build the smooth path for a step: linear moves, pivots round corners
+  const x=t.x,y=t.y,a0=tnAng(t.n),a1=tnAng(st.n),d=tnDelta(a0,a1),segs=[];let dur=TERMITE_STEP;
+  if(st.kind==='straight')segs.push({w:1,f:u=>[x+(st.to[0]-x)*u,y+(st.to[1]-y)*u,a0]});
+  else if(st.kind==='drop')segs.push({w:1,f:u=>{const e=u*u*(3-2*u);return [x,y+u,a0+d*e];}});   // slides off the wall end, turning upright as it lands
+  else if(st.kind==='inner'||st.kind==='attach'){dur=TERMITE_STEP*(Math.abs(d)>2?1.2:0.7);const big=Math.abs(d)>2;
+    segs.push({w:1,f:u=>{const e=u*u*(3-2*u),a=a0+d*e;if(big)return [x,y,a];
+      // pivot into the inner corner: the feet slide along the cell edge into the corner and out along the other face
+      const fx=-Math.sin(a),fy=Math.cos(a),k=0.5/Math.max(Math.abs(fx),Math.abs(fy))-0.5;return [x+fx*k,y+fy*k,a];}});}
+  else{   // outer: walk to the edge, pivot 90 deg round the corner point with the feet on it, walk down the new face
+    const n=t.n,td=t.td,Px=x+0.5*td[0]+0.5*n[0],Py=y+0.5*td[1]+0.5*n[1];dur=TERMITE_STEP*1.5;
+    segs.push({w:0.3,f:u=>[x+0.5*td[0]*u,y+0.5*td[1]*u,a0]});
+    segs.push({w:0.4,f:u=>{const e=u*u*(3-2*u),th=d*e,c=Math.cos(th),s=Math.sin(th),vx=-0.5*n[0],vy=-0.5*n[1];return [Px+vx*c-vy*s,Py+vx*s+vy*c,a0+th];}});
+    const sx=x+td[0]+0.5*n[0],sy=y+td[1]+0.5*n[1];
+    segs.push({w:0.3,f:u=>[sx+0.5*n[0]*u,sy+0.5*n[1]*u,a1]});}
+  t.mv={kind:st.kind,segs,dur,st};t.mt=0;t.move=true;t.tx=st.to[0];t.ty=st.to[1];
+  t.occ=[[x,y],st.to].concat(st.via?[st.via]:[]);
+  if(st.kind==='straight')airSplat(x+0.5-t.n[0]*0.35,y+0.5+t.n[1]*0.35,0.25,0,t.td[0]*6,t.td[1]*6-1.5,AIRFX.cfg.digD*0.5,true);}   // tiny dust kick, only if the air is already stirring
+function termiteFinish(t){const st=t.mv.st;t.x=st.to[0];t.y=st.to[1];t.n=st.n;t.td=st.td;if(t.td[0])t.dir=t.td[0];
+  t.mv=null;t.move=false;t.mt=0;t.tx=t.x;t.ty=t.y;t.occ=[[t.x,t.y]];
+  const key=t.x+','+t.y+','+t.n+','+t.td;if(st.kind!=='attach'){if(t.seen.has(key))t.loop=true;t.seen.add(key);}}   // loop guard: revisiting a state before any dead end
+function termiteFacing(t){const a=tnAng(t.n);return (t.td[0]*Math.cos(a)+t.td[1]*Math.sin(a))>=0?1:-1;}   // 1 = right-run row in its own frame
+function termiteInitDir(t){   // initial surface (floor preferred, then walls) and direction (right/down unless blocked)
+  t.n=tSurf(t.x,t.y+1,TN_FLOOR)?TN_FLOOR:terrainSolid(t.x-1,t.y)?TN_L:terrainSolid(t.x+1,t.y)?TN_R:TN_FLOOR;
+  const opts=t.n[1]?[[1,0],[-1,0]]:[[0,1],[0,-1]];t.td=opts[0];if(!termiteNext(t))t.td=opts[1];if(!termiteNext(t))t.td=opts[0];
+  if(t.td[0])t.dir=t.td[0];t.seen=new Set();}
+function termiteReattach(t){   // lost the surface under its feet: grab another neighbouring surface if there is one
+  for(const n of [TN_FLOOR,TN_L,TN_R]){if(n===t.n||!tSurf(t.x+n[0],t.y+n[1],n))continue;
+    const opts=n[1]?[[t.dir,0],[-t.dir,0]]:[[0,1],[0,-1]];let td=opts[0];
+    for(const o of opts)if(termiteOpen(t.x+o[0],t.y+o[1],t)){td=o;break;}
+    termiteStart(t,{kind:'attach',to:[t.x,t.y],n,td});t.seen=new Set();return true;}
+  return false;}
 function explodeTermite(t){
   if(t.dead)return;const cx=Math.round(termiteX(t)),cy=Math.round(termiteY(t));t.dead=true;t.move=false;
   spawnDebris(cx+0.5,cy+0.6,[0.45,0.12,0.08],8,0.06,0.13);blast(cx,cy,false);}
 function fuseTermite(t,delay){if(t.dead)return;if(t.fused){t.fuse=Math.min(t.fuse,delay);return;}
-  t.x=Math.round(termiteX(t));t.tx=t.x;if(t.falling){t.y=Math.round(t.fy);t.fy=t.y;t.falling=false;t.vy=0;}t.move=false;t.turn=null;t.fused=true;t.fuse=delay;}
+  const P=termitePose(t);t.x=Math.round(P[0]);t.y=Math.round(P[1]);t.tx=t.x;t.ty=t.y;t.fa=P[2];
+  if(t.falling){t.fy=t.y;t.falling=false;t.vy=0;}t.mv=null;t.move=false;t.turn=null;t.occ=[[t.x,t.y]];t.fused=true;t.fuse=delay;t.fusedA=P[2];}
 function updateTermites(dt){
   const m=G.moley;
   for(const t of G.termites){
     if(t.dead||t.fused)continue;
     let budget=dt;
     for(let guard=0;budget>0&&guard<8;guard++){
-      // ground gone (e.g. Moley dug the cell beneath): drop with gravity like an object, land on the next support, then carry on
-      if(!t.move&&!t.falling&&inB(t.x,t.y+1)&&!termiteSolid(t.x,t.y+1)){t.turn=null;t.wait=0;t.falling=true;t.fy=t.y;t.vy=0;t.falls=(t.falls||0)+1;}
-      if(t.falling){t.vy=Math.min(MAX_VY,t.vy+GRAV*budget);let rem=t.vy*budget;budget=0;
+      // lost contact with every surface (e.g. Moley dug away the wall or ground it was on): drop with gravity like an object,
+      // land on the next floor, then carry on
+      if(!t.mv&&!t.falling&&!tSurf(t.x+t.n[0],t.y+t.n[1],t.n)){t.turn=null;
+        if(termiteReattach(t))continue;
+        t.wait=0;t.falling=true;t.fa=tnAng(t.n);t.fy=t.y;t.vy=0;t.falls=(t.falls||0)+1;t.n=TN_FLOOR;t.td=[t.dir,0];t.occ=[[t.x,t.y]];}
+      if(t.falling){t.vy=Math.min(MAX_VY,t.vy+GRAV*budget);let rem=t.vy*budget;t.fa*=Math.exp(-12*budget);budget=0;
         while(rem>0){const st=Math.min(0.2,rem);rem-=st;const ny=t.fy+st,below=Math.floor(ny)+1;
-          if((!inB(t.x,below)||termiteSolid(t.x,below))&&ny>=below-1){t.fy=below-1;t.y=below-1;t.falling=false;t.vy=0;   // lands softly: no explosion
+          if((!inB(t.x,below)||termiteSolid(t.x,below))&&ny>=below-1){t.fy=below-1;t.y=below-1;t.falling=false;t.vy=0;t.fa=0;t.occ=[[t.x,t.y]];t.seen=new Set();   // lands softly: no explosion
             for(let i=0;i<5;i++)G.particles.push({x:t.x+0.3+Math.random()*0.4,y:t.y+0.95,vx:(Math.random()-0.5)*2,vy:-Math.random(),life:0.4,max:0.4,s:0.12+Math.random()*0.1,c:[0.75,0.6,0.45,0.5],g:2,t:'dust'});break;}
-          t.fy=ny;t.y=Math.floor(ny);}
+          t.fy=ny;t.y=Math.floor(ny);t.occ=[[t.x,t.y]];}
         break;}
       if(t.turn){const need=t.turn.seq.length*TERMITE_TURN_FRAME-t.turn.t;
         if(budget<need){t.turn.t+=budget;budget=0;break;}
-        budget-=need;t.dir=-t.dir;t.turn=null;t.wait=termiteCanWalk(t.x+t.dir,t.y,t)?0:1.0;t.turns=(t.turns||0)+1;continue;}
-      if(t.move){const need=TERMITE_STEP-t.mt;
+        budget-=need;t.td=[-t.td[0],-t.td[1]];if(t.td[0])t.dir=t.td[0];t.turn=null;t.seen=new Set();t.loop=false;
+        t.wait=termiteNext(t)?0:1.0;t.turns=(t.turns||0)+1;continue;}
+      if(t.mv){const need=t.mv.dur-t.mt;
         if(budget<need){t.mt+=budget;t.animT+=budget;budget=0;break;}
-        budget-=need;t.animT+=need;t.x=t.tx;t.move=false;t.mt=0;continue;}
-      if(termiteCanWalk(t.x+t.dir,t.y,t)){t.move=true;t.tx=t.x+t.dir;t.mt=0;
-        airSplat(t.x+0.5,t.y+0.85,0.25,0,t.dir*6,-1.5,AIRFX.cfg.digD*0.5,true);continue;}   // tiny dust kick, only if the air is already stirring
+        budget-=need;t.animT+=need;termiteFinish(t);continue;}
+      const nx=t.loop?null:termiteNext(t);
+      if(nx){termiteStart(t,nx);continue;}
       if(t.wait>0){t.wait-=budget;budget=0;break;}   // boxed in: idle a moment between turns
-      t.turn={seq:t.dir>0?TERM_TURN_RL:TERM_TURN_LR,t:0};
+      t.loop=false;t.turn={seq:termiteFacing(t)>0?TERM_TURN_RL:TERM_TURN_LR,t:0};
     }
     t.px=termiteX(t);
   }
@@ -1210,6 +1363,14 @@ const KEYMAP={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1],a
 addEventListener('keydown',e=>{
   const tg=e.target&&e.target.tagName;if(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT')return;   // typing in editor fields
   if(modalOpen()){if(e.key==='Escape')closeModal();return;}
+  if(INTRO.on){   // title screen: Enter/Space start, E editor, F full screen, arrows scroll the instructions
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();startGame();}
+    else if(e.key==='e'||e.key==='E'){e.preventDefault();introEditor();}
+    else if(e.key==='f'||e.key==='F')toggleFS();
+    else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();INTRO.scroll+=e.key==='ArrowDown'?40:-40;INTRO.hold=1.5;}
+    return;}
+  if(G.seq&&G.mode==='game'){e.preventDefault();if(e.key==='f'||e.key==='F')toggleFS();skipSeq();return;}   // any key skips the level-start fly-in
+  if((e.key==='h'||e.key==='H'||e.key==='Escape')&&G.mode==='game'){e.preventDefault();showIntro();return;}
   if(G.mode==='editor'){
     if(KEYMAP[e.key]){e.preventDefault();keys[e.key]=true;}
     const t=TOOLS.find(t=>t.key===e.key);if(t)selectTool(t.id);
@@ -1225,6 +1386,7 @@ addEventListener('keydown',e=>{
   if(KEYMAP[e.key]){e.preventDefault();if(!keys[e.key]){queue.push(KEYMAP[e.key]);}keys[e.key]=true;lastDir=e.key;G.started=true;}
   if(e.key==='f'||e.key==='F')toggleFS();
   if(e.key==='v'||e.key==='V')airToggle();
+  if(e.key==='g'||e.key==='G')setPad(!PAD.on);
   if(e.key==='p'||e.key==='P'){G.paused=!G.paused;showMsg(G.paused?'<h1>Paused</h1><p>Press P to continue</p>':'');}
   if((e.key==='Enter'||e.key===' ')&&G.state==='over'){e.preventDefault();newGame();}
   if(e.key===' ')e.preventDefault();
@@ -1234,16 +1396,61 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 function heldDir(){
   if(lastDir&&keys[lastDir])return KEYMAP[lastDir];
   for(const k in keys)if(keys[k])return KEYMAP[k];
-  return null;
+  return padDir();   // on-screen arrow pad held = like a held cursor key
 }
-// simple touch: swipe / hold on screen side
-let touchDir=null;
-canvas.addEventListener('touchstart',e=>{const t=e.touches[0];e.preventDefault();if(G.mode==='editor'){const c=cellAt(t.clientX,t.clientY);paintCell(c[0],c[1],ED.tool);saveWork();return;}touchFrom(t);},{passive:false});
-canvas.addEventListener('touchmove',e=>{e.preventDefault();if(G.mode==='editor'){const t=e.touches[0],c=cellAt(t.clientX,t.clientY);paintCell(c[0],c[1],ED.tool);return;}touchFrom(e.touches[0]);},{passive:false});
-canvas.addEventListener('touchend',()=>{touchDir=null;});
-function touchFrom(t){const r=canvas.getBoundingClientRect();const dx=t.clientX-(r.left+r.width/2),dy=t.clientY-(r.top+r.height/2);
-  touchDir=Math.abs(dx)>Math.abs(dy)?[Math.sign(dx),0]:[0,Math.sign(dy)];G.started=true;if(G.state==='over')newGame();}
-canvas.addEventListener('click',()=>{if(G.mode!=='editor'&&G.state==='over')newGame();});
+// ---- touch in play: each swipe = one cell (like a key tap, but a swipe also walks after any turn it needs); taps start / restart
+// Threshold in CSS px (clientX/Y are CSS px, so it is already independent of devicePixelRatio). One move per swipe direction:
+// keep dragging the same way = nothing more; change direction mid-gesture = one more move (origin reset after every move).
+const SWIPE_PX=24, SWIPE_QUEUE=2;
+const SW={id:null,x0:0,y0:0,last:null,moves:0,moved:0};
+function inputMove(d,tap){   // queue a one-cell move from touch / pad (max 2 buffered so quick swipes are not dropped)
+  if(G.seq&&G.mode==='game'){skipSeq();return false;}   // a swipe / pad press during the fly-in only skips it
+  if(G.mode==='editor'||G.state!=='play'||G.paused)return false;
+  if(queue.length>=SWIPE_QUEUE)return false;
+  const q=[d[0],d[1]];q.sw=true;queue.push(q);G.started=true;
+  if(G.moley){cancelFidget(G.moley,q);G.moley.idleT=0;G.moley.fidgetNext=0;}
+  G.swipes=(G.swipes||0)+(tap?0:1);return true;}
+function touchTap(){if(G.mode==='editor')return;G.taps=(G.taps||0)+1;if(G.seq){skipSeq();return;}
+  if(G.state==='over'){newGame();return;}if(!G.started){G.started=true;}}
+canvas.addEventListener('touchstart',e=>{e.preventDefault();
+  if(G.mode==='editor'){const t=e.touches[0],c=cellAt(t.clientX,t.clientY);paintCell(c[0],c[1],ED.tool);saveWork();return;}
+  if(SW.id!==null)return;const t=e.changedTouches[0];SW.id=t.identifier;SW.x0=t.clientX;SW.y0=t.clientY;SW.last=null;SW.moves=0;SW.moved=0;},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();
+  if(G.mode==='editor'){const t=e.touches[0],c=cellAt(t.clientX,t.clientY);paintCell(c[0],c[1],ED.tool);return;}
+  for(const t of e.changedTouches){if(t.identifier!==SW.id)continue;
+    const dx=t.clientX-SW.x0,dy=t.clientY-SW.y0;SW.moved=Math.max(SW.moved,Math.hypot(t.clientX-SW.x0,t.clientY-SW.y0));
+    if(Math.max(Math.abs(dx),Math.abs(dy))<SWIPE_PX)continue;
+    const d=Math.abs(dx)>=Math.abs(dy)?[Math.sign(dx),0]:[0,Math.sign(dy)];
+    SW.x0=t.clientX;SW.y0=t.clientY;   // origin follows the finger after each segment
+    if(SW.last&&SW.last[0]===d[0]&&SW.last[1]===d[1])continue;   // same direction again in this gesture: still one move
+    SW.last=d;SW.moves++;inputMove(d);}},{passive:false});
+function swipeEnd(e){for(const t of e.changedTouches){if(t.identifier!==SW.id)continue;
+    if(!SW.moves){const dx=t.clientX-SW.x0,dy=t.clientY-SW.y0;   // fast flick that never fired a touchmove past the threshold
+      if(Math.max(Math.abs(dx),Math.abs(dy))>=SWIPE_PX)inputMove(Math.abs(dx)>=Math.abs(dy)?[Math.sign(dx),0]:[0,Math.sign(dy)]);
+      else if(e.type==='touchend'&&SW.moved<SWIPE_PX)touchTap();}
+    SW.id=null;}}
+canvas.addEventListener('touchend',e=>{e.preventDefault();swipeEnd(e);},{passive:false});
+canvas.addEventListener('touchcancel',swipeEnd);
+// ---- optional on-screen arrow pad (pointer events: touch + mouse, multi-touch safe), default off, saved in localStorage
+const PAD={on:false,ptr:new Map(),order:[]};
+function padDir(){if(!PAD.on||!PAD.order.length)return null;return PAD.ptr.get(PAD.order[PAD.order.length-1]);}   // most recent finger wins
+function padRelease(id){const b=PAD.ptr.get(id);if(!b&&!PAD.order.includes(id))return;PAD.ptr.delete(id);PAD.order=PAD.order.filter(i=>i!==id);
+  document.querySelectorAll('#dpad button').forEach(el=>{const d=el.dataset.d;el.classList.toggle('down',[...PAD.ptr.values()].some(v=>v.join()===d));});}
+function setPad(on,noSave){PAD.on=!!on;if(!noSave){try{localStorage.setItem('holymoley.dpad',PAD.on?'1':'0');}catch(e){}}
+  if(!PAD.on){PAD.ptr.clear();PAD.order=[];document.querySelectorAll('#dpad button.down').forEach(b=>b.classList.remove('down'));}
+  const pb=document.getElementById('padBtn');pb.classList.toggle('on',PAD.on);pb.setAttribute('aria-pressed',PAD.on?'true':'false');updatePadVis();}
+function updatePadVis(){const ed=G.mode==='editor';document.getElementById('dpad').hidden=!PAD.on||ed;document.body.classList.toggle('padOn',PAD.on&&!ed);document.getElementById('padBtn').style.display=ed?'none':'';}
+document.querySelectorAll('#dpad button').forEach(el=>{const d=el.dataset.d.split(',').map(Number);
+  el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();try{el.setPointerCapture(e.pointerId);}catch(_){}
+    PAD.ptr.set(e.pointerId,d);PAD.order.push(e.pointerId);el.classList.add('down');G.padPresses=(G.padPresses||0)+1;
+    if(G.state==='over'){newGame();return;}inputMove(d,true);});
+  for(const ev of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(ev,e=>{e.stopPropagation();padRelease(e.pointerId);});
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+  for(const ev of ['touchstart','touchmove','touchend','mousedown','click'])el.addEventListener(ev,e=>{e.stopPropagation();if(ev!=='click')e.preventDefault();},{passive:false});});
+document.getElementById('padBtn').addEventListener('click',e=>{e.stopPropagation();setPad(!PAD.on);e.currentTarget.blur();});
+addEventListener('blur',()=>{for(const id of [...PAD.ptr.keys()])padRelease(id);});
+setPad((()=>{try{return localStorage.getItem('holymoley.dpad')==='1';}catch(e){return false;}})(),true);
+canvas.addEventListener('click',()=>{if(G.mode!=='editor'&&G.seq){skipSeq();return;}if(G.mode!=='editor'&&G.state==='over')newGame();});
 
 // ---------------------------------------------------------------- fullscreen
 const wrap=document.getElementById('wrap'),fsBtn=document.getElementById('fs');
@@ -1354,7 +1561,7 @@ function updateFidget(m,dt){
 }
 function updateMoley(dt){
   const m=G.moley;
-  if(m.fidget&&(G.state!=='play'||queue.length||heldDir()||touchDir)){if(G.state!=='play'){m.fidget=null;m.poseTarget=Math.round(m.pose);}else cancelFidget(m,queue[0]||heldDir()||touchDir);}
+  if(m.fidget&&(G.state!=='play'||queue.length||heldDir())){if(G.state!=='play'){m.fidget=null;m.poseTarget=Math.round(m.pose);}else cancelFidget(m,queue[0]||heldDir());}
   // pose animation through the turn row (0 = right, 9 = facing camera, 15 = left)
   const prate=1/TURN_FRAME_TIME;
   if(m.pose<m.poseTarget)m.pose=Math.min(m.poseTarget,m.pose+prate*dt);
@@ -1364,10 +1571,10 @@ function updateMoley(dt){
   while(budget>0){
     if(!m.move){
       if(m.pose!==m.poseTarget)break;            // turning in place: no movement until the turn finishes
-      let d=queue.shift()||heldDir()||touchDir;
+      let d=queue.shift()||heldDir();
       if(!d)break;
       const res=tryMove(m,d);
-      if(res==='turn'){m.idleT=0;m.fidgetNext=0;break;}         // a tap only turns; if the key is still held we move after the turn
+      if(res==='turn'){m.idleT=0;m.fidgetNext=0;if(d.sw)queue.unshift(d);break;}         // a key tap only turns (held: moves after the turn); a swipe / pad tap walks on after turning
       if(!res){m.idleT=0;m.fidgetNext=0;break;}
     }
     const mv=m.move;const need=mv.dur-mv.t;
@@ -1606,7 +1813,7 @@ function updateTimerHUD(force){const el=document.getElementById('time'),box=docu
   if(force||t!==_tShown){el.textContent=t;_tShown=t;}if(force||c!==_tCls){box.className=c;_tCls=c;}}
 // ---------------------------------------------------------------- exit lock: the exit opens (and lights up) only once every crystal is gone
 const EXITMSG={text:'Get to the exit',assemble:0.35,hold:1.2,delay:[0.28,0.12],flow:[0.7,0.3],glowIn:0.8};
-function exitLockInit(){G.exitOpen=G.gemsLeft<=0;G.exitGlow=G.exitOpen?1:0;G.exitMsg=null;G.exitUnlockT=-9;G.exitDeny=-9;G.exitSounds={chime:0,locked:0};}
+function exitLockInit(){G.exitOpen=G.gemsLeft<=0;G.exitGlow=G.exitOpen?1:0;G.exitMsg=null;G.gemsMsg=null;G.exitUnlockT=-9;G.exitDeny=-9;G.exitSounds={chime:0,locked:0};}
 function checkExitUnlock(){
   if(G.exitOpen||G.gemsLeft>0||G.mode==='editor')return false;
   G.exitOpen=true;G.exitUnlockT=G.time;G.exitSounds.chime++;
@@ -1614,43 +1821,62 @@ function checkExitUnlock(){
   startExitMsg();return true;}
 function exitLockedHint(){   // stepping onto a closed exit: short low buzz + the padlock rattles
   if(G.time-G.exitDeny<0.6)return;G.exitDeny=G.time;G.exitSounds.locked++;beep(140,0.16,'sawtooth',0.04,95);}
-function exitScreenTarget(){   // exit centre in canvas pixels; off-screen -> the screen edge in its direction
+function exitScreenTarget(){return screenTargetFor(G.exit.x+0.5,G.exit.y+0.5);}
+function exitScreenTargetOld(){   // (kept for reference) exit centre in canvas pixels; off-screen -> the screen edge in its direction
   const C=cellPx,cw=canvas.width,ch=canvas.height,tx=(G.exit.x+0.5-G.cam.x)*C,ty=(G.exit.y+0.5-G.cam.y)*C,m=C*0.35;
   if(tx>=m&&tx<=cw-m&&ty>=m&&ty<=ch-m)return [tx,ty,true];
   const cx=cw/2,cy=ch/2,dx=tx-cx,dy=ty-cy;const k=Math.min(Math.abs(dx)>1e-6?(cw/2-m)/Math.abs(dx):1e9,Math.abs(dy)>1e-6?(ch/2-m)/Math.abs(dy):1e9);
   return [cx+dx*k,cy+dy*k,false];}
-function startExitMsg(){   // "Get to the exit" written in glowing particles sampled from canvas text
+function screenTargetFor(wx,wy){   // world point (cells) -> canvas pixels; off-screen -> the screen edge in its direction
+  const C=cellPx,cw=canvas.width,ch=canvas.height,tx=(wx-G.cam.x)*C,ty=(wy-G.cam.y)*C,m=C*0.35;
+  if(tx>=m&&tx<=cw-m&&ty>=m&&ty<=ch-m)return [tx,ty,true];
+  const cx=cw/2,cy=ch/2,dx=tx-cx,dy=ty-cy;const k=Math.min(Math.abs(dx)>1e-6?(cw/2-m)/Math.abs(dx):1e9,Math.abs(dy)>1e-6?(ch/2-m)/Math.abs(dy):1e9);
+  return [cx+dx*k,cy+dy*k,false];}
+function makeParticleMsg(text,ntg){   // text sampled into glowing particles; each particle is given one of ntg targets, evenly
   const cw=canvas.width,ch=canvas.height,fs=Math.max(18,Math.round(Math.min(cw*0.075,ch*0.13)));
   const font='900 '+fs+'px "Trebuchet MS", Verdana, sans-serif',c=document.createElement('canvas'),x=c.getContext('2d');x.font=font;
-  const tw=Math.ceil(x.measureText(EXITMSG.text).width)+8,th=Math.ceil(fs*1.35);c.width=tw;c.height=th;
-  x.font=font;x.textBaseline='middle';x.fillStyle='#fff';x.fillText(EXITMSG.text,4,th/2);
+  const tw=Math.ceil(x.measureText(text).width)+8,th=Math.ceil(fs*1.35);c.width=tw;c.height=th;
+  x.font=font;x.textBaseline='middle';x.fillStyle='#fff';x.fillText(text,4,th/2);
   const d=x.getImageData(0,0,tw,th).data,st=Math.max(2,Math.round(fs/16)),cx=cw/2,cy=ch*0.36,parts=[];
   for(let py=0;py<th;py+=st)for(let px=0;px<tw;px+=st){if(d[(py*tw+px)*4+3]<128)continue;
     const hx=cx-tw/2+px+(Math.random()-0.5)*st*0.5,hy=cy-th/2+py+(Math.random()-0.5)*st*0.5,a=Math.random()*6.283,rr=fs*(0.4+Math.random()*1.1);
     parts.push({hx,hy,ox:hx+Math.cos(a)*rr,oy:hy+Math.sin(a)*rr,d:(px/tw)*EXITMSG.delay[0]+Math.random()*EXITMSG.delay[1],
-      dur:EXITMSG.flow[0]+Math.random()*EXITMSG.flow[1],bend:(Math.random()-0.5)*2,lift:0.08+Math.random()*0.22,tw:Math.random()*6.283,s:st*(1.0+Math.random()*0.7),x:hx,y:hy,a:0,k:0});}
+      dur:EXITMSG.flow[0]+Math.random()*EXITMSG.flow[1],bend:(Math.random()-0.5)*2,lift:0.08+Math.random()*0.22,tw:Math.random()*6.283,s:st*(1.0+Math.random()*0.7),x:hx,y:hy,a:0,k:0,tg:0});}
+  if(ntg>1){const ord=parts.map((_,i)=>i);for(let i=ord.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ord[i],ord[j]]=[ord[j],ord[i]];}
+    ord.forEach((pi,k)=>{parts[pi].tg=k%ntg;});}   // shuffled round-robin: every target gets floor/ceil(n/ntg) particles from all over the text
   const total=EXITMSG.assemble+EXITMSG.hold+EXITMSG.delay[0]+EXITMSG.delay[1]+EXITMSG.flow[0]+EXITMSG.flow[1];
-  G.exitMsg={t:0,parts,fs,st,cx,cy,total,target:exitScreenTarget(),phase:'assemble'};}
-function updateExitMsg(dt){
-  if(G.exitOpen&&G.exitGlow<1)G.exitGlow=Math.min(1,G.exitGlow+dt/EXITMSG.glowIn);
-  const M=G.exitMsg;if(!M)return;M.t+=dt;const t=M.t,A=EXITMSG.assemble,Hd=EXITMSG.hold;
-  if(t>=M.total){G.exitMsg=null;return;}
-  const T=exitScreenTarget();M.target=T;M.phase=t<A?'assemble':t<A+Hd?'hold':'flow';
+  return {t:0,parts,fs,st,cx,cy,total,text,phase:'assemble',targets:[]};}
+function startExitMsg(){   // "Get to the exit": all particles stream into the exit
+  const M=makeParticleMsg(EXITMSG.text,1);M.tfn=()=>[exitScreenTarget()];M.targets=M.tfn();M.target=M.targets[0];G.exitMsg=M;}
+function startGemsMsg(){   // "Go get the gems": particles split evenly between all remaining crystals and stream towards each one
+  const gems=G.rocks.filter(o=>o.kind==='gem'&&!o.dead);if(!gems.length)return;
+  const M=makeParticleMsg('Go get the gems',gems.length);M.gems=gems;M.last=[];
+  M.tfn=()=>M.gems.map((o,i)=>{if(!o.dead)M.last[i]=screenTargetFor(o.x+0.5,(o.state==='falling'?o.fy:o.y)+0.5);return M.last[i];});
+  M.targets=M.tfn();G.gemsMsg=M;}
+function updParticleMsg(M,dt){   // returns false once finished
+  M.t+=dt;const t=M.t,A=EXITMSG.assemble,Hd=EXITMSG.hold;if(t>=M.total)return false;
+  M.targets=M.tfn();M.target=M.targets[0];M.phase=t<A?'assemble':t<A+Hd?'hold':'flow';
   const ease=k=>k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
   for(const p of M.parts){
     if(t<A){const k=1-Math.pow(1-t/A,3);p.x=p.ox+(p.hx-p.ox)*k;p.y=p.oy+(p.hy-p.oy)*k;p.a=k;p.k=0;continue;}
     const ft=t-A-Hd-p.d;
     if(ft<0){p.x=p.hx+Math.sin(t*3+p.tw)*0.6;p.y=p.hy+Math.cos(t*2.6+p.tw)*0.6;p.a=1;p.k=0;continue;}
-    const k=Math.min(1,ft/p.dur),e=ease(k),dx=T[0]-p.hx,dy=T[1]-p.hy,L=Math.hypot(dx,dy)||1;
+    const T=M.targets[p.tg]||M.targets[0],k=Math.min(1,ft/p.dur),e=ease(k),dx=T[0]-p.hx,dy=T[1]-p.hy,L=Math.hypot(dx,dy)||1;
     const mx=p.hx+dx*0.5-dy*0.28*p.bend,my=p.hy+dy*0.5+dx*0.28*p.bend-L*p.lift;   // curved stream with random bend and lift
     const u=1-e;p.x=u*u*p.hx+2*u*e*mx+e*e*T[0];p.y=u*u*p.hy+2*u*e*my+e*e*T[1];
-    p.a=k<0.65?1:Math.max(0,1-(k-0.65)/0.35);p.k=k;}}
+    p.a=k<0.65?1:Math.max(0,1-(k-0.65)/0.35);p.k=k;}
+  return true;}
+function updateExitMsg(dt){
+  if(G.exitOpen&&G.exitGlow<1)G.exitGlow=Math.min(1,G.exitGlow+dt/EXITMSG.glowIn);
+  if(G.exitMsg&&!updParticleMsg(G.exitMsg,dt))G.exitMsg=null;
+  if(G.gemsMsg&&!updParticleMsg(G.gemsMsg,dt))G.gemsMsg=null;}
 function renderExitMsg(X,Y,C){
-  const ut=G.time-G.exitUnlockT,M=G.exitMsg;if(!M&&ut>1.4)return;
+  const ut=G.time-G.exitUnlockT;if(!G.exitMsg&&!G.gemsMsg&&ut>1.4)return;
   flush();gl.blendFunc(gl.ONE,gl.ONE);
   if(ut>=0&&ut<1.4){const k=ut/1.4,r=C*(0.6+2.4*Math.sqrt(k)),a=(1-k)*0.9,cx=X(G.exit.x+0.5),cy=Y(G.exit.y+0.5);useTex(fxTex);   // unlock flash at the door
     quad(cx-r,cy-r,2*r,2*r,0,0,0.5,1,[a,0.8*a,0.35*a,a]);}
-  if(M){for(const p of M.parts){if(p.a<=0.01)continue;const tw=0.75+0.25*Math.sin(G.time*9+p.tw),a=p.a*tw,s=p.s*(1-0.55*p.k);
+  for(const M of [G.gemsMsg,G.exitMsg]){if(!M)continue;
+    for(const p of M.parts){if(p.a<=0.01)continue;const tw=0.75+0.25*Math.sin(G.time*9+p.tw),a=p.a*tw,s=p.s*(1-0.55*p.k);
       drawTile('dust',p.x-s*1.6,p.y-s*1.6,s*3.2,s*3.2,[0.55*a,0.32*a,0.06*a,0.55*a]);
       drawTile('dust',p.x-s*0.6,p.y-s*0.6,s*1.2,s*1.2,[a,0.93*a,0.7*a,a]);}}
   flush();gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);}
@@ -1663,7 +1889,7 @@ function levelClear(){
   beep(523,0.15,'square',0.05);setTimeout(()=>beep(659,0.15,'square',0.05),150);setTimeout(()=>beep(784,0.3,'square',0.05),300);
   showMsg(G.mode==='test'?'<h1>Level complete!</h1><p>Back to the editor…</p>':'<h1>Level '+G.level+' clear!</h1><p>Bonus +'+bonus+'</p>');
 }
-function newGame(){G.score=0;G.lives=3;G.timeUp=false;showMsg('');if(G.mode==='test'){loadLevel(ED.data);return;}G.level=1;genLevel();}
+function newGame(){G.score=0;G.lives=3;G.timeUp=false;showMsg('');if(G.mode==='test'){loadLevel(ED.data);return;}G.level=1;genLevel();startLevelSeq();}
 function updateState(dt){
   G.stateT+=dt;
   if(G.state==='dying'&&G.stateT>1.8){
@@ -1671,7 +1897,7 @@ function updateState(dt){
     if(G.lives<=0){G.state='over';updateHUD();showMsg('<h1>Game Over</h1><p>Score '+G.score+'<br>Press Enter / Space or click to play again</p>');}
     else{G.score=G.levelStartScore;showMsg('');restartLevel();}
   }
-  if(G.state==='clear'&&G.stateT>2.2){showMsg('');if(G.mode==='test'){backToEditor();return;}G.level++;genLevel();}
+  if(G.state==='clear'&&G.stateT>2.2){showMsg('');if(G.mode==='test'){backToEditor();return;}G.level++;genLevel();startLevelSeq();}
 }
 // particles
 function spawnDirt(x,y){const b=BANDS[band(Math.floor(y))].col;for(let i=0;i<2;i++)G.particles.push({x,y,vx:(Math.random()-0.5)*4,vy:-Math.random()*4,life:0.6,max:0.6,s:0.08+Math.random()*0.08,c:[b[0]/255,b[1]/255,b[2]/255,1],g:14,t:'white'});}
@@ -1863,16 +2089,18 @@ function render(){
 function drawTermites(X,Y){
   if(!termTex||!G.termites.length)return;const C=cellPx,k=C/TSW,sc=termTex.w/(16*TSW),iw=termTex.w,ih=termTex.h;
   for(const t of G.termites){
-    if(t.dead)continue;const px=termiteX(t);
-    const ty=termiteY(t);if(px+1<G.cam.x-1||px>G.cam.x+viewW()+1||ty+1<G.cam.y-1||ty>G.cam.y+viewH()+1)continue;
-    let row,frame;
+    if(t.dead)continue;const P=t.fused?[t.x,t.y,t.fusedA||0]:termitePose(t),px=P[0],ty=P[1],ang=P[2];
+    if(px+1<G.cam.x-1||px>G.cam.x+viewW()+1||ty+1<G.cam.y-1||ty>G.cam.y+viewH()+1)continue;
+    let row,frame;const face=termiteFacing(t);
     if(t.turn){row=2;frame=t.turn.seq[Math.min(t.turn.seq.length-1,Math.floor(t.turn.t/TERMITE_TURN_FRAME))];}
-    else{row=t.dir>0?0:1;frame=Math.floor(t.animT/TERMITE_FRAME)%16;}
-    const feetY=Y(ty)+C*0.97,w=C*TERM_DRAW,h=TSH*k*TERM_DRAW,left=X(px)+(C-w)/2,top=feetY-TBASE*k*TERM_DRAW;
-    if(!t.falling)drawTile('dust',left+C*0.12,feetY-C*0.07,C*0.76,C*0.13,[0,0,0,0.35]);   // soft contact shadow
+    else{row=face>0?0:1;frame=Math.floor(t.animT/TERMITE_FRAME)%16;}
+    // floor layout (unchanged size-matching): feet line at 0.97 of the cell, slot centred; rotated as a whole about the cell centre
+    const w=C*TERM_DRAW,h=TSH*k*TERM_DRAW,dy=0.47*C-TBASE*k*TERM_DRAW+h/2,cs=Math.cos(ang),sn=Math.sin(ang),ccx=X(px)+C/2,ccy=Y(ty)+C/2;
+    if(!t.falling){const sx=ccx-sn*C*0.465,sy=ccy+cs*C*0.465,uv=tileUV(T['dust']);useTex(tilesTex);   // soft contact shadow on the surface
+      quadRot(sx,sy,C*0.76,C*0.13,ang,uv[0],uv[1],uv[2],uv[3],[0,0,0,0.35]);}
     const fl=t.fused?0.5+0.5*Math.sin(G.time*60):0,tint=t.fused?[1+fl*0.6,1+fl*0.3,1,1]:WHITE;
-    useTex(termTex);t.q=[row,frame,left,top,w,h];
-    quad(left,top,w,h,frame*TSW*sc/iw,row*TSH*sc/ih,(frame+1)*TSW*sc/iw,(row+1)*TSH*sc/ih,tint);
+    useTex(termTex);const qx=ccx-sn*dy,qy=ccy+cs*dy;t.q=[row,frame,qx-w/2,qy-h/2,w,h,ang];
+    quadRot(qx,qy,w,h,ang,frame*TSW*sc/iw,row*TSH*sc/ih,(frame+1)*TSW*sc/iw,(row+1)*TSH*sc/ih,tint);
   }
 }
 function drawMoley(X,Y){
@@ -1916,7 +2144,8 @@ function step(dt){
   if(G.paused){coalAudio(0);return;}   // crackle loop silent while paused
   G.time+=dt;
   if(G.mode==='editor'){coalAudio(0);editorStep(dt);for(const c of G.clouds)c.x=(c.x+c.v*dt)%(W+4);return;}   // physics frozen while editing
-  if(G.state==='play'||G.state==='dying'||G.state==='clear'){
+  if(G.seq)updateSeq(dt);
+  if((G.state==='play'||G.state==='dying'||G.state==='clear')&&!G.seq&&!INTRO.on){
     updateMoley(dt);
     if(G.state==='play'||G.state==='clear')updateRocks(dt);
     if(G.state==='play')updateTermites(dt);
@@ -1930,15 +2159,35 @@ function step(dt){
   airStep(dt);   // visual air flow (GPU); never feeds back into gameplay
   for(const c of G.clouds)c.x=(c.x+c.v*dt)%(W+4);
   G.shake=Math.max(0,G.shake-dt*1.5);
-  // camera follows Moley smoothly
-  const m=G.moley,vw=viewW(),vh=viewH();
-  let tx=m.x+0.5-vw/2,ty=m.y+0.5-vh*0.45;
-  tx=W<vw?(W-vw)/2:clamp(tx,0,W-vw);ty=clamp(ty,-0.0,Math.max(0,H-vh));
-  const k=1-Math.exp(-6*dt);G.cam.x+=(tx-G.cam.x)*k;G.cam.y+=(ty-G.cam.y)*k;
-  if(!G.started&&G.state==='play'&&!msgEl.innerHTML)showMsg('<h1>Holy Moley</h1><p>Dig with the arrow keys!</p>');
-  $('menu').hidden=!(G.mode==='game'&&!G.started&&G.state==='play');
-  if(G.started&&msgEl.innerHTML.indexOf('Dig with')>=0)showMsg('');
+  // camera follows Moley smoothly (the level-start fly-in drives it itself)
+  if(!G.seq){const m=G.moley,[tx,ty]=camTarget(m.x,m.y);
+    const k=1-Math.exp(-6*dt);G.cam.x+=(tx-G.cam.x)*k;G.cam.y+=(ty-G.cam.y)*k;}
 }
+function camTarget(x,y){const vw=viewW(),vh=viewH();let tx=x+0.5-vw/2,ty=y+0.5-vh*0.45;
+  tx=W<vw?(W-vw)/2:clamp(tx,0,W-vw);ty=clamp(ty,-0.0,Math.max(0,H-vh));return [tx,ty];}
+// ---------------------------------------------------------------- level start: name, fly-in from the exit to Moley, "Go get the gems"
+// Random levels only (game mode). Skipped for editor test-play (fast iteration) and for the restart after losing a life.
+// Input and the clock are held until the fly-in ends (any key / tap skips it); the clock starts as the gems message forms.
+const SEQ={hold:0.55,fly:[2.0,3.5],nameOut:0.55,settle:0.15};
+const LVL_ADJ=['Rooty','Pebbly','Muddy','Crumbly','Twisty','Gloomy','Sparkly','Rumbly','Sandy','Mossy','Wormy','Dusty','Bumpy','Murky','Lumpy','Glittery'];
+const LVL_NOUN=['Burrow','Tunnels','Diggings','Warren','Caverns','Hollows','Depths','Mine','Labyrinth','Den','Grotto','Passages','Pits','Underworld','Maze','Seams'];
+function levelName(n){const r=mulberry(n*7919+4242);return 'The '+LVL_ADJ[Math.floor(r()*LVL_ADJ.length)]+' '+LVL_NOUN[Math.floor(r()*LVL_NOUN.length)];}
+function startLevelSeq(){
+  if(NOINTRO||G.mode!=='game')return false;
+  const m=G.moley,from=camTarget(G.exit.x,G.exit.y),to=camTarget(m.x,m.y),dist=Math.hypot(to[0]-from[0],to[1]-from[1]);
+  const fly=clamp(1.5+dist*0.045,SEQ.fly[0],SEQ.fly[1]);
+  G.levelName=levelName(G.level);G.seq={t:0,fly,from,to,dist,total:SEQ.hold+fly+SEQ.settle,skipped:false};G.seqLog=[];
+  G.started=false;queue.length=0;G.cam.x=from[0];G.cam.y=from[1];
+  showMsg('<h1 class="lvlname">'+G.levelName+'</h1><p>Level '+G.level+'</p>');return true;}
+function updateSeq(dt){const S=G.seq;S.t+=dt;
+  S.to=camTarget(G.moley.x,G.moley.y);const k=clamp((S.t-SEQ.hold)/S.fly,0,1),e=k<0.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+  G.cam.x=S.from[0]+(S.to[0]-S.from[0])*e;G.cam.y=S.from[1]+(S.to[1]-S.from[1])*e;
+  if(S.t>SEQ.hold+S.fly*SEQ.nameOut&&msgEl.style.opacity!=='0')msgEl.style.opacity=0;   // level name fades out half-way
+  if(S.t>=S.total)endSeq();}
+function endSeq(){const S=G.seq;if(!S)return;G.cam.x=S.to?S.to[0]:G.cam.x;G.cam.y=S.to?S.to[1]:G.cam.y;
+  G.seq=null;G.seqDone=(G.seqDone||0)+1;G.started=true;queue.length=0;showMsg('');if(G.gemsLeft>0)startGemsMsg();}
+function skipSeq(){if(!G.seq)return;G.seq.to=camTarget(G.moley.x,G.moley.y);G.seq.skipped=true;G.seqSkips=(G.seqSkips||0)+1;endSeq();}
+
 
 // ---------------------------------------------------------------- boot
 tilesTex=makeTex(tileCanvas,false);
@@ -1979,7 +2228,7 @@ const TOOLS=[
   {id:'brick', label:'Brick',   key:'7', tip:'Brick: indestructible wall; Moley cannot dig, push or enter it; objects rest on it'},
   {id:'bomb',  label:'Bomb',    key:'8', tip:'Bomb: like a boulder (pushable, falls); explodes when it lands after a fall or a boulder lands on it, clearing the 3×3 around it'},
   {id:'nuke',  label:'Nuke',    key:'9', tip:'Nuke: behaves like a bomb, but its blast destroys everything within a 5-cell radius (bedrock and the exit survive)'},
-  {id:'termite',label:'Termite',key:'0', tip:'Termite (enemy): patrols a tunnel with ground beneath it and turns at the ends; touching it costs a life; a boulder dropped on it makes it explode like a bomb. Placing it digs the cell out'},
+  {id:'termite',label:'Termite',key:'0', tip:'Termite (enemy): crawls along tunnel floors and up/down shaft walls (always touching earth), turning back at dead ends; starts on the floor if there is one, else a side wall; touching it costs a life; a boulder dropped on it makes it explode like a bomb. Placing it digs the cell out'},
   {id:'coal',  label:'Coal',    key:'c', tip:'Coal: solid like brick (blasts destroy it), but explosions next to it set it alight; fire spreads to touching coal and burnt coal crumbles into a gap'},
 ];
 const LEVEL_SIZES=[[30,24,'Small 30×24'],[44,38,'Medium 44×38'],[64,48,'Large 64×48'],[96,64,'Huge 96×64']];
@@ -2043,11 +2292,14 @@ function loadLevel(d){
   G.state='play';G.stateT=0;G.levelStartScore=G.score;resetTimer();exitLockInit();
   updateHUD();
 }
-function applyZoom(){cellPx=Math.max(12,Math.round(baseCell*(G.mode==='editor'?ED.zoom:1)));}
+function applyZoom(){cellPx=Math.max(12,Math.round(baseCell*(G.mode==='editor'?ED.zoom:1)));syncZoomUI();}
+function syncZoomUI(){const r=document.getElementById('edZoom'),l=document.getElementById('edZoomPct');if(!r)return;let z;try{z=ED.zoom;}catch(e){return;}   // ED not created yet during boot
+    // slider follows every zoom change (keys, Ctrl+wheel, slider)
+  const v=Math.round(z*100);if(+r.value!==v)r.value=v;l.textContent=v+'%';}
 function setUI(){
   const ed=G.mode==='editor';
   $e('editor').hidden=!ed;$e('hud').style.display=ed?'none':'';$e('help').style.display=G.mode==='game'?'':'none';
-  $e('testBar').hidden=G.mode!=='test';$e('edBtn').style.display=ed?'none':'';
+  $e('testBar').hidden=G.mode!=='test';$e('edBtn').style.display=ed?'none':'';updatePadVis();if(ed){palPlace();syncZoomUI();}
   canvas.style.cursor=ed?'crosshair':'';
   updateHUD();
 }
@@ -2067,7 +2319,7 @@ function playTest(){
   G.mode='test';G.lives=3;G.score=0;G.started=true;applyZoom();loadLevel(ED.data);showMsg('');setUI();
 }
 function backToEditor(){enterEditor(ED.data);}
-function exitEditor(){if(G.mode==='editor')saveWork();G.mode='game';G.lives=3;G.score=0;applyZoom();showMsg('');genLevel();setUI();}
+function exitEditor(){if(G.mode==='editor')saveWork();G.mode='game';G.lives=3;G.score=0;applyZoom();showMsg('');genLevel();setUI();if(!NOINTRO)showIntro();}   // back to the title screen
 function restartLevel(){if(G.mode==='test')loadLevel(ED.data);else genLevel();}
 
 // painting
@@ -2123,18 +2375,18 @@ function renderEditorOverlay(X,Y){
 }
 // toolbar
 function toolIcon(id){
-  const c=document.createElement('canvas');c.width=c.height=36;const x=c.getContext('2d');
-  const tile=(name)=>{const i=T[name];x.drawImage(tileCanvas,(i%TCOLS)*TS,Math.floor(i/TCOLS)*TS,TS,TS,0,0,36,36);};
+  const c=document.createElement('canvas');c.width=c.height=72;const x=c.getContext('2d');
+  const tile=(name)=>{const i=T[name];x.drawImage(tileCanvas,(i%TCOLS)*TS,Math.floor(i/TCOLS)*TS,TS,TS,0,0,72,72);};
   if(id==='earth')tile('earth0_1');
   if(id==='tunnel')tile('dug');
-  if(id==='rock'){tile('dug');x.drawImage(rockCanvas,0,0,ROCK_TS,ROCK_TS,0,0,36,36);}
-  if(id==='gem'){tile('dug');x.drawImage(gemCanvas,GEM_TS*GEM_FRAMES%(GEM_TS*8),Math.floor(GEM_FRAMES/8)*GEM_TS,GEM_TS,GEM_TS,0,0,36,36);}
+  if(id==='rock'){tile('dug');x.drawImage(rockCanvas,0,0,ROCK_TS,ROCK_TS,0,0,72,72);}
+  if(id==='gem'){tile('dug');x.drawImage(gemCanvas,GEM_TS*GEM_FRAMES%(GEM_TS*8),Math.floor(GEM_FRAMES/8)*GEM_TS,GEM_TS,GEM_TS,0,0,72,72);}
   if(id==='exit'){tile('earth0_0');tile('exit');}
   if(id==='start'){tile('dug');c.dataset.moley='1';}
-  if(id==='brick')x.drawImage(brickCanvas,0,0,BRICK_TS,BRICK_TS,0,0,36,36);
-  if(id==='coal')x.drawImage(coalCanvas,0,0,COAL_TS,COAL_TS,0,0,36,36);
-  if(id==='bomb'){tile('dug');x.drawImage(bombCanvas,0,0,BOMB_TS,BOMB_TS,0,0,36,36);}
-  if(id==='nuke'){tile('dug');x.drawImage(nukeCanvas,0,0,BOMB_TS,BOMB_TS,0,0,36,36);}
+  if(id==='brick')x.drawImage(brickCanvas,0,0,BRICK_TS,BRICK_TS,0,0,72,72);
+  if(id==='coal')x.drawImage(coalCanvas,0,0,COAL_TS,COAL_TS,0,0,72,72);
+  if(id==='bomb'){tile('dug');x.drawImage(bombCanvas,0,0,BOMB_TS,BOMB_TS,0,0,72,72);}
+  if(id==='nuke'){tile('dug');x.drawImage(nukeCanvas,0,0,BOMB_TS,BOMB_TS,0,0,72,72);}
   if(id==='termite'){tile('dug');c.dataset.termite='1';}
   return c;
 }
@@ -2145,11 +2397,44 @@ function buildToolbar(){
     b.addEventListener('click',()=>selectTool(t.id));box.appendChild(b);}
   selectTool(ED.tool);
 }
+// ---- tile palette panel: default bottom-left, draggable by its TILES bar, position saved, kept inside the window
+const LS_PAL='holymoley.edPalettePos',PAL={margin:10,bottom:34,drag:null};
+function palFit(){   // scale 2x the old tiles; shrink (not below 0.9x) so the panel stays within 92% of the width and 45% of the height
+  const el=$e('edPal');if(!el||$e('editor').hidden)return;const vw=wrap.clientWidth,vh=wrap.clientHeight;
+  const cols=vw<vh?4:6;el.style.setProperty('--pcols',cols);el.style.setProperty('--ps',2);
+  const bar=$e('edBar').getBoundingClientRect(),wr=wrap.getBoundingClientRect(),free=vh-(bar.bottom-wr.top)-palBottom()-12;
+  const r=el.getBoundingClientRect(),k=Math.min(1,(vw*0.92)/r.width,Math.min(vh*0.45,Math.max(free,vh*0.3))/r.height);
+  const ps=Math.max(0.9,Math.floor(2*k*100)/100);el.style.setProperty('--ps',ps);PAL.scale=ps;PAL.cols=cols;}
+function palBottom(){const h=$e('edHint');return Math.max(PAL.bottom,(h?h.offsetHeight:0)+16);}   // sit just above the hint line (it wraps on narrow screens)
+function palDefault(){const el=$e('edPal'),vh=wrap.clientHeight;return [PAL.margin,vh-palBottom()-el.offsetHeight];}
+function palClamp(x,y){const el=$e('edPal'),vw=wrap.clientWidth,vh=wrap.clientHeight,m=4;
+  return [clamp(x,m,Math.max(m,vw-el.offsetWidth-m)),clamp(y,m,Math.max(m,vh-el.offsetHeight-m))];}
+function palSaved(){try{const o=JSON.parse(lsGet(LS_PAL)||'null');return o&&isFinite(o.x)&&isFinite(o.y)?o:null;}catch(e){return null;}}
+function palPlace(){const el=$e('edPal');if(!el||$e('editor').hidden)return;palFit();
+  const sv=palSaved();let [x,y]=sv?[sv.x,sv.y]:palDefault();[x,y]=palClamp(x,y);
+  el.style.left=x+'px';el.style.top=y+'px';el.style.bottom='auto';PAL.pos=[x,y];}
+function palReset(){try{localStorage.removeItem(LS_PAL);}catch(e){}palPlace();toast('Tile palette back in the bottom-left');}
+(function(){const h=$e('edPalHead'),el=$e('edPal');
+  h.addEventListener('pointerdown',e=>{if(e.target.id==='edPalReset'||e.button>0)return;e.preventDefault();e.stopPropagation();
+    const r=el.getBoundingClientRect(),w=wrap.getBoundingClientRect();PAL.drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top,wx:w.left,wy:w.top,moved:false};
+    h.setPointerCapture(e.pointerId);el.classList.add('drag');});
+  h.addEventListener('pointermove',e=>{const D=PAL.drag;if(!D||e.pointerId!==D.id)return;e.preventDefault();
+    const [x,y]=palClamp(e.clientX-D.wx-D.dx,e.clientY-D.wy-D.dy);el.style.left=x+'px';el.style.top=y+'px';el.style.bottom='auto';PAL.pos=[x,y];D.moved=true;});
+  const end=e=>{const D=PAL.drag;if(!D||e.pointerId!==D.id)return;PAL.drag=null;el.classList.remove('drag');
+    if(D.moved){lsSet(LS_PAL,JSON.stringify({x:Math.round(PAL.pos[0]),y:Math.round(PAL.pos[1])}));PAL.drags=(PAL.drags||0)+1;}};
+  h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end);
+  h.addEventListener('dblclick',e=>{if(e.target.id!=='edPalReset')palReset();});
+  $e('edPalReset').addEventListener('click',e=>{e.stopPropagation();palReset();});
+  // keep the canvas from ever seeing presses on the panel (no painting through it)
+  for(const ev of ['mousedown','touchstart','wheel','contextmenu'])el.addEventListener(ev,e=>{e.stopPropagation();if(ev==='contextmenu')e.preventDefault();},{passive:ev!=='contextmenu'});
+  addEventListener('resize',palPlace);addEventListener('orientationchange',()=>setTimeout(palPlace,60));
+  document.addEventListener('fullscreenchange',()=>setTimeout(palPlace,60));
+})();
 function selectTool(id){ED.tool=id;document.querySelectorAll('#tools .tool').forEach(b=>b.classList.toggle('on',b.id==='tool-'+id));}
 function drawTermiteIcon(){const c=document.querySelector('#tool-termite canvas');if(!c||!termImg.complete||!termImg.naturalWidth)return;const x=c.getContext('2d');
-  x.drawImage(termImg,0,40,TSW,TSH-40,0,36-36*(TSH-40)/TSW-1,36,36*(TSH-40)/TSW);}
+  x.drawImage(termImg,0,40,TSW,TSH-40,0,72-72*(TSH-40)/TSW-1,72,72*(TSH-40)/TSW);}
 function drawMoleyIcon(){const c=document.querySelector('#tool-start canvas');if(!c||!img.complete)return;const x=c.getContext('2d');
-  x.drawImage(img,9*SLOT+BOX_X0,SLOT+BOX_Y0,FW,FH,0,36-36*FH/FW,36,36*FH/FW);}
+  x.drawImage(img,9*SLOT+BOX_X0,SLOT+BOX_Y0,FW,FH,0,72-72*FH/FW,72,72*FH/FW);}
 function refreshSlots(){const s=$e('edSlot'),cur=s.value||'1';s.innerHTML='';
   for(let i=1;i<=NSLOTS;i++){let label='Slot '+i+' — empty';const raw=lsGet(LS_SLOT+i);if(raw){try{const o=JSON.parse(raw);label='Slot '+i+' — '+(o.name||'untitled');}catch(e){}}
     const op=document.createElement('option');op.value=String(i);op.textContent=label;s.appendChild(op);}s.value=cur;}
@@ -2215,15 +2500,74 @@ $e('edLoad').addEventListener('click',loadSlot);
 $e('edExport').addEventListener('click',exportDialog);
 $e('edImport').addEventListener('click',importDialog);
 $e('edExit').addEventListener('click',()=>{$e('edExit').blur();exitEditor();});
-$e('edZin').addEventListener('click',()=>setZoom(ED.zoom*1.2));
+$e('edZoom').addEventListener('input',e=>setZoom(+e.target.value/100));$e('edZoom').addEventListener('change',e=>e.target.blur());   // blur so arrows pan again
 function syncRootsBtn(){const b=$e('edRoots');b.textContent='Roots: '+(G.rootsOn?'on':'off');b.classList.toggle('on',!!G.rootsOn);}
 $e('edRoots').addEventListener('click',()=>{G.rootsOn=!G.rootsOn;$e('edRoots').blur();syncRootsBtn();saveWork();});
-$e('edZout').addEventListener('click',()=>setZoom(ED.zoom/1.2));
 $e('tbBack').addEventListener('click',e=>{e.stopPropagation();$e('tbBack').blur();backToEditor();});
-$e('mPlay').addEventListener('click',()=>{G.started=true;$e('menu').hidden=true;showMsg('');});
-$e('mEditor').addEventListener('click',()=>enterEditor());
+$e('mPlay').addEventListener('click',e=>{e.currentTarget.blur();startGame();});
+$e('mEditor').addEventListener('click',e=>{e.currentTarget.blur();introEditor();});
 buildToolbar();drawTermiteIcon();
 
+// ---------------------------------------------------------------- title screen: chase animation + scrolling how-to
+const CHASE={speedM:1/MOVE_TIME,speedT:1/TERMITE_STEP,gap:0.5,pause:1.0,nR:3,nL:5,sp:1.25,lead:1.0};   // speeds in cells/s, same as in the game
+function chasePhases(Wc){   // phase lengths (s) for a strip Wc cells wide
+  const A=(Wc+2)/CHASE.speedM,B=(Wc+2+(CHASE.nR-1)*CHASE.sp)/CHASE.speedT,Cc=(Wc+2+CHASE.lead+(CHASE.nL-1)*CHASE.sp)/CHASE.speedT;
+  return [['moleyR',A],['gap1',CHASE.gap],['termitesR',B],['gap2',CHASE.gap],['chaseL',Cc],['pause',CHASE.pause]];}
+function showIntro(){const el=document.getElementById('intro');el.hidden=false;INTRO.on=true;G.seq=null;G.started=false;queue.length=0;showMsg('');
+  INTRO.t=0;INTRO.pt=0;INTRO.phase='moleyR';INTRO.loops=0;INTRO.log=[{phase:'moleyR',t:0}];
+  const box=document.getElementById('howto');INTRO.scroll=-(box.clientHeight*0.3);INTRO.hold=0;introTick(0);}
+function hideIntro(){document.getElementById('intro').hidden=true;INTRO.on=false;}
+function startGame(){hideIntro();if(G.mode!=='game'){G.mode='game';applyZoom();setUI();}
+  G.score=0;G.lives=3;G.timeUp=false;G.level=1;showMsg('');genLevel();if(!startLevelSeq())G.started=true;}
+function introEditor(){hideIntro();enterEditor();}
+function introTick(dt){
+  if(!INTRO.on)return;INTRO.t+=dt;
+  // credits-style scroll of the instructions; seamless because the content is there twice
+  const box=document.getElementById('howto'),inner=document.getElementById('howtoIn'),first=inner.firstElementChild,h=first.offsetHeight||1;
+  if(INTRO.hold>0)INTRO.hold-=dt;else INTRO.scroll+=dt*Math.max(14,box.clientHeight*0.06);
+  if(INTRO.scroll>=h)INTRO.scroll-=h;if(INTRO.scroll<-box.clientHeight)INTRO.scroll=-box.clientHeight;
+  inner.style.transform='translateY('+(-INTRO.scroll).toFixed(1)+'px)';
+  drawChase(dt);}
+function drawChase(dt){
+  const cv=document.getElementById('chase'),dpr=Math.min(2,window.devicePixelRatio||1),cw=Math.round(cv.clientWidth*dpr),ch=Math.round(cv.clientHeight*dpr);
+  if(!cw||!ch)return;if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch;}
+  const x=cv.getContext('2d'),C=ch*0.82,gy=ch*0.91,Wc=cw/C;   // C = sprite cell size: about 2.5-3x the game's cell on desktop
+  const ph=chasePhases(Wc);INTRO.pt+=dt;
+  let i=ph.findIndex(p=>p[0]===INTRO.phase);if(i<0)i=0;
+  while(INTRO.pt>=ph[i][1]){INTRO.pt-=ph[i][1];i=(i+1)%ph.length;if(i===0)INTRO.loops++;INTRO.phase=ph[i][0];INTRO.log.push({phase:INTRO.phase,t:+INTRO.t.toFixed(3)});if(INTRO.log.length>60)INTRO.log.shift();}
+  const t=INTRO.pt,P=INTRO.phase,ents=[];
+  if(P==='moleyR')ents.push({k:'m',x:-1+t*CHASE.speedM,dir:1});
+  if(P==='termitesR')for(let j=0;j<CHASE.nR;j++)ents.push({k:'t',x:-1-j*CHASE.sp+t*CHASE.speedT,dir:1,o:j*3});
+  if(P==='chaseL'){ents.push({k:'m',x:Wc+1-t*CHASE.speedM,dir:-1});   // Moley flees at his own running speed and pulls away
+    for(let j=0;j<CHASE.nL;j++)ents.push({k:'t',x:Wc+1+CHASE.lead+j*CHASE.sp-t*CHASE.speedT,dir:-1,o:j*5});}
+  INTRO.ents=ents.map(e=>({k:e.k,x:+e.x.toFixed(3),dir:e.dir,on:e.x>-0.5&&e.x<Wc+0.5}));INTRO.Wc=Wc;
+  x.clearRect(0,0,cw,ch);
+  // earth strip: a tunnel floor with pebbles
+  const gr=x.createLinearGradient(0,gy,0,ch);gr.addColorStop(0,'#9a6434');gr.addColorStop(0.25,'#6e4321');gr.addColorStop(1,'#3e240f');
+  x.fillStyle=gr;x.fillRect(0,gy,cw,ch-gy);x.fillStyle='rgba(255,220,170,.25)';x.fillRect(0,gy,cw,Math.max(1,ch*0.006));
+  const r=mulberry(77);for(let k=0;k<Math.ceil(cw/14);k++){const px=r()*cw,py=gy+ch*0.02+r()*(ch-gy-ch*0.03),pr=(1+r()*2.2)*dpr;x.fillStyle=r()<0.5?'rgba(40,22,8,.55)':'rgba(200,150,100,.35)';
+    x.beginPath();x.ellipse(px,py,pr*1.4,pr,0,0,6.283);x.fill();}
+  x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
+  const frame=Math.floor(INTRO.t/RUN_FRAME_TIME);
+  for(const e of ents){const cx=e.x*C;
+    x.fillStyle='rgba(0,0,0,.35)';x.beginPath();x.ellipse(cx,gy,C*(e.k==='m'?0.38:0.42),C*0.05,0,0,6.283);x.fill();
+    if(e.k==='m'){if(!img.complete||!img.naturalWidth)continue;const k=C/FW,f=frame%16,row=e.dir>0?0:2;
+      x.drawImage(img,f*256+BOX_X0,row*256+BOX_Y0,FW,FH,cx-C/2,gy-(RUN_FEET-BOX_Y0)*k,C,FH*k);}
+    else{if(!termImg.complete||!termImg.naturalWidth)continue;const w=C*TERM_DRAW,k=w/256,f=(Math.floor(INTRO.t/TERMITE_FRAME)+e.o)%16,row=e.dir>0?0:1;
+      x.drawImage(termImg,f*256,row*160,256,160,cx-w/2,gy-TBASE*k,w,160*k);}}
+}
+(function(){   // real-time driver for the title screen (tests can set window.__introManual and call introTick themselves)
+  let last=performance.now();
+  function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;if(!window.__introManual)introTick(dt);requestAnimationFrame(loop);}
+  requestAnimationFrame(loop);
+  const box=document.getElementById('howto');
+  box.addEventListener('wheel',e=>{e.preventDefault();INTRO.scroll+=e.deltaY*0.6;INTRO.hold=1.5;},{passive:false});
+  let dragY=null;
+  box.addEventListener('pointerdown',e=>{dragY=e.clientY;box.setPointerCapture(e.pointerId);});
+  box.addEventListener('pointermove',e=>{if(dragY===null)return;INTRO.scroll-=(e.clientY-dragY);dragY=e.clientY;INTRO.hold=1.5;});
+  const up=()=>{dragY=null;};box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);
+})();
+if(!NOINTRO)showIntro();
 requestAnimationFrame(frame);
 // test hook
 window.HolyMoley={G,step,render,genLevel,canEnter,AIRFX,airToggle,airRead,resizeLevel,timerSound};
