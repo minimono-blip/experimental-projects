@@ -94,6 +94,13 @@
   #edExit{background:rgba(25,14,8,.82)!important}
   #palHand{display:none;font-size:calc(13px*var(--ps));margin-right:calc(3px*var(--ps))} body.touchEd #palHand{display:block} #palHand.on{background:#ffc96b;color:#3a2516}
   #edMode{position:absolute;left:50%;top:64px;transform:translateX(-50%);padding:6px 14px;border-radius:16px;background:rgba(20,12,6,.78);border:1px solid rgba(255,201,107,.7);color:#ffe2a8;font-size:13px;pointer-events:none;white-space:nowrap;z-index:6}
+  #edSelBar{position:absolute;right:8px;top:54px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:flex-end;max-width:calc(100% - 16px);z-index:6;padding:4px;
+      background:rgba(25,14,8,.82);border:1px solid rgba(255,214,150,.35);border-radius:10px;user-select:none;-webkit-user-select:none}
+  #edSelBar button{background:#3a2516;color:#fbe9cf;border:1px solid #6b4a2e;border-radius:7px;padding:5px 8px;min-width:36px;min-height:34px;font-size:15px;font-weight:bold;cursor:pointer;touch-action:manipulation}
+  #edSelBar button:hover:not(:disabled){background:#5a3a22} #edSelBar button:disabled{opacity:.35;cursor:default}
+  #edSelBar button.on{background:#c7862f;border-color:#ffd38a;color:#1d0f05} #edSelBar button.go{background:#2f7a3a;border-color:#59b96a;color:#fff}
+  #edSelBar .sep{width:1px;align-self:stretch;background:rgba(255,214,150,.3);margin:0 2px}
+  #edSelBar #edsInfo{font-size:12px;font-weight:bold;color:#9fe8ff;min-width:3.4em;text-align:center;font-variant-numeric:tabular-nums}
   #edHint{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:12px;color:#f0dcc0;text-shadow:0 1px 0 #000;pointer-events:none}
   #edToast{position:absolute;left:50%;bottom:36px;transform:translateX(-50%);background:rgba(20,10,5,.9);border:1px solid #c7862f;border-radius:8px;padding:8px 14px;font-weight:bold;opacity:0;transition:opacity .3s;pointer-events:none}
   #testBar{position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(25,14,8,.82);border:1px solid #c7862f;border-radius:10px;padding:5px 8px 5px 14px;font-weight:bold;letter-spacing:2px;color:#ffd166;z-index:6}
@@ -188,26 +195,42 @@
   #lselSrc .chip.main{padding-right:.9em} #lselSrc .chip.on{border-color:#ffd166;background:rgba(110,66,20,.95);color:#fff3c4}
   #lselSrc .chip .n{opacity:.75;font-weight:normal} #lselSrc .chip .x{border:0;background:rgba(0,0,0,.35);color:#ffc9b8;border-radius:50%;width:1.4em;height:1.4em;padding:0;font:inherit;line-height:1.4em;cursor:pointer}
   #lselSrc .chip .x:hover{background:#8a2a16;color:#fff}
-  .lcard.lock{opacity:.55;filter:grayscale(.7);cursor:default} .lcard.lock .lb{color:#c9b59a}
+  .lcard.lock,.lcm.lock{opacity:.55;filter:grayscale(.7);cursor:default} .lcard.lock .lb,.lcm.lock .lb{color:#c9b59a}
   #gToast{position:absolute;left:50%;bottom:clamp(70px,14vh,120px);transform:translateX(-50%);z-index:25;background:rgba(20,10,5,.92);border:1px solid #c7862f;border-radius:8px;padding:8px 14px;font-weight:bold;color:#fbe9cf;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center}
   @media (max-aspect-ratio:4/5){#lsel{padding-top:58px}}
   #lselTitle{margin:0;font-weight:900;letter-spacing:.06em;line-height:1;font-size:clamp(24px,min(7vw,8vh),72px);white-space:nowrap;
       background:linear-gradient(180deg,#fff3c4 0%,#ffd166 38%,#e08a1e 70%,#a3500f 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
       filter:drop-shadow(0 3px 0 #3a1c08) drop-shadow(0 0 14px rgba(255,170,60,.45))}
-  #lselRow{--cw:min(80vw,calc(52vh * 1.16),470px);flex:1 1 auto;min-height:0;width:100%;display:flex;align-items:center;gap:clamp(12px,2.6vw,30px);
+  #lselRow{--cw:min(80vw,calc(37vh * 1.16),470px);--rf:.42;flex:1 1 auto;min-height:0;width:100%;display:flex;align-items:center;gap:clamp(12px,2.6vw,30px);
       overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;box-sizing:border-box;
       padding:12px calc(50% - var(--cw) / 2);scrollbar-width:thin;scrollbar-color:#c7862f transparent;cursor:grab;touch-action:pan-x}
   #lselRow.drag{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
-  .lcard{flex:0 0 auto;width:var(--cw);max-height:calc(100% / 1.08);min-height:0;scroll-snap-align:center;font-family:inherit;color:#fbe9cf;background:rgba(40,22,10,.9);border:3px solid #7a4a1e;border-radius:16px;
+  .lcard,.lcm{position:relative;transform:translateY(calc(var(--rf) * -50%));flex:0 0 auto;width:var(--cw);max-height:calc((100% - 8px) / (1 + var(--rf)));min-height:0;scroll-snap-align:center;font-family:inherit;color:#fbe9cf;background:rgba(40,22,10,.9);border:3px solid #7a4a1e;border-radius:16px;
       padding:clamp(4px,1vh,12px);box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:clamp(1px,.6vh,4px);transition:transform .15s,border-color .15s,box-shadow .15s;touch-action:pan-x}
-  .lcard canvas{width:100%;height:auto;min-height:0;flex:0 1 auto;aspect-ratio:var(--ar,1.16);display:block;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:8px;background:#21140b;pointer-events:none}
-  .lcard .ln{font-weight:900;font-size:clamp(15px,min(2.6vw,3.6vh),26px);color:#ffcf7a;letter-spacing:.04em}
-  .lcard .lt{font-size:clamp(12px,min(1.9vw,2.8vh),18px);opacity:.9}
-  .lcard .lbest{font-size:clamp(12px,min(2vw,3vh),20px);font-weight:900;color:#ffd166;letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .lcard.lock .lbest{color:#c9b59a;font-weight:bold;opacity:.85}
-  .lcard .lb{font-size:clamp(11px,min(1.6vw,2.4vh),15px);font-weight:900;letter-spacing:.12em;color:#9fe39a}
-  .lcard.cont{border-color:#59b96a;background:rgba(30,58,26,.92)} .lcard.cont .lb{color:#fff3c4}
-  .lcard.sel{transform:scale(1.04);transform-origin:center center;border-color:#ffd166;box-shadow:0 0 0 3px rgba(255,209,102,.35),0 0 26px rgba(255,170,60,.45)}
+  .lcard canvas,.lcm canvas{width:100%;height:auto;min-height:0;flex:0 1 auto;aspect-ratio:var(--ar,1.16);display:block;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:8px;background:#21140b;pointer-events:none}
+  .lcard .ln,.lcm .ln{font-weight:900;font-size:clamp(15px,min(2.6vw,3.6vh),26px);color:#ffcf7a;letter-spacing:.04em}
+  .lcard .lt,.lcm .lt{font-size:clamp(12px,min(1.9vw,2.8vh),18px);opacity:.9}
+  .lcard .lbest,.lcm .lbest{font-size:clamp(12px,min(2vw,3vh),20px);font-weight:900;color:#ffd166;letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .lcard.lock .lbest,.lcm.lock .lbest{color:#c9b59a;font-weight:bold;opacity:.85}
+  .lcard .lb,.lcm .lb{font-size:clamp(11px,min(1.6vw,2.4vh),15px);font-weight:900;letter-spacing:.12em;color:#9fe39a}
+  .lcard.cont,.lcm.cont{border-color:#59b96a;background:rgba(30,58,26,.92)} .lcard.cont .lb,.lcm.cont .lb{color:#fff3c4}
+  /* v76 (pt173): mirror floor under the carousel - each card carries a flipped, dulled copy of itself that fades out within a fraction of the card height
+     (a plain duplicate + gradient mask works in Chrome, Firefox and Safari; -webkit-box-reflect would not). Static, no filters, clipped to the row. */
+  .lcard .lrw{position:absolute;left:-3px;right:-3px;top:calc(100% + 3px + 5px);height:calc(var(--rf) * 100%);overflow:hidden;pointer-events:none;contain:paint;
+      -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.34) 0%,rgba(0,0,0,.12) 30%,rgba(0,0,0,0) 72%);mask-image:linear-gradient(to bottom,rgba(0,0,0,.34) 0%,rgba(0,0,0,.12) 30%,rgba(0,0,0,0) 72%)}
+  .lcm{position:absolute;left:0;top:0;width:100%;max-width:none;max-height:none;height:calc(100% / var(--rf) + 6px);transform:scaleY(-1);transform-origin:50% 50%;
+      transition:none;pointer-events:none;opacity:1;filter:none;box-shadow:none;cursor:default}
+  .lcm.lock{opacity:1;filter:none}
+  .lcard .lpw,.lcm .lpw{font-size:clamp(11px,min(1.7vw,2.5vh),16px);font-weight:900;letter-spacing:.12em;color:#ffd166;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .lcard .lpw.ask,.lcm .lpw.ask{color:#e8d2b0;font-weight:bold;letter-spacing:.06em;opacity:.9}
+  .lcard.lock .lpw.ask,.lcm.lock .lpw.ask{color:#f0dcb8}
+  @media (max-height:560px){#lselRow{--rf:.28;--cw:min(80vw,calc(40vh * 1.16),470px)}}
+  #modal #lselPwIn{width:100%;box-sizing:border-box;background:#120a05;color:#ffe9b8;border:1px solid #c7862f;border-radius:8px;font:800 22px/1.2 inherit;letter-spacing:.14em;text-transform:uppercase;padding:10px 12px;margin:4px 0 6px;text-align:center}
+  #modal #lselPwIn::placeholder{text-transform:none;letter-spacing:.04em;font-weight:normal;color:#8a7458}
+  #modal #lselPwErr{min-height:1.3em;color:#ffb199;font-size:13px;font-weight:bold;text-align:center}
+  #modal #lselPwIn.shake{animation:pwShake .35s}
+  @keyframes pwShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}45%{transform:translateX(6px)}70%{transform:translateX(-4px)}}
+  .lcard.sel{transform:translateY(calc(var(--rf) * -50%)) scale(1.04);transform-origin:center center;border-color:#ffd166;box-shadow:0 0 0 3px rgba(255,209,102,.35),0 0 26px rgba(255,170,60,.45)}
   .lcard.cont.sel{border-color:#9dff8a;box-shadow:0 0 0 3px rgba(157,255,138,.35),0 0 26px rgba(120,230,110,.45)}
   .lcard:focus{outline:none}
   #lselBar{display:flex;gap:clamp(8px,2vw,18px);align-items:center;flex-wrap:wrap;justify-content:center;flex:0 0 auto;padding:0 10px}
@@ -298,8 +321,22 @@
     </div>
     <div id="edPal"><div id="edPalHead" title="Drag to move the tile palette (double-click to put it back bottom-left)"><span class="grip">⠿</span><span class="ttl">TILES</span><button id="edPalReset" title="Reset palette position">⟲</button></div><div id="palBody"><button id="palHand" class="palArr" title="Drag mode: scroll and pinch-zoom the level without painting (pick a tile to paint again)" aria-label="Drag mode">✋</button><button id="palPrev" class="palArr" title="Previous tile">◀</button><div id="tools"></div><button id="palNext" class="palArr" title="Next tile">▶</button></div></div>
     <div id="edScrim"></div>
+    <div id="edSelBar" role="toolbar" aria-label="Select, copy and paste">
+      <button id="edsSel" title="Select mode: drag a rectangle (same as holding Shift)" aria-pressed="false">▭ Select</button>
+      <span id="edsInfo"></span><span class="sep"></span>
+      <button id="edsCopy" title="Copy the selection (Ctrl/Cmd+C)">Copy</button>
+      <button id="edsPaste" title="Paste the copied area: it follows the pointer, click to place (Ctrl/Cmd+V)">📋 Paste</button>
+      <span class="sep"></span>
+      <button id="edsFx" title="Flip left-right (H)" aria-label="Flip X">⇋</button>
+      <button id="edsFy" title="Flip up-down (V)" aria-label="Flip Y">⇅</button>
+      <button id="edsCw" title="Rotate 90° clockwise (T)" aria-label="Rotate clockwise">↻</button>
+      <button id="edsCcw" title="Rotate 90° anticlockwise (Shift+T)" aria-label="Rotate anticlockwise">↺</button>
+      <span class="sep"></span>
+      <button id="edsUndo" title="Undo the last paste / flip / rotate (Ctrl/Cmd+Z)" aria-label="Undo">↶</button>
+      <button id="edsEsc" title="Cancel the paste / clear the selection (Esc)" aria-label="Cancel">✕</button>
+    </div>
     <div id="edMode" hidden>✋ Drag mode: drag to scroll, pinch to zoom • pick a tile to paint</div>
-    <div id="edHint">Left-drag: paint &nbsp;•&nbsp; Right-drag: earth &nbsp;•&nbsp; Arrows / WASD / wheel: pan (Shift+wheel sideways) &nbsp;•&nbsp; Ctrl+wheel, +/− or slider: zoom &nbsp;•&nbsp; drag TILES bar: move palette &nbsp;•&nbsp; swipe / wheel / ◀ ▶: browse tiles &nbsp;•&nbsp; 1–9, 0, L, Q, O, C, U, B, K: tools &nbsp;•&nbsp; Y: Wormy &nbsp;•&nbsp; N: Brian &nbsp;•&nbsp; J: Contrary &nbsp;•&nbsp; P: pump (R: rotate; 5th click removes) &nbsp;•&nbsp; Enter: play &nbsp;•&nbsp; New: empty or random level (difficulty and 🎲 reroll in the dialog)</div>
+    <div id="edHint">Left-drag: paint &nbsp;•&nbsp; Right-drag: earth &nbsp;•&nbsp; Arrows / WASD / wheel: pan (Shift+wheel sideways) &nbsp;•&nbsp; Ctrl+wheel, +/− or slider: zoom &nbsp;•&nbsp; drag TILES bar: move palette &nbsp;•&nbsp; swipe / wheel / ◀ ▶: browse tiles &nbsp;•&nbsp; 1–9, 0, L, Q, O, C, U, B, K: tools &nbsp;•&nbsp; Y: Wormy &nbsp;•&nbsp; N: Brian &nbsp;•&nbsp; J: Contrary &nbsp;•&nbsp; P: pump (R: rotate; 5th click removes) &nbsp;•&nbsp; Enter: play &nbsp;•&nbsp; New: empty or random level (difficulty and 🎲 reroll in the dialog) &nbsp;•&nbsp; Shift+drag: select &nbsp;•&nbsp; Ctrl/⌘+C V: copy, paste &nbsp;•&nbsp; H V T: flip, rotate &nbsp;•&nbsp; Ctrl/⌘+Z: undo &nbsp;•&nbsp; Esc: cancel</div>
     <div id="edToast"></div>
   </div>
   <div id="menu" hidden></div>
@@ -801,7 +838,7 @@ const LAVA_CONTACT=0.8, LAVA_TOUCH=0.25, LAVA_BOMB_FUSE=1.0;   // contact radius
 const WATER_SPLAT=[1.8,0.55];
 // pt66 (v40): pumps - an invisible editor tile with an arrow; it pushes water, lava and air in the arrow direction inside its cell
 // (full strength) fading to zero 1 cell beyond the cell edge. PUMP_ACC = 90 cells/s^2 (4.5 g) lifts water up a 1-wide shaft.
-const PUMP_ACC=90, PUMP_FALL=1.0, PUMP_AIR=420, PUMP_DIRS=[[0,-1],[1,0],[0,1],[-1,0]], PUMP_MAX=32;   // dir 0 = up, then clockwise
+const PUMP_ACC=90, PUMP_FALL=1.0, PUMP_AIR=420, PUMP_DIRS=[[0,-1],[1,0],[0,1],[-1,0]], PUMP_MAX=128;  // v77 (pt177): raised from 32; dir 0 = up, then clockwise
 function pumpList(){const out={n:0,arr:new Float32Array(PUMP_MAX*4),list:[]};if(!G.pumps||!G.pumps.size)return out;
   for(const [j,d] of G.pumps){if(out.n>=PUMP_MAX)break;const D=PUMP_DIRS[d&3];out.arr.set([j%W,(j/W)|0,D[0],D[1]],out.n*4);out.list.push([j%W,(j/W)|0,D[0],D[1]]);out.n++;}return out;}
 function pumpAccCPU(pu,x,y){let ax=0,ay=0;for(const [px,py,dx,dy] of pu.list){const ex=Math.max(Math.abs(x-px-0.5)-0.5,0),ey=Math.max(Math.abs(y-py-0.5)-0.5,0),w=1-Math.hypot(ex,ey)/PUMP_FALL;if(w>0){ax+=dx*PUMP_ACC*w;ay+=dy*PUMP_ACC*w;}}return [ax,ay];}   // metaball splat radius (x particle spacing) and iso threshold
@@ -908,8 +945,8 @@ void main(){ivec2 c=ivec2(gl_FragCoord.xy);int i=c.y*uTW+c.x;vec4 s=st(i);if(i>=
   ${GH('float w=h2-r2;r+=w*w*w;')}
   r=Q1(max(r*uCoef,uSelf));o=Q4(vec4(r,Q1(uC2*max(r-1.0,-0.05)/(r*r)),0.0,0.0));}`,['aP']),
       int:mk(FSQ,HEAD+SOL+`uniform sampler2DArray uSlots;uniform sampler2D uDen;uniform ivec2 uBins;uniform float uB,uH,uS2,uSpk,uLap,uVisc,uG,uDt,uVmax;
-uniform int uK,uN,uNK,uNW,uFirst,uReact,uNP;uniform vec4 uKill[8];uniform vec4 uStir;uniform sampler2D uNN;uniform vec4 uPump[32];uniform float uPA;out vec4 o;
-vec2 pumpAcc(vec2 p){vec2 a=vec2(0.0);for(int k=0;k<32;k++){if(k>=uNP)break;vec4 P=uPump[k];vec2 e=max(abs(p-P.xy-0.5)-0.5,0.0);float w=1.0-length(e)/${PUMP_FALL.toFixed(2)};if(w>0.0)a+=P.zw*uPA*w;}return a;}
+uniform int uK,uN,uNK,uNW,uFirst,uReact,uNP;uniform vec4 uKill[8];uniform vec4 uStir;uniform sampler2D uNN;uniform vec4 uPump[${PUMP_MAX}];uniform float uPA;out vec4 o;
+vec2 pumpAcc(vec2 p){vec2 a=vec2(0.0);for(int k=0;k<${PUMP_MAX};k++){if(k>=uNP)break;vec4 P=uPump[k];vec2 e=max(abs(p-P.xy-0.5)-0.5,0.0);float w=1.0-length(e)/${PUMP_FALL.toFixed(2)};if(w>0.0)a+=P.zw*uPA*w;}return a;}
 float nnOf(int j){return texelFetch(uNN,ivec2(j%uTW,j/uTW),0).r;}
 vec4 den(int j){return texelFetch(uDen,ivec2(j%uTW,j/uTW),0);}
 void main(){ivec2 c=ivec2(gl_FragCoord.xy);int i=c.y*uTW+c.x;vec4 s=st(i);if(i>=uN||s.x<-50.0){o=(uFirst==1||i>=uN)?vec4(-100.0,-100.0,0.0,0.0):s;return;}   // a reaction flag (x=-120) lives until the next frame's first substep
@@ -1321,21 +1358,29 @@ function gasStep(dt){
   const bw=Math.ceil(W/h)+1,bh=Math.ceil(H/h)+1,nb=bw*bh;
   if(!GAS.start||GAS.start.length!==nb+1){GAS.start=new Int32Array(nb+1);GAS.cnt=new Int32Array(nb);}
   if(!GAS.sorted||GAS.sorted.length!==N){GAS.sorted=new Int32Array(N);GAS.bin=new Int32Array(N);}
-  const ghost=(x,y,f)=>{const gx0=Math.floor(x/s),gy0=Math.floor(y/s);for(let gy=-2;gy<=2;gy++)for(let gx=-2;gx<=2;gx++){const px=(gx0+gx+0.5)*s,py=(gy0+gy+0.5)*s,dx=x-px,dy=y-py,r2=dx*dx+dy*dy;if(r2<h2&&solid(px,py))f(dx,dy,r2);}};
   const pu=pumpList(),air=GAS.air,damp=Math.exp(-GAS_DAMP*sdt),airK=1-Math.exp(-GAS_AIRK*sdt);
+  // v74 (pt163): wall (ghost) samples sit on a fixed lattice of spacing s and the mask does not change inside a step -> look each one up once per step
+  const lw=Math.ceil(W/s)+10,lh=Math.ceil(H/s)+10;if(!GAS.lat||GAS.lat.length!==lw*lh)GAS.lat=new Uint8Array(lw*lh);else GAS.lat.fill(0);const LAT=GAS.lat;
+  const gsolid=(lx,ly)=>{const ix=lx+5,iy=ly+5;if(ix<0||iy<0||ix>=lw||iy>=lh)return solid((lx+0.5)*s,(ly+0.5)*s);const k=iy*lw+ix,v=LAT[k];if(v)return v===2;const r=solid((lx+0.5)*s,(ly+0.5)*s);LAT[k]=r?2:1;return r;};
   for(let it=0;it<sub;it++){
     const C=GAS.cnt,ST=GAS.start,SO=GAS.sorted,BI=GAS.bin;C.fill(0);
     for(let i=0;i<N;i++){if(!AL[i]){BI[i]=-1;continue;}const b=clamp(Math.floor(Y[i]/h),0,bh-1)*bw+clamp(Math.floor(X[i]/h),0,bw-1);BI[i]=b;C[b]++;}
-    let acc=0;for(let b=0;b<nb;b++){ST[b]=acc;acc+=C[b];}ST[nb]=acc;const fp=ST.slice(0,nb);for(let i=0;i<N;i++){const b=BI[i];if(b>=0)SO[fp[b]++]=i;}
-    const each=(i,f)=>{const bx=clamp(Math.floor(X[i]/h),0,bw-1),by=clamp(Math.floor(Y[i]/h),0,bh-1);
-      for(let dy=-1;dy<=1;dy++){const yy=by+dy;if(yy<0||yy>=bh)continue;for(let dx=-1;dx<=1;dx++){const xx=bx+dx;if(xx<0||xx>=bw)continue;const b=yy*bw+xx;for(let q=ST[b];q<ST[b]+C[b];q++)f(SO[q]);}}};
-    for(let i=0;i<N;i++){if(!AL[i])continue;let r=0;const xi=X[i],yi=Y[i];each(i,j=>{const dx=X[j]-xi,dy=Y[j]-yi,q=h2-(dx*dx+dy*dy);if(q>0)r+=q*q*q;});
-      ghost(xi,yi,(dx,dy,r2)=>{const q=h2-r2;r+=q*q*q;});r=Math.max(r*GAS.coef,GAS.self);GAS.rho[i]=r;GAS.pr[i]=c2*Math.max(r-1,0)/(r*r);}   // gas: pressure only pushes
+    let acc=0;for(let b=0;b<nb;b++){ST[b]=acc;acc+=C[b];}ST[nb]=acc;const fp=GAS.fpb&&GAS.fpb.length===nb?GAS.fpb:(GAS.fpb=new Int32Array(nb));fp.set(ST.subarray(0,nb));for(let i=0;i<N;i++){const b=BI[i];if(b>=0)SO[fp[b]++]=i;}
+
+    for(let i=0;i<N;i++){if(!AL[i])continue;let r=0;const xi=X[i],yi=Y[i];
+      const bx=clamp(Math.floor(xi/h),0,bw-1),by=clamp(Math.floor(yi/h),0,bh-1);
+      for(let dy=-1;dy<=1;dy++){const yy=by+dy;if(yy<0||yy>=bh)continue;for(let dx=-1;dx<=1;dx++){const xx=bx+dx;if(xx<0||xx>=bw)continue;const b=yy*bw+xx;
+        for(let q=ST[b];q<ST[b]+C[b];q++){const j=SO[q];const ddx=X[j]-xi,ddy=Y[j]-yi,qq=h2-(ddx*ddx+ddy*ddy);if(qq>0)r+=qq*qq*qq;}}}
+      {const gx0=Math.floor(xi/s),gy0=Math.floor(yi/s);for(let gy=-2;gy<=2;gy++)for(let gx=-2;gx<=2;gx++){const px=(gx0+gx+0.5)*s,py=(gy0+gy+0.5)*s,dx=xi-px,dy=yi-py,r2=dx*dx+dy*dy;if(r2<h2&&gsolid(gx0+gx,gy0+gy)){const q=h2-r2;r+=q*q*q;}}}
+      r=Math.max(r*GAS.coef,GAS.self);GAS.rho[i]=r;GAS.pr[i]=c2*Math.max(r-1,0)/(r*r);}
     for(let i=0;i<N;i++){if(!AL[i])continue;let ax=0,ay=-GAS_LIFT;const xi=X[i],yi=Y[i],vxi=VX[i],vyi=VY[i],pi=GAS.pr[i];
-      if(pi>0)ghost(xi,yi,(dx,dy,r2)=>{const r=Math.sqrt(r2);if(r>1e-5){const w=h-r,f=s2*2*pi*spk*w*w/r;ax+=f*dx;ay+=f*dy;}});
-      each(i,j=>{if(j===i)return;const dx=xi-X[j],dy=yi-Y[j],r=Math.sqrt(dx*dx+dy*dy);if(r<h&&r>1e-5){const w=h-r,f=s2*(pi+GAS.pr[j])*spk*w*w/r;ax+=f*dx;ay+=f*dy;
-        const v=GAS_VISC*s2*lap*w/GAS.rho[j];ax+=v*(VX[j]-vxi);ay+=v*(VY[j]-vyi);}});
-      ax+=(rnd()-0.5)*GAS_JIT*2;ay+=(rnd()-0.5)*GAS_JIT*2;   // diffusion: a little random walk so still gas keeps drifting
+      if(pi>0){const gx0=Math.floor(xi/s),gy0=Math.floor(yi/s);for(let gy=-2;gy<=2;gy++)for(let gx=-2;gx<=2;gx++){const px=(gx0+gx+0.5)*s,py=(gy0+gy+0.5)*s,dx=xi-px,dy=yi-py,r2=dx*dx+dy*dy;if(r2<h2&&gsolid(gx0+gx,gy0+gy)){
+        const r=Math.sqrt(r2);if(r>1e-5){const w=h-r,f=s2*2*pi*spk*w*w/r;ax+=f*dx;ay+=f*dy;}}}}
+      {const bx=clamp(Math.floor(xi/h),0,bw-1),by=clamp(Math.floor(yi/h),0,bh-1);
+      for(let dy=-1;dy<=1;dy++){const yy=by+dy;if(yy<0||yy>=bh)continue;for(let dx=-1;dx<=1;dx++){const xx=bx+dx;if(xx<0||xx>=bw)continue;const b=yy*bw+xx;
+        for(let q=ST[b];q<ST[b]+C[b];q++){const j=SO[q];if(j===i)continue;const ddx=xi-X[j],ddy=yi-Y[j],r=Math.sqrt(ddx*ddx+ddy*ddy);if(r<h&&r>1e-5){const w=h-r,f=s2*(pi+GAS.pr[j])*spk*w*w/r;ax+=f*ddx;ay+=f*ddy;
+          const v=GAS_VISC*s2*lap*w/GAS.rho[j];ax+=v*(VX[j]-vxi);ay+=v*(VY[j]-vyi);}}}}}
+      ax+=(rnd()-0.5)*GAS_JIT*2;ay+=(rnd()-0.5)*GAS_JIT*2;
       if(pu.n){const pa=pumpAccCPU(pu,xi,yi);ax+=pa[0]*GAS_PUMPK;ay+=pa[1]*GAS_PUMPK;}
       GAS.ax[i]=ax;GAS.ay[i]=ay;}
     const vmax=0.5*h/sdt;
@@ -2423,7 +2468,7 @@ const WHITE=[1,1,1,1];
 // ---------------------------------------------------------------- audio (tiny synth)
 let actx=null;
 const PACK={on:false,name:'',levels:[],idx:0,cleared:0};   // pt57: level-pack play state (see playPack)
-const BUILTIN_PACK={"format":"holy-moley-pack","version":1,"name":"test_pack","levels":[{"format":"holy-moley-level","version":1,"name":"Welcome Squishy","w":20,"h":20,"rows":["#######B############","#W...G#G..#WB..#####","#WWBB#X.##.XgXW.####","####G#X.B##XgXW.####","######X.#..XgXW.####","##...#WB..#W#..#####","####################","#.##W#W###WWBBW#####","#.#W#W#W#WBBWBW###B#","#.#W###W#WBBWGW#####","#.#W###W#WBBWGW#####","#.#WBB#W##WW.#WWWW##","#.#########...#####B","#......G.........###","####################","#B##B######.......##"],"start":[2,2],"exit":[19,18],"roots":true,"rootSeed":955858275,"time":60,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Rocky Road","w":18,"h":18,"rows":["##################","XBBBBBBBBBBBBBBBB#","##################","#BBBBBBBBBBBBBBBBX","##################","XBBBBBBBBBBBBBBBB#","##################","#BBBBBBBBBBBBBBBBX","##################","XBBBBBBBBBBBBBBBB#","##################","#BBBBBBBBBBBBBBBBX","#################T","XGXGXGXGXGXGXGX#.."],"start":[2,2],"exit":[15,16],"roots":true,"rootSeed":94395818,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Steam Teardrops","w":20,"h":19,"rows":["####~~~~~~~~~###~~~#","####~~~~~~~~~#######","#####~~~~~~~########","####################","########CCCCCCCC####","######CCC######CCN##","######C#############","######CCCLLL########","######CLLLLLLLL#####","######CLLLLLLL######","XXXXXXCLLLLLLgGXXXXX","############GGG#####","####################","####################","####################"],"start":[2,2],"exit":[17,17],"roots":true,"rootSeed":983433639,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Diving Practice","w":24,"h":22,"rows":["########################",".....................TTT","###########...##########","~~~~~~~~~~~C##LLLLLLLLLL","~~~~~~~~~~~C##LLLLLLLLLL","~g~~~~g~~~~CM#LLLLLLLLLL","~~~~~~~~~~~C##LLLLLLLLLL","XXXXXXXXXXXC##XXXXXXXXXX","########################","####B###BB############B#","########BGGG###B#B##B###","#########GGG############","#########GGG##B####B##B#","#########GGG#####B######","###############B##B#B#B#","####B#######B###########","###########B#####B#####B","#############B##########"],"start":[2,2],"exit":[21,20],"roots":true,"rootSeed":472259600,"time":90,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Bomb Alley","w":21,"h":20,"rows":["######X#X#########~~~","######XMXgT...T.m##~~","XXXXXXXXXXXXXXXXXXXXX","G#...BX#X#...#.....#G","G#L#.#X#X#.#.#.#L####","G#L#..WWW..#...#L#MXX","XXXXXXXXXXXXXXXXXXXXX","##M#B#X#X############","########XXXM#########","########X#XMXXXXXXXXX","XXXXXXXWW.###..T...T.","BBBBBBBWWXXXXXXXXXXXX","#######.X############","######..XXXXXXXXXXXXX","........C###G########",".T..T...C#G###G######"],"start":[2,2],"exit":[18,18],"roots":true,"rootSeed":401936702,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Uncle Bunker","w":24,"h":22,"rows":["XX##BXXXXXXXXXXXXXXXXXXX","####BXGBGGGXBM#.....###B","#...##.....X##G.#X#..G#G","#X...XBB###XB###BX#####G","XXXXXXXX#XXXXBXXXXXXX#XX","#############B#####..bgg","#.w..........b.#....####","########################","XXXXXXXXXXXXX#XXXXXXXXXX","G#####XB######XBBBBBBX#M","G#####X###.###XGXGGGGX#X","G#BB..b.......XGX####X#G","G#XX.XX###.###XGX######G","G#####XB######X######X##","XX.X.XXXXXX#####XXX#XXXX","#.#.#.#XXXXXX#XXXX######","b#b#b#bXXBBBB#BBBB######","#.#g#.#XX###############"],"start":[2,2],"exit":[9,20],"roots":true,"rootSeed":839490406,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Hot Water","w":26,"h":24,"rows":["#######X~~~~g~~~~X########","#######X~~~~~~~~~X########","WWWWWW#X~~~~~~~~~XWWWWWWWW","W###############WWW#####.W","W######XWWCCCCCWWX#######W","W.#####XCG##M##GCX#####..W","W######XC#WWWWW#CX#######W","WT.####XC#WG#GW#CX####..TW","W######XC#W###W#CX#######W","WT..###XC#WG#GW#CX###...TW","W######XC#WWWWW#CX#######W","WT...##XCG#####GCX##....TW","W#####WWWCCCCCCWWWW######W","MT....#############.....TW","M#######LLLLLLLLL########W","WT.....#LLLLLLLLL#......TW","W#######LLLG#GLLL########W","W#GGGG##LLLLLLLLL###GGGG#W","W###########C############W","WWWWWWWWWWWWWWWWWWWWWWWWWW"],"start":[2,2],"exit":[12,11],"roots":true,"rootSeed":638709747,"time":180,"waterPPC":9,"pumps":[[10,5,0],[14,5,0],[12,18,0]]},{"format":"holy-moley-level","version":1,"name":"Chain Reaction","w":23,"h":34,"rows":["##XXXXXXXXXXXXXXXXXXXXX","##XGGXGGXGGXGGXGGX#####","###WW#WW#WW#WW#WW#WW###","##MWWMWWMWWMWWMWWMWWN##","###WW#WW#WW#WW#WW#WW###","##########M##M#########","B#B#B#B#B#WWWW#B#B#B#B#","XXXXXXXXXXXCCCCCCCCC###","#####TTTTTTTTTTTTTTT#..","#####TTT###############","#####TTT###############","#####TTT###############","XXXXXX#BBBBBBBBBB######","#######################","#######################","##N####################","###TTwTTTwTTTTTT#######","##TTTTTTTTTTTTTT#######","##TTwTTTTwTTTTTT#######","#######################","#######################","GGGGGGG################","GGGGGGG################","#######################","########LLLLLLLLLLLL###","########LLLLLLLLLLLL###","#######################","#######################","#######################","#######################"],"start":[2,2],"exit":[20,32],"roots":true,"rootSeed":94013348,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Oh Well","w":24,"h":46,"rows":["~##X~~~~~~~~~~~~~~~~XBBB","~##XXXXXXX~gg~XXXXXXXGGG","~########X~gg~X#########","~########X~~~~X#########","~########XX~~XX#########","~########BX~~XB#########","~##..T...#W~~W#..T....##","~#########W~~W##########","~##.T....#W~~W#.T.....##","~#########W~~W##########","~~#T.....#W~~W#T......##","~~########X~~X##########","~~########X~~X##########","~~########X~~X##########","~~########X~~XXXXX######","~~########X~~~~~~X######","##########X~~~~~~X######","##########XXXXX~~X######","##############X~~X######","#LLLLLLLL#####X~~X######","##LLLLLLL#####X~~X##BBBB","###LLLLLL#####X~~X##BBBB","##############X~~X#####G","##############X~~XXXXX.G","############GGX~~~~~gX.G","############G#X~~~~~~X.G","############G#XXXXX~~X.#","############G#####X~~X..","##CCCCCCCCCCCCCCCNX~~X#.","##################X~~X#.","##################X~~X#.","##################X~~X#.","##################X~~X#.","##################X~~X#.","##CCCCCCCCCCCCCCMMX~~X#.","##################X~~X##","##################X~~XGG","####GGGGGG########X~~XGG","####GGGGGG########X~~XXX","####GGGGGG########X~~~~~","##################X~~~~~","##################Xw~#~~"],"start":[2,2],"exit":[21,44],"roots":true,"rootSeed":206027194,"time":180,"waterPPC":9,"pumps":[[0,7,0],[0,13,0],[0,18,0]]},{"format":"holy-moley-level","version":1,"name":"The Mine","w":21,"h":25,"rows":["XXXXXX#MXLXXXLXXXLXXX","XLLLLXWXXXXXXXXWXXXXX","XLLLLXWXWWWWWWWWWWWWX","XLLLLXWXWXXGGXXXXXXWX","XLLLLXWWWXWWWWWWWWWWX","XGXXXXXXXMXXXXXXXXXXX","BBBBBBBBBBBBBBBBBBBBB","CCCCCCCCCCCCCCCCCCCCC","CCCCCCGCCCGCCCCCCCCGC","CCCGCCCCCCCCCCGCCGCCC","CCCCCCGCCCCGCCCCCCCCC","CCCCCCCCCCCCCCCCGCCCC","~~~~~~~~~~~~~~~~~~~~~","~~~~~~~~~~~~~~~~~~~~~","~~~~~~~~~~~~~~~~~~~~~","WWWWWWWWT.WWWWWWWWWWW","WGWWWWWWW.WWGWWWWWWWW","WWW.T..WWWWWWW.T..WWW","MWWWWWWWW.T.WMWWWWW.T","#############M#######","####GGGG#############"],"start":[2,2],"exit":[18,23],"roots":true,"rootSeed":76910489,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Get to Mars","w":22,"h":21,"rows":["~XX#####B########B##~~","~~XM###B###B#####B##~~","~~X####B###B##B#####~~","~~X##########B######~~","~~X##B##############~~","~~X###################","~~X################XLL","~~C.......##......mXLL","~~X################XLL","~~X################XLL","~~C......T##T.....mXLL","~~X################XLL","~~X################XLL","~~C..T...X..X....bmXLL","~~X###.LLLLLLLL.###Xgg","~~X####LLLLLLLL####XXX","ggX####LLLLLLLL#######"],"start":[2,2],"exit":[19,19],"roots":true,"rootSeed":965114706,"time":71,"waterPPC":9,"pumps":[[0,10,1],[0,13,1],[0,16,1],[10,19,0],[11,19,0]],"big":[[17,4,"2x1"],[7,5,"2x1"],[11,5,"1x2"],[13,6,"2x1"],[5,7,"1x2"]]},{"format":"holy-moley-level","version":1,"name":"Inferno","w":20,"h":24,"rows":["#M#XXXXXXXXXXXXXXXXX","###XBBBB#BBBBB####N#","##CCCCCWCCCCCXXXX###","##~~~~~~XXXXCXCCMMm#","##WCCCWCMXCXCXGCCX##","##~~~~~~CXCXCXCXCX.#","##CMCCC~WXCXMXCXCX.#","##XXXXC~CXCXCXCCCX.#","##WWCCC~CXXN#WCCCX.#","##WXCXX~CXWWGXXXXX.#","##WXCWCCCXXXXXGWWW.#","########G###########","#LLLLLLXgXLLLLLLLLL#","#LLLLLLX~XLLLLLLLLL#","#LLLLLLX~XLLLLLLLLL#","#######X~X##########","#XCWCWCX~XCWCWCWCWW#","~~~~~~~X~~~~~~~~~~~#","CCCCCCCX~XCCCCCCCC##","######GGGGG#########"],"start":[2,2],"exit":[17,22],"roots":true,"rootSeed":407149362,"time":180,"waterPPC":9,"pumps":[[1,17,0],[18,17,0],[6,20,3],[9,20,3],[18,20,0]]},{"format":"holy-moley-level","version":1,"name":"Diamond Geyser","w":60,"h":38,"rows":["###############C~C##########################################","###############C~C##########################################","###############C~C##LLL#####################LLLLL###########","###############C~C##LLL#####################LLLLL###########","###############C~C##LLL##~~~~~~~~~~~########LLLLL###########","###############C~C##LLL##~~~~~~~~~~~########################","###############C~C##LLL##~~~~~~~~~~~########################","###############C~C##LLL##~~~~~~~~~~~########################","###############C~C##LLL##~~~~~~~~~~~#########~~~~~~#########","###############C~C##LgL##B#B#B#B#B###########~~~~~~#########","###############C~C######BGGGGGGGGGGB#########~~~~~~#########","###############C~C##LLL##GGGGGGGGGG#####LLL##~~~~~~#########","###############C~C##LLL##B#B#B#B#B######LLL##~~~~~~#########","###############C~C##LgL####CMC##############################","###############C~C#########CCC##############################","############CCCC~CCCCCCCCCCCC#B#######B####B######B#########","############C~~~~~~~C#####################B###B#B###B#######","############C~~~~~~~C####LLL#######B####B###B#####B#####B###","###########CC~~~~~~~CC###LLL####B##############B#####B######","###########C~~~~~~~~~C#################B###B##############B#","###########C~~~~~~~~~C######B######B#B######################","###########C~~~~~~~~~C##B###################################","###########C~~~~~~~~~C######################################","###########C~~~~~~~~~C######################################","LLLLLLLLLX#C~~~~~~~~~C#XLLLLLLLLLLX#XLL#LLLXLXLXLXLXLXLXLXLX","LLLLLLLLLX#C~~~~~~~~~C#XLLLLLLLLLLX#XLL#LLLXLX#X#X#X#X#X#X#X","LLLgggLLLX#C~~~~~~~~~C#XLLLLgggLLLX#XLL#LLLXLXMXGXGXGXGXGXNX","LLLXXXLLLX#C~~~~~~~~~C#XLLLLXXXLLLX#XLL#LLLXLX#X#X#X#X#X#XGX","LLLLLLLLLX#C~ggggggg~C#XLLLLLLLLLLX#XLL#LLLXLX#XMXMXMXMXMX#X","LLLLLLLLLX#CCCCCCCCCCC#XLLLLLLLLLLX#XLL#LLLXLX#XXXXXXXXXXX#X","######XXXX#############XXXXXXXXXXXX#XXXXXXXXXX##############","####M#######################################################","########################################G###################","############################################################"],"start":[2,2],"exit":[57,36],"roots":true,"rootSeed":262200466,"time":240,"waterPPC":18,"pumps":[[48,13,2],[16,20,0],[16,23,0],[16,26,0],[16,29,0]],"big":[[25,12,"2x1"],[27,12,"2x1"],[29,12,"2x1"],[31,12,"2x1"],[33,12,"2x1"],[24,13,"1x2"],[35,13,"1x2"],[25,15,"2x1"],[27,15,"2x1"],[29,15,"2x1"],[31,15,"2x1"],[33,15,"2x1"],[42,19,"1x2"],[28,23,"2x1"],[37,23,"1x2"],[24,24,"2x1"]]},{"format":"holy-moley-level","version":1,"name":"Speed essence","w":20,"h":24,"rows":["#####BBBB###########","##.#BGGGGGGGGBBBBBBB","##.##BBBBBB#########","##.################B","##...........B######","##########B#####B###","##########B#######B#","LLLLLLLLLL#LLLLLLL#G","####################","~N~~~~##B###B##B####","~#~B~B############B#","~~~#~####U####B####B","~B~~~~B######B######","####################","LLLLLLLLLLLLLLLLLLLL","LbLbLbLbLbLbLbLbLbLb","####################","#N##################","####################","####################"],"start":[2,2],"exit":[17,22],"roots":true,"rootSeed":804086280,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"The Farm","w":23,"h":19,"rows":["###############B####CL#","###B#B######B#######CL#","####################CL#","###XXX#XXXX#XXX#XX##CL#","###X#############X##CL#","###X#############X##CL#","###X#############X##CL#","###X#U####U###U##X###L#","###X#############X###L#","###XN###########NX##LLL","###XXXXXXXXXXXXXXX##LLL","G##XXXXXCCCCXXXXXX##LLL","CC#CCCCCCCCCCCCCCC##LLL","CC#CCCCCGGGGCCCCCCC####","##################CC###"],"start":[2,2],"exit":[20,17],"roots":true,"rootSeed":529627732,"time":115,"waterPPC":9,"pumps":[[21,6,0],[21,10,0],[21,15,0]]},{"format":"holy-moley-level","version":1,"name":"Mined Out","w":24,"h":28,"rows":["####BBBBBBBBBBBBBBBBB#XX","#####################XXX","####w.w.w.w.w.w.w.w.XXXX","#####.############.##XXX","####w.w.w.w.w.w.w.w.##XX","#######################X","########################","####W#M######M#M##M##M##","##WM#W#C#M#C##C#W##W####","#M####M#W#W#M###M#C#C#M#","####M###C##W##M####M####","#WC####M#C#M#W##M#W##C##","#M###CW###W##M#C#W##C###","###C#M##M##W####C#M##WXX","###W##C###M#M#M#####W#M#","####M##M###C####M##C####","##M###C##M###M#M##C#M###","###C#W#M###M######C##W##","XX##M#C######C##CM#CW###","GX#M#W###MC###M####WXXXX","GX##########M##XXXXX~~~~","GXXXXXXXXX#####X~X~XXXXX","#########X#####X~X~X####","###############X~X~X####"],"start":[2,2],"exit":[21,26],"roots":true,"rootSeed":464287515,"time":180,"waterPPC":18,"pumps":[[20,23,3],[23,23,3],[16,24,0],[18,24,0],[16,26,0],[18,26,0]]},{"format":"holy-moley-level","version":1,"name":"Messi","w":23,"h":27,"rows":["B#B########BBB###B##BBB","####G###LL##BB#G####G#B","#LL###G#~L#GG#B#G######","BLL####G####G##B##GG#B#","#L#B#####G#B##M#CCC#G##","##.#BB#.M#G############","#XXBCCGB####BMB###.B..B","#BCCCC#####B####MCCC.#B","#BWWCGB.B###BW###CCCC##","#C#WCC##BGWWWWW....CB#L","#C###C#G####B~~uuGCC###","#C##.MG###XXXG#BB#.B###","#CCC.WWW#XXBX#BCCB##G##","#CCNG#W#B#B#X#BCC##B##G","B#G###BGB.#~~~#B#.B#B##","#WBXXGB###BM##XXX.#N###","#WWW#XXBWWWWW#..#.###G#","BWM##XXWWGWB...........","#W##GXX#CC##G#BBBBBB.#B","B##BWWWWWC###B###B#~~##","G###G###BC###mBB####B#L","#L###B##CCGB#B##G######","###N#B###B#####B#######"],"start":[4,2],"exit":[14,25],"roots":true,"rootSeed":-1885471667,"time":180,"waterPPC":9,"big":[[0,3,"2x1"],[2,3,"2x1"],[11,3,"1x2"],[17,3,"2x1"],[13,22,"2x1"],[11,24,"2x1"]],"brians":[[16,20,1]]},{"format":"holy-moley-level","version":1,"name":"Termite Nest","w":25,"h":23,"rows":["###########CXXXXXXXXXXXXX","#########CCC.......g....X","##BBBBB#CC...###########X","########..W#...#CTTTTC###","##.......#####.#CTTTTC###","#############..BCTTTTC###","##........###..WCC..CC###","##.#####..#####...T.#####","##.#####.################","##.#####....###.#######B#","##.#####....###........W#","##.#######..###########.#","########B#g####W..#...#.#","XXXXXXXX##W##B#.#.#.#.#.#","######C.....CC#.#g#.#g#.#","GGG###....T.CC#.#.#.#.#.#","CCCCCC.....TCCC.#.#.#.#.#",".........W.T.##.#...#WWW#","#####################W#W#"],"start":[2,2],"exit":[22,21],"roots":true,"rootSeed":653841942,"time":180,"waterPPC":9,"brians":[[21,4,1],[2,20,1]]},{"format":"holy-moley-level","version":1,"name":"Brian's Lair","w":25,"h":23,"rows":["M########################","B###########B############","B######B#XXX######B#B####","M########X#X######B##B###","W..######XWX##B##########","XX.#######W##############","............##########G##","XX.######################","............##B#G........","XX.#B####B##B###G###B#.XX","...########GGGX#G#####...","XX.#X####X#GGG#G####X#.XX","..g..#N####GNG#B#M.......","XX...#XM####X####X####.XX",".....#WWWWWWWWWWWW#B##...","XX..##W.BW..WBW..W####.XX","....##W.#WggW#WggW#X##...","XX###WBgWWWWWWWWWWWWWWWXX","#####WWgWW..WWW..W..W####"],"start":[2,2],"exit":[10,6],"roots":true,"rootSeed":249648252,"time":180,"waterPPC":9,"big":[[12,4,"2x1"],[7,5,"2x1"],[18,5,"2x1"],[20,5,"2x1"],[18,6,"1x2"],[21,6,"1x2"],[14,7,"2x1"],[14,11,"1x2"],[4,12,"1x2"],[9,12,"1x2"],[20,12,"1x2"],[15,15,"1x2"],[19,17,"1x2"],[8,18,"1x2"],[13,18,"1x2"]],"brians":[[0,9,1],[0,11,1],[0,13,1],[24,13,1],[0,15,1],[24,15,1],[0,17,1],[24,17,1],[0,19,1],[24,19,1]]}]};   // pt90 (v52): authored campaign; after the last level, play continues with random levels
+const BUILTIN_PACK={"format":"holy-moley-pack","version":1,"name":"test_pack","levels":[{"format":"holy-moley-level","version":1,"name":"Welcome Squishy","w":20,"h":20,"rows":["#######B############","#W...G#G..#WB..#####","#WWBB#X.##.XgXW.####","####G#X.B##XgXW.####","######X.#..XgXW.####","##...#WB..#W#..#####","####################","#.##W#W###WWBBW#####","#.#W#W#W#WBBWBW###B#","#.#W###W#WBBWGW#####","#.#W###W#WBBWGW#####","#.#WBB#W##WW.#WWWW##","#.#########...#####B","#......G.........###","####################","#B##B######.......##"],"start":[2,2],"exit":[19,18],"roots":true,"rootSeed":955858275,"time":60,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Rocky Road","w":18,"h":18,"rows":["##################","XBBBBBBBBBBBBBBBB#","##################","#BBBBBBBBBBBBBBBBX","##################","XBBBBBBBBBBBBBBBB#","##################","#BBBBBBBBBBBBBBBBX","##################","XBBBBBBBBBBBBBBBB#","##################","#BBBBBBBBBBBBBBBBX","#################T","XGXGXGXGXGXGXGX#.."],"start":[2,2],"exit":[15,16],"roots":true,"rootSeed":94395818,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Steam Teardrops","w":20,"h":19,"rows":["####~~~~~~~~~###~~~#","####~~~~~~~~~#######","#####~~~~~~~########","####################","########CCCCCCCC####","######CCC######CCN##","######C#############","######CCCLLL########","######CLLLLLLLL#####","######CLLLLLLL######","XXXXXXCLLLLLLgGXXXXX","############GGG#####","####################","####################","####################"],"start":[2,2],"exit":[17,17],"roots":true,"rootSeed":983433639,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Diving Practice","w":24,"h":22,"rows":["########################",".....................TTT","###########...##########","~~~~~~~~~~~C##LLLLLLLLLL","~~~~~~~~~~~C##LLLLLLLLLL","~g~~~~g~~~~CM#LLLLLLLLLL","~~~~~~~~~~~C##LLLLLLLLLL","XXXXXXXXXXXC##XXXXXXXXXX","########################","####B###BB############B#","########BGGG###B#B##B###","#########GGG############","#########GGG##B####B##B#","#########GGG#####B######","###############B##B#B#B#","####B#######B###########","###########B#####B#####B","#############B##########"],"start":[2,2],"exit":[21,20],"roots":true,"rootSeed":472259600,"time":90,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Bomb Alley","w":21,"h":20,"rows":["######X#X#########~~~","######XMXgT...T.m##~~","XXXXXXXXXXXXXXXXXXXXX","G#...BX#X#...#.....#G","G#L#.#X#X#.#.#.#L####","G#L#..WWW..#...#L#MXX","XXXXXXXXXXXXXXXXXXXXX","##M#B#X#X############","########XXXM#########","########X#XMXXXXXXXXX","XXXXXXXWW.###..T...T.","BBBBBBBWWXXXXXXXXXXXX","#######.X############","######..XXXXXXXXXXXXX","........C###G########",".T..T...C#G###G######"],"start":[2,2],"exit":[18,18],"roots":true,"rootSeed":401936702,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Uncle Bunker","w":24,"h":22,"rows":["XX##BXXXXXXXXXXXXXXXXXXX","####BXGBGGGXBM#.....###B","#...##.....X##G.#X#..G#G","#X...XBB###XB###BX#####G","XXXXXXXX#XXXXBXXXXXXX#XX","#############B#####..bgg","#.w..........b.#....####","########################","XXXXXXXXXXXXX#XXXXXXXXXX","G#####XB######XBBBBBBX#M","G#####X###.###XGXGGGGX#X","G#BB..b.......XGX####X#G","G#XX.XX###.###XGX######G","G#####XB######X######X##","XX.X.XXXXXX#####XXX#XXXX","#.#.#.#XXXXXX#XXXX######","b#b#b#bXXBBBB#BBBB######","#.#g#.#XX###############"],"start":[2,2],"exit":[9,20],"roots":true,"rootSeed":839490406,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Hot Water","w":26,"h":24,"rows":["#######X~~~~g~~~~X########","#######X~~~~~~~~~X########","WWWWWW#X~~~~~~~~~XWWWWWWWW","W###############WWW#####.W","W######XWWCCCCCWWX#######W","W.#####XCG##M##GCX#####..W","W######XC#WWWWW#CX#######W","WT.####XC#WG#GW#CX####..TW","W######XC#W###W#CX#######W","WT..###XC#WG#GW#CX###...TW","W######XC#WWWWW#CX#######W","WT...##XCG#####GCX##....TW","W#####WWWCCCCCCWWWW######W","MT....#############.....TW","M#######LLLLLLLLL########W","WT.....#LLLLLLLLL#......TW","W#######LLLG#GLLL########W","W#GGGG##LLLLLLLLL###GGGG#W","W###########C############W","WWWWWWWWWWWWWWWWWWWWWWWWWW"],"start":[2,2],"exit":[12,11],"roots":true,"rootSeed":638709747,"time":180,"waterPPC":9,"pumps":[[10,5,0],[14,5,0],[12,18,0]]},{"format":"holy-moley-level","version":1,"name":"Chain Reaction","w":23,"h":34,"rows":["##XXXXXXXXXXXXXXXXXXXXX","##XGGXGGXGGXGGXGGX#####","###WW#WW#WW#WW#WW#WW###","##MWWMWWMWWMWWMWWMWWN##","###WW#WW#WW#WW#WW#WW###","##########M##M#########","B#B#B#B#B#WWWW#B#B#B#B#","XXXXXXXXXXXCCCCCCCCC###","#####TTTTTTTTTTTTTTT#..","#####TTT###############","#####TTT###############","#####TTT###############","XXXXXX#BBBBBBBBBB######","#######################","#######################","##N####################","###TTwTTTwTTTTTT#######","##TTTTTTTTTTTTTT#######","##TTwTTTTwTTTTTT#######","#######################","#######################","GGGGGGG################","GGGGGGG################","#######################","########LLLLLLLLLLLL###","########LLLLLLLLLLLL###","#######################","#######################","#######################","#######################"],"start":[2,2],"exit":[20,32],"roots":true,"rootSeed":94013348,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Oh Well","w":24,"h":46,"rows":["~##X~~~~~~~~~~~~~~~~XBBB","~##XXXXXXX~gg~XXXXXXXGGG","~########X~gg~X#########","~########X~~~~X#########","~########XX~~XX#########","~########BX~~XB#########","~##..T...#W~~W#..T....##","~#########W~~W##########","~##.T....#W~~W#.T.....##","~#########W~~W##########","~~#T.....#W~~W#T......##","~~########X~~X##########","~~########X~~X##########","~~########X~~X##########","~~########X~~XXXXX######","~~########X~~~~~~X######","##########X~~~~~~X######","##########XXXXX~~X######","##############X~~X######","#LLLLLLLL#####X~~X######","##LLLLLLL#####X~~X##BBBB","###LLLLLL#####X~~X##BBBB","##############X~~X#####G","##############X~~XXXXX.G","############GGX~~~~~gX.G","############G#X~~~~~~X.G","############G#XXXXX~~X.#","############G#####X~~X..","##CCCCCCCCCCCCCCCNX~~X#.","##################X~~X#.","##################X~~X#.","##################X~~X#.","##################X~~X#.","##################X~~X#.","##CCCCCCCCCCCCCCMMX~~X#.","##################X~~X##","##################X~~XGG","####GGGGGG########X~~XGG","####GGGGGG########X~~XXX","####GGGGGG########X~~~~~","##################X~~~~~","##################Xw~#~~"],"start":[2,2],"exit":[21,44],"roots":true,"rootSeed":206027194,"time":180,"waterPPC":9,"pumps":[[0,7,0],[0,13,0],[0,18,0]]},{"format":"holy-moley-level","version":1,"name":"The Mine","w":21,"h":25,"rows":["XXXXXX#MXLXXXLXXXLXXX","XLLLLXWXXXXXXXXWXXXXX","XLLLLXWXWWWWWWWWWWWWX","XLLLLXWXWXXGGXXXXXXWX","XLLLLXWWWXWWWWWWWWWWX","XGXXXXXXXMXXXXXXXXXXX","BBBBBBBBBBBBBBBBBBBBB","CCCCCCCCCCCCCCCCCCCCC","CCCCCCGCCCGCCCCCCCCGC","CCCGCCCCCCCCCCGCCGCCC","CCCCCCGCCCCGCCCCCCCCC","CCCCCCCCCCCCCCCCGCCCC","~~~~~~~~~~~~~~~~~~~~~","~~~~~~~~~~~~~~~~~~~~~","~~~~~~~~~~~~~~~~~~~~~","WWWWWWWWT.WWWWWWWWWWW","WGWWWWWWW.WWGWWWWWWWW","WWW.T..WWWWWWW.T..WWW","MWWWWWWWW.T.WMWWWWW.T","#############M#######","####GGGG#############"],"start":[2,2],"exit":[18,23],"roots":true,"rootSeed":76910489,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"Get to Mars","w":22,"h":21,"rows":["~XX#####B########B##~~","~~XM###B###B#####B##~~","~~X####B###B##B#####~~","~~X##########B######~~","~~X##B##############~~","~~X###################","~~X################XLL","~~C.......##......mXLL","~~X################XLL","~~X################XLL","~~C......T##T.....mXLL","~~X################XLL","~~X################XLL","~~C..T...X..X....bmXLL","~~X###.LLLLLLLL.###Xgg","~~X####LLLLLLLL####XXX","ggX####LLLLLLLL#######"],"start":[2,2],"exit":[19,19],"roots":true,"rootSeed":965114706,"time":71,"waterPPC":9,"pumps":[[0,10,1],[0,13,1],[0,16,1],[10,19,0],[11,19,0]],"big":[[17,4,"2x1"],[7,5,"2x1"],[11,5,"1x2"],[13,6,"2x1"],[5,7,"1x2"]]},{"format":"holy-moley-level","version":1,"name":"Inferno","w":20,"h":24,"rows":["#M#XXXXXXXXXXXXXXXXX","###XBBBB#BBBBB####N#","##CCCCCWCCCCCXXXX###","##~~~~~~XXXXCXCCMMm#","##WCCCWCMXCXCXGCCX##","##~~~~~~CXCXCXCXCX.#","##CMCCC~WXCXMXCXCX.#","##XXXXC~CXCXCXCCCX.#","##WWCCC~CXXN#WCCCX.#","##WXCXX~CXWWGXXXXX.#","##WXCWCCCXXXXXGWWW.#","########G###########","#LLLLLLXgXLLLLLLLLL#","#LLLLLLX~XLLLLLLLLL#","#LLLLLLX~XLLLLLLLLL#","#######X~X##########","#XCWCWCX~XCWCWCWCWW#","~~~~~~~X~~~~~~~~~~~#","CCCCCCCX~XCCCCCCCC##","######GGGGG#########"],"start":[2,2],"exit":[17,22],"roots":true,"rootSeed":407149362,"time":180,"waterPPC":9,"pumps":[[1,17,0],[18,17,0],[6,20,3],[9,20,3],[18,20,0]]},{"format":"holy-moley-level","version":1,"name":"Diamond Geyser","w":60,"h":38,"rows":["###############C~C##########################################","###############C~C##########################################","###############C~C##LLL#####################LLLLL###########","###############C~C##LLL#####################LLLLL###########","###############C~C##LLL##~~~~~~~~~~~########LLLLL###########","###############C~C##LLL##~~~~~~~~~~~########################","###############C~C##LLL##~~~~~~~~~~~########################","###############C~C##LLL##~~~~~~~~~~~########################","###############C~C##LLL##~~~~~~~~~~~#########~~~~~~#########","###############C~C##LgL##B#B#B#B#B###########~~~~~~#########","###############C~C######BGGGGGGGGGGB#########~~~~~~#########","###############C~C##LLL##GGGGGGGGGG#####LLL##~~~~~~#########","###############C~C##LLL##B#B#B#B#B######LLL##~~~~~~#########","###############C~C##LgL####CMC##############################","###############C~C#########CCC##############################","############CCCC~CCCCCCCCCCCC#B#######B####B######B#########","############C~~~~~~~C#####################B###B#B###B#######","############C~~~~~~~C####LLL#######B####B###B#####B#####B###","###########CC~~~~~~~CC###LLL####B##############B#####B######","###########C~~~~~~~~~C#################B###B##############B#","###########C~~~~~~~~~C######B######B#B######################","###########C~~~~~~~~~C##B###################################","###########C~~~~~~~~~C######################################","###########C~~~~~~~~~C######################################","LLLLLLLLLX#C~~~~~~~~~C#XLLLLLLLLLLX#XLL#LLLXLXLXLXLXLXLXLXLX","LLLLLLLLLX#C~~~~~~~~~C#XLLLLLLLLLLX#XLL#LLLXLX#X#X#X#X#X#X#X","LLLgggLLLX#C~~~~~~~~~C#XLLLLgggLLLX#XLL#LLLXLXMXGXGXGXGXGXNX","LLLXXXLLLX#C~~~~~~~~~C#XLLLLXXXLLLX#XLL#LLLXLX#X#X#X#X#X#XGX","LLLLLLLLLX#C~ggggggg~C#XLLLLLLLLLLX#XLL#LLLXLX#XMXMXMXMXMX#X","LLLLLLLLLX#CCCCCCCCCCC#XLLLLLLLLLLX#XLL#LLLXLX#XXXXXXXXXXX#X","######XXXX#############XXXXXXXXXXXX#XXXXXXXXXX##############","####M#######################################################","########################################G###################","############################################################"],"start":[2,2],"exit":[57,36],"roots":true,"rootSeed":262200466,"time":240,"waterPPC":18,"pumps":[[48,13,2],[16,20,0],[16,23,0],[16,26,0],[16,29,0]],"big":[[25,12,"2x1"],[27,12,"2x1"],[29,12,"2x1"],[31,12,"2x1"],[33,12,"2x1"],[24,13,"1x2"],[35,13,"1x2"],[25,15,"2x1"],[27,15,"2x1"],[29,15,"2x1"],[31,15,"2x1"],[33,15,"2x1"],[42,19,"1x2"],[28,23,"2x1"],[37,23,"1x2"],[24,24,"2x1"]]},{"format":"holy-moley-level","version":1,"name":"Speed essence","w":20,"h":24,"rows":["#####BBBB###########","##.#BGGGGGGGGBBBBBBB","##.##BBBBBB#########","##.################B","##...........B######","##########B#####B###","##########B#######B#","LLLLLLLLLL#LLLLLLL#G","####################","~N~~~~##B###B##B####","~#~B~B############B#","~~~#~####U####B####B","~B~~~~B######B######","####################","LLLLLLLLLLLLLLLLLLLL","LbLbLbLbLbLbLbLbLbLb","####################","#N##################","####################","####################"],"start":[2,2],"exit":[17,22],"roots":true,"rootSeed":804086280,"time":180,"waterPPC":9},{"format":"holy-moley-level","version":1,"name":"The Farm","w":23,"h":19,"rows":["###############B####CL#","###B#B######B#######CL#","####################CL#","###XXX#XXXX#XXX#XX##CL#","###X#############X##CL#","###X#############X##CL#","###X#############X##CL#","###X#U####U###U##X###L#","###X#############X###L#","###XN###########NX##LLL","###XXXXXXXXXXXXXXX##LLL","G##XXXXXCCCCXXXXXX##LLL","CC#CCCCCCCCCCCCCCC##LLL","CC#CCCCCGGGGCCCCCCC####","##################CC###"],"start":[2,2],"exit":[20,17],"roots":true,"rootSeed":529627732,"time":115,"waterPPC":9,"pumps":[[21,6,0],[21,10,0],[21,15,0]]},{"format":"holy-moley-level","version":1,"name":"Mined Out","w":24,"h":28,"rows":["####BBBBBBBBBBBBBBBBB#XX","#####################XXX","####w.w.w.w.w.w.w.w.XXXX","#####.############.##XXX","####w.w.w.w.w.w.w.w.##XX","#######################X","########################","####W#M######M#M##M##M##","##WM#W#C#M#C##C#W##W####","#M####M#W#W#M###M#C#C#M#","####M###C##W##M####M####","#WC####M#C#M#W##M#W##C##","#M###CW###W##M#C#W##C###","###C#M##M##W####C#M##WXX","###W##C###M#M#M#####W#M#","####M##M###C####M##C####","##M###C##M###M#M##C#M###","###C#W#M###M######C##W##","XX##M#C######C##CM#CW###","GX#M#W###MC###M####WXXXX","GX##########M##XXXXX~~~~","GXXXXXXXXX#####X~X~XXXXX","#########X#####X~X~X####","###############X~X~X####"],"start":[2,2],"exit":[21,26],"roots":true,"rootSeed":464287515,"time":180,"waterPPC":18,"pumps":[[20,23,3],[23,23,3],[16,24,0],[18,24,0],[16,26,0],[18,26,0]]},{"format":"holy-moley-level","version":1,"name":"Messi","w":23,"h":27,"rows":["B#B########BBB###B##BBB","####G###LL##BB#G####G#B","#LL###G#~L#GG#B#G######","BLL####G####G##B##GG#B#","#L#B#####G#B##M#CCC#G##","##.#BB#.M#G############","#XXBCCGB####BMB###.B..B","#BCCCC#####B####MCCC.#B","#BWWCGB.B###BW###CCCC##","#C#WCC##BGWWWWW....CB#L","#C###C#G####B~~uuGCC###","#C##.MG###XXXG#BB#.B###","#CCC.WWW#XXBX#BCCB##G##","#CCNG#W#B#B#X#BCC##B##G","B#G###BGB.#~~~#B#.B#B##","#WBXXGB###BM##XXX.#N###","#WWW#XXBWWWWW#..#.###G#","BWM##XXWWGWB...........","#W##GXX#CC##G#BBBBBB.#B","B##BWWWWWC###B###B#~~##","G###G###BC###mBB####B#L","#L###B##CCGB#B##G######","###N#B###B#####B#######"],"start":[4,2],"exit":[14,25],"roots":true,"rootSeed":-1885471667,"time":180,"waterPPC":9,"big":[[0,3,"2x1"],[2,3,"2x1"],[11,3,"1x2"],[17,3,"2x1"],[13,22,"2x1"],[11,24,"2x1"]],"brians":[[16,20,1]]},{"format":"holy-moley-level","version":1,"name":"Termite Nest","w":25,"h":23,"rows":["###########CXXXXXXXXXXXXX","#########CCC.......g....X","##BBBBB#CC...###########X","########..W#...#CTTTTC###","##.......#####.#CTTTTC###","#############..BCTTTTC###","##........###..WCC..CC###","##.#####..#####...T.#####","##.#####.################","##.#####....###.#######B#","##.#####....###........W#","##.#######..###########.#","########B#g####W..#...#.#","XXXXXXXX##W##B#.#.#.#.#.#","######C.....CC#.#g#.#g#.#","GGG###....T.CC#.#.#.#.#.#","CCCCCC.....TCCC.#.#.#.#.#",".........W.T.##.#...#WWW#","#####################W#W#"],"start":[2,2],"exit":[22,21],"roots":true,"rootSeed":653841942,"time":180,"waterPPC":9,"brians":[[21,4,1],[2,20,1]]},{"format":"holy-moley-level","version":1,"name":"Brian's Lair","w":25,"h":23,"rows":["M########################","B###########B############","B######B#XXX######B#B####","M########X#X######B##B###","W..######XWX##B##########","XX.#######W##############","............##########G##","XX.######################","............##B#G........","XX.#B####B##B###G###B#.XX","...########GGGX#G#####...","XX.#X####X#GGG#G####X#.XX","..g..#N####GNG#B#M.......","XX...#XM####X####X####.XX",".....#WWWWWWWWWWWW#B##...","XX..##W.BW..WBW..W####.XX","....##W.#WggW#WggW#X##...","XX###WBgWWWWWWWWWWWWWWWXX","#####WWgWW..WWW..W..W####"],"start":[2,2],"exit":[10,6],"roots":true,"rootSeed":249648252,"time":180,"waterPPC":9,"big":[[12,4,"2x1"],[7,5,"2x1"],[18,5,"2x1"],[20,5,"2x1"],[18,6,"1x2"],[21,6,"1x2"],[14,7,"2x1"],[14,11,"1x2"],[4,12,"1x2"],[9,12,"1x2"],[20,12,"1x2"],[15,15,"1x2"],[19,17,"1x2"],[8,18,"1x2"],[13,18,"1x2"]],"brians":[[0,9,1],[0,11,1],[0,13,1],[24,13,1],[0,15,1],[24,15,1],[0,17,1],[24,17,1],[0,19,1],[24,19,1]]},{"format":"holy-moley-level","version":1,"name":"Termite Gas","w":50,"h":54,"rows":["#################XXXXXXXXX##########XXXXXXXXXXXXX#","#################X.g.g.g.X########XXXWWWWWWWWWWWX#","#################X.X.X.X.X########XWWWWWWWWWWWWWX#","#################X.......X########XWWWWWWWWWWWWWXX","#################X.......X#######XXWWWWWWWWWWWWWXX","#################X.......X#######XWWWWWWWWWWWWWWXN","#################X.......X######XXWW~WWWWWWWWWWWX#","#################XX.....XX#####XXWWWWWWWWWWWWWWWX#","#################XX.....XX#####X~W~WWWWWWWWWWWWWX#","#################MXX...XX#####XX~WWXXXX......XXXX#","#################MXX...XX####XX..~~X##X......X####","##############XXXXXXX.XX####XX..XXXX##XXXu..XX####","############XXXXXXXXXWXXXXXXX..XX#######XXXXX#####","###########XXXX......MW.....X.XX##################","###########XXXX......X......XXX###########XXXXXXXX","##########XXXX...............X#####XXXXXXXX.......","##########XXXX...............####XXX..............","##########XXX.................CCCC..............gg","##########XXX................mCCCC................","##########XXXX...............X###XXX..............","###########XXX...............X######XXXXXXX.......","###########XXX...............X############XX#XXXXX","###BBBBB####XXX.............XX##############BXXX##","##BWWWWWB###XXX.............X###############B#####","##WWWWWWBBBB##XXXX.......XXXX##########BBBB#B#####","##WGTWWWW###B###BBBB#.#XXBBB####BBBBBBBBWWBB######","WWWWTWWWW####BBBWWWBBWWWWWWBBBBBBWWWWWWWWWWWWW####","#WWWWWWWW######WWWWWWWWTW#WWWBWWWWWWTWWWWWBWWWW###","#WWWW###WW#####WWWWW#WWWWWTTWBWWWWBWWWWWWWWW######","#########WW####WWWWWWWWTWWTTWWWWWWWWWW############","##########WW####WWWBWWWWWWWWWWWWBWWWWW############","###########WWWWWWWWWWW#WWWBWWTTWWWWTWWWWWWWW######","#############WWWWWW#WWWW.WW#WTTWWWWWWTWWWWWWW#####","#############WWWBWW#WWTWWWWWWTWWBWWTWWW#WW#WWW####","#############WWWWWWWWWWWWWWWTWWWWWWWWWWWWTWWW#####","#############W#WWTWWW#WWWBWWWWWWW#######WWWWW#####","############WWWWWWWWWWWWWWWWW#WWWW################","#########WWW#WWWW##W###WW#####W#WW################","######WWWWWWWW#####W##WW######WWWWW#####...#######","####WWWWWW.W..#####W##W#####WWWWTWW####....#######","###W#WWTWWXXXX##WWWW#########WWWWWWWW##....#######","###WWWWWWW#####WW########WWWWWTW#WWW###.#####...##","#####WWW######WW########WW......WWW####.#...#.#.##","#####W########W#########XXXXXXXX#######.#.#.#.#.##","#######################################.#.#.#.#.##","#######################################.#.#.#.#.##","#######################################.#.#.#.#.##","#######################################...#...#.##","###############################################.##","##################################################"],"start":[41,42],"exit":[47,52],"roots":true,"rootSeed":610999809,"time":180,"waterPPC":9,"pumps":[[21,6,2],[21,8,2],[36,9,2],[21,10,2],[34,11,3],[21,12,2],[21,14,2],[39,20,3],[41,20,3],[43,20,3],[45,20,3],[39,21,3],[41,21,3],[43,21,3],[45,21,3],[21,28,0],[30,35,0],[13,42,0],[31,45,0],[47,47,0],[47,49,0],[47,51,0]],"brians":[[24,35,1],[10,42,1],[27,45,1]],"gas":[[18,4],[20,4],[22,4],[24,4],[18,5],[20,5],[22,5],[24,5],[18,6],[19,6],[20,6],[21,6],[22,6],[23,6],[24,6],[18,7],[19,7],[20,7],[21,7],[22,7],[23,7],[24,7],[18,8],[19,8],[20,8],[21,8],[22,8],[23,8],[24,8],[18,9],[19,9],[20,9],[21,9],[22,9],[23,9],[24,9],[19,10],[20,10],[21,10],[22,10],[23,10],[19,11],[20,11],[21,11],[22,11],[23,11],[20,12],[21,12],[22,12],[20,13],[21,13],[22,13],[21,14],[43,18],[44,18],[45,18],[46,18],[47,18],[48,18],[49,18],[36,19],[37,19],[38,19],[39,19],[40,19],[41,19],[42,19],[43,19],[44,19],[45,19],[46,19],[47,19],[48,19],[49,19],[34,20],[35,20],[36,20],[37,20],[38,20],[39,20],[40,20],[41,20],[42,20],[43,20],[44,20],[45,20],[46,20],[47,20],[34,21],[35,21],[36,21],[37,21],[38,21],[39,21],[40,21],[41,21],[42,21],[43,21],[44,21],[45,21],[46,21],[47,21],[48,21],[49,21],[36,22],[37,22],[38,22],[39,22],[40,22],[41,22],[42,22],[43,22],[44,22],[45,22],[46,22],[47,22],[48,22],[49,22],[43,23],[44,23],[45,23],[46,23],[47,23],[48,23],[49,23],[45,44],[46,44],[47,44],[47,45],[47,46],[47,47],[47,48],[47,49],[47,50],[47,51]]},{"format":"holy-moley-level","version":1,"name":"Unary","w":24,"h":28,"rows":["########B#B#B#B#B#######","########C#C#C#C#C#######","########C#C#C#C#C#######","#.....WXCXCXCXCXCXW.....","#####W.............W####","###C#X......m......X#C##","#CCC#W...#######...W#CC#","#C###X...#GG#GG#...X##C#","#CCCCW...#######...WCCC#","XXXXXX.....CCC.....XXXXX","...........C~C..........","XXXXXX.....CCC.....XXXXX","#CCCCW...###M###...WCCC#","#####X...#gg#gg#...X####","#CCCCW...#######...WCCC#","#####X.............X####","#####W.............W####","#.....WXWXWX#XWXWXW.....","######C#C#C###C#C#######","##CCC#C#C#C###C#CCCCCCC#","##C#C#C#C#CCC#C#######C#","#CC#CCC#C###C#C#CCCCCCC#","########C#CCC#C#########","########C#####C#########"],"start":[9,13],"exit":[21,26],"roots":true,"rootSeed":231772966,"time":180,"waterPPC":9,"pumps":[[5,6,1],[19,6,3],[7,8,1],[17,8,3],[10,16,3],[14,16,1],[7,18,1],[17,18,3],[12,19,0],[5,20,1],[19,20,3]],"brians":[[0,13,1],[23,13,1]],"canaries":[[4,6,1],[20,6,1],[3,20,1],[21,20,1]]},{"format":"holy-moley-level","version":1,"name":"Only way to be sure","w":26,"h":24,"rows":["##########################","################B#G#######","###G######CCC#M#####GWW###","#WW##G##BBCBC#XXBXXXWWCCBB","#WWW###GBCCXWWWW####MBCCG#","#WWWB#XGXBCX###B#GNN#BCC##","####BXXGXCC...N#WWWWBCCC##","#M#B####..#B.G##GWW###.#..","##BGB..B..####B##B~~~~####","#BG##G###.#..B#BGB#BWWGB#G","##XBXXB##.M####GB##WWM##B#","###CCCCC#######XMB.###G.#B","G#G......G.BB.BX##.###G.#G","#G#.####M####GWWB#.#.GCCC#","##BGBG###GX~~BW.##X..B~~~#","#B#B#CCCCG.BX#B.#BX#.###M#","#####CBGB#X##.G..G#BCCM###","##.#NCCC#G#B###.#GCC#CC.B#","B#.##MCC##G####.###CC##B##","#G.#G#N##MM#G#B#G##B#BGG#B"],"start":[4,2],"exit":[13,20],"roots":true,"rootSeed":493346289,"time":180,"waterPPC":9,"pumps":[[9,11,0],[9,12,0],[9,13,0],[18,14,0],[18,15,0],[18,16,0],[15,19,0],[15,20,0],[15,21,0]],"canaries":[[5,15,1]]}]};   // pt90 (v52): authored campaign; after the last level, play continues with random levels
 // pt57: gems sound like glass - a short high partial stack (inharmonic overtones), fast attack, exponential decay, slight random pitch
 function gemSnd(){return G.gemSounds||(G.gemSounds={plink:0,tink:0,thud:0});}
 // pt81 (v47): world-positioned SFX fall off by half every 24 cells from Moley (Euclidean). No position = full volume.
@@ -3446,6 +3491,7 @@ addEventListener('keydown',e=>{
   if(G.mode==='editor'){
     if(ED.sheet&&e.key==='Escape'){setSheet(false);return;}
     if(PAL.grid&&e.key==='Escape'){palSetGrid(false);return;}
+    if(edsKey(e))return;   // v76 (pt174): select / copy / paste / flip / rotate keys
     if(KEYMAP[e.key]){e.preventDefault();keys[e.key]=true;}
     const t=TOOLS.find(t=>t.key===e.key);if(t)selectTool(t.id);
     if((e.key==='r'||e.key==='R'||e.key==='Delete'||e.key==='Backspace')&&ED.hover&&G.pumps){const j=inB(ED.hover[0],ED.hover[1])?idx(ED.hover[0],ED.hover[1]):-1;   // pt69: R cycles the four directions then removes; Delete restores what was under the pump
@@ -3495,10 +3541,10 @@ function touchTap(){if(G.mode==='editor')return;G.taps=(G.taps||0)+1;if(G.seq){s
   if(G.state==='over'){offerPlayAgain();return;}if(!G.started){G.started=true;return;}
   if(SW.lastSwipe&&G.state==='play'&&!G.paused&&SW.lastLv===G.lvSerial){if(inputMove(SW.lastSwipe,true,true))G.tapRepeats=(G.tapRepeats||0)+1;}}   // pt66: a tap after a swipe repeats that swipe
 canvas.addEventListener('touchstart',e=>{e.preventDefault();SW.hold=null;
-  if(G.mode==='editor'){if(edTouchStart(e))return;const t=e.touches[0],c=cellAt(t.clientX,t.clientY);paintCell(c[0],c[1],ED.tool);ED.tlast=c;saveWork();return;}
+  if(G.mode==='editor'){if(edsTouch(e,'s'))return;if(edTouchStart(e))return;const t=e.touches[0],c=cellAt(t.clientX,t.clientY);paintCell(c[0],c[1],ED.tool);ED.tlast=c;saveWork();return;}
   if(SW.id!==null)return;const t=e.changedTouches[0];SW.id=t.identifier;SW.x0=t.clientX;SW.y0=t.clientY;SW.last=null;SW.moves=0;SW.moved=0;},{passive:false});
 canvas.addEventListener('touchmove',e=>{e.preventDefault();
-  if(G.mode==='editor'){if(edTouchMove(e))return;const t=e.touches[0],c=cellAt(t.clientX,t.clientY);if(ED.tlast&&c[0]===ED.tlast[0]&&c[1]===ED.tlast[1])return;ED.pumpPress=null;paintCell(c[0],c[1],ED.tool,true);ED.tlast=c;return;}
+  if(G.mode==='editor'){if(edsTouch(e,'m'))return;if(edTouchMove(e))return;const t=e.touches[0],c=cellAt(t.clientX,t.clientY);if(ED.tlast&&c[0]===ED.tlast[0]&&c[1]===ED.tlast[1])return;ED.pumpPress=null;paintCell(c[0],c[1],ED.tool,true);ED.tlast=c;return;}
   for(const t of e.changedTouches){if(t.identifier!==SW.id)continue;
     const dx=t.clientX-SW.x0,dy=t.clientY-SW.y0;SW.moved=Math.max(SW.moved,Math.hypot(t.clientX-SW.x0,t.clientY-SW.y0));
     if(Math.max(Math.abs(dx),Math.abs(dy))<SWIPE_PX)continue;
@@ -3511,7 +3557,7 @@ function swipeEnd(e){for(const t of e.changedTouches){if(t.identifier!==SW.id)co
       if(Math.max(Math.abs(dx),Math.abs(dy))>=SWIPE_PX)inputMove(Math.abs(dx)>=Math.abs(dy)?[Math.sign(dx),0]:[0,Math.sign(dy)]);
       else if(e.type==='touchend'&&SW.moved<SWIPE_PX)touchTap();}
     SW.id=null;SW.hold=null;}}
-canvas.addEventListener('touchend',e=>{e.preventDefault();if(G.mode==='editor'){edTouchStart(e);if(!e.touches.length){pumpRelease();saveWork();}ED.tlast=null;return;}swipeEnd(e);},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();if(G.mode==='editor'){if(edsTouch(e,'e'))return;edTouchStart(e);if(!e.touches.length){pumpRelease();saveWork();}ED.tlast=null;return;}swipeEnd(e);},{passive:false});
 canvas.addEventListener('touchcancel',swipeEnd);
 // ---- optional on-screen arrow pad (pointer events: touch + mouse, multi-touch safe), default off, saved in localStorage
 const PAD={on:false,ptr:new Map(),order:[]};
@@ -4434,9 +4480,11 @@ function renderParallax(X,Y,C,x0,x1,y0,y1,ox,oy){
   const mode=parallaxMode();if(!mode)return;if(!PX.tex)pxInit();if(!PX.tex)return;
   const str=mode===2?PX.strong:1,camx=ox/C,camy=oy/C,cw=canvas.width,ch=canvas.height;
   const yTop=Y(SURF),hUnd=ch-yTop+C;if(hUnd<=1)return;
+  let bx0=1e9,by0=1e9,bx1=-1e9,by1=-1e9;   // v74 (pt163): bounding box (canvas px) of the stencil mask, used as a scissor for the layers
   const mask=()=>{const NONE=[0,0,0,0];
     for(let y=Math.max(y0,SURF);y<=y1;y++)for(let x=x0;x<=x1;x++){
-      const r=pxOpenRect(x,y);if(!r)continue;rect(X(x+r[0]),Y(y+r[1]),(r[2]-r[0])*C,(r[3]-r[1])*C,NONE);}
+      const r=pxOpenRect(x,y);if(!r)continue;const ax=X(x+r[0]),ay=Y(y+r[1]),bx=X(x+r[2]),by=Y(y+r[3]);
+      if(ax<bx0)bx0=ax;if(ay<by0)by0=ay;if(bx>bx1)bx1=bx;if(by>by1)by1=by;rect(ax,ay,(r[2]-r[0])*C,(r[3]-r[1])*C,NONE);}
     flush();};
   const drawSlice=(tex,p,period,aTop,aBot,uDrift,vDrift,sx,sy,sw,sh)=>{
     if(sw<=0.5||sh<=0.5)return;
@@ -4468,9 +4516,12 @@ function renderParallax(X,Y,C,x0,x1,y0,y1,ox,oy){
   if(useSt){flush();gl.enable(gl.STENCIL_TEST);gl.clearStencil(0);gl.clear(gl.STENCIL_BUFFER_BIT);
     gl.stencilFunc(gl.ALWAYS,1,0xff);gl.stencilOp(gl.KEEP,gl.KEEP,gl.REPLACE);mask();
     gl.stencilFunc(gl.EQUAL,1,0xff);gl.stencilOp(gl.KEEP,gl.KEEP,gl.KEEP);
+    gl.enable(gl.SCISSOR_TEST);   // v74: pixels outside the mask's box are stencil-rejected anyway -> identical image, far fewer shaded fragments
+    if(bx1>bx0&&by1>by0)gl.scissor(Math.max(0,Math.floor(bx0)-1),Math.max(0,Math.floor(ch-by1)-1),Math.ceil(bx1-bx0)+3,Math.ceil(by1-by0)+3);else gl.scissor(0,0,0,0);
+    PX.scissor=[bx0,by0,bx1,by1];
     const yFade=Y(SURF+PX.fadeCells),split=Math.max(yTop+1,Math.min(yTop+hUnd,yFade));
     paint(0,yTop,cw,split-yTop);paint(0,split,cw,yTop+hUnd-split);
-    flush();gl.disable(gl.STENCIL_TEST);}
+    flush();gl.disable(gl.SCISSOR_TEST);gl.disable(gl.STENCIL_TEST);}
   else{for(let y=Math.max(y0,SURF);y<=y1;y++)for(let x=x0;x<=x1;x++){
       const r=pxOpenRect(x,y);if(!r)continue;paint(X(x+r[0]),Y(y+r[1]),(r[2]-r[0])*C,(r[3]-r[1])*C);}flush();}
   PX.drawn=(PX.drawn||0)+1;
@@ -4736,9 +4787,16 @@ function updateHUD(){$('lvl').textContent=G.mode==='test'?'TEST':PACK.on?G.level
 
 // ---------------------------------------------------------------- main loop
 let last=performance.now();
+// v74 (pt163): the title screen (#intro, opaque gradient) covers the whole canvas, so drawing the world under it is wasted GPU work
+// (title fps 26 -> 60 desktop, 18 -> 60 phone-like in perf_review). The first frame is still drawn so the lazy one-time set-up
+// (parallax textures, atlas uploads, shaders) happens at load as before, and the frame after the title hides draws a fresh world
+// before the browser paints (rAF runs before paint), so no stale image is ever shown. step() keeps running as before.
+function worldCovered(){if(!INTRO.on)return false;const el=document.getElementById('intro');return !!el&&!el.hidden;}
+const RENDER_SKIP={frames:0,drawn:0};
 function frame(now){
   let dt=Math.min(0.05,(now-last)/1000);last=now;
-  if(!window.__manualStep)step(dt);render();
+  if(!window.__manualStep)step(dt);
+  if(RENDER_SKIP.drawn>0&&worldCovered())RENDER_SKIP.frames++;else{render();RENDER_SKIP.drawn++;}
   requestAnimationFrame(frame);
 }
 function step(dt){
@@ -4861,6 +4919,8 @@ img.src=MOLEY_IMG;
 // ---------------------------------------------------------------- level editor
 const LS_WORK='holymoley.work', LS_SLOT='holymoley.slot.', NSLOTS=5, LS_SLOTN='holymoley.slotCount', SLOT_MAX=99, LS_PACK='holymoley.pack';   // pt57: 5 slots by default, the user can add up to 99
 const ED={tool:'tunnel',zoom:0.7,paint:null,last:null,hover:null,data:null,diff:1,randSeed:0,baseline:null,src:null};
+// v76 (pt174): select / copy / paste / flip / rotate. All edits work on the saved-level data (rows + pump / Brian / Contrary / gas / big-boulder sidecars), then reload it.
+const EDS={sel:null,drag:null,buf:null,paste:null,toggle:false,shift:false,touchAt:null,undo:[],pastes:0,ops:0};
 const ED_DIFF_MIN=1,ED_DIFF_MAX=20;   // slider: play-generator level number (features mostly all on by 10, counts still grow to 20)
 const TOOLS=[
   {id:'earth', label:'Earth',   key:'1', tip:'Earth: fill cells back in with earth (right-click also paints earth)'},
@@ -5034,7 +5094,7 @@ function enterEditor(data){
   let d=data||ED.data;
   if(!d){const w=lsGet(LS_WORK);if(w){try{d=normalizeLevel(w);}catch(e){d=null;}}}
   if(!d)d=emptyLevel(44,38);
-  ED.data=d;$e('edName').value=d.name||'';
+  ED.data=d;$e('edName').value=d.name||'';edsReset();
   applyZoom();loadLevel(d);G.state='edit';showMsg('');$e('menu').hidden=true;
   setUI();refreshSlots();syncRootsBtn();syncSizeTime();editorMarkClean();syncDiffUI();
 }
@@ -5100,12 +5160,12 @@ function paintLine(a,b,tool){ED.pumpPress=null;let [x0,y0]=a;const [x1,y1]=b;con
   for(let n=0;n<4000;n++){paintCell(x0,y0,tool,true);if(x0===x1&&y0===y1)break;const e2=2*err;if(e2>=dy){err+=dy;x0+=sx;}if(e2<=dx){err+=dx;y0+=sy;}}}
 function cellAt(cx,cy){const r=canvas.getBoundingClientRect();const px=(cx-r.left)*canvas.width/r.width,py=(cy-r.top)*canvas.height/r.height;
   return [Math.floor(px/cellPx+G.cam.x),Math.floor(py/cellPx+G.cam.y)];}
-canvas.addEventListener('mousedown',e=>{if(G.mode!=='editor')return;e.preventDefault();
+canvas.addEventListener('mousedown',e=>{if(G.mode!=='editor')return;e.preventDefault();if(edsMouseDown(e))return;
   ED.paint=e.button===2?'earth':(e.button===0?ED.tool:null);if(!ED.paint)return;const c=cellAt(e.clientX,e.clientY);paintCell(c[0],c[1],ED.paint);ED.last=c;});
-canvas.addEventListener('mousemove',e=>{if(G.mode!=='editor')return;const c=cellAt(e.clientX,e.clientY);ED.hover=c;ED.hoverPt=[e.clientX,e.clientY];
+canvas.addEventListener('mousemove',e=>{if(G.mode!=='editor')return;const c=cellAt(e.clientX,e.clientY);ED.hover=c;ED.hoverPt=[e.clientX,e.clientY];edsMouseMove(c);
   if(ED.paint&&ED.last&&(c[0]!==ED.last[0]||c[1]!==ED.last[1])){paintLine(ED.last,c,ED.paint);ED.last=c;}});
 canvas.addEventListener('mouseleave',()=>{ED.hover=null;ED.hoverPt=null;ED.blastPreview=null;});
-addEventListener('mouseup',()=>{if(ED.paint){if(G.mode==='editor')pumpRelease();ED.paint=null;ED.last=null;if(G.mode==='editor')saveWork();}});
+addEventListener('mouseup',()=>{if(edsMouseUp())return;if(ED.paint){if(G.mode==='editor')pumpRelease();ED.paint=null;ED.last=null;if(G.mode==='editor')saveWork();}});
 canvas.addEventListener('contextmenu',e=>{if(G.mode==='editor')e.preventDefault();});
 canvas.addEventListener('wheel',e=>{if(G.mode!=='editor')return;e.preventDefault();
   if(e.ctrlKey){setZoom(ED.zoom*Math.exp(-e.deltaY*0.0025));return;}
@@ -5113,7 +5173,165 @@ canvas.addEventListener('wheel',e=>{if(G.mode!=='editor')return;e.preventDefault
   G.cam.x+=dx*k;G.cam.y+=dy*k;clampEditorCam();},{passive:false});
 function setZoom(z){const cx=G.cam.x+viewW()/2,cy=G.cam.y+viewH()/2;ED.zoom=clamp(z,0.35,1.6);applyZoom();G.cam.x=cx-viewW()/2;G.cam.y=cy-viewH()/2;clampEditorCam();}
 function clampEditorCam(){const vw=viewW(),vh=viewH();G.cam.x=W+2<vw?(W-vw)/2:clamp(G.cam.x,-1,W-vw+1);G.cam.y=H+2<vh?(H-vh)/2:clamp(G.cam.y,-1,H-vh+1);}
+// ---------------------------------------------------------------- v76 (pt174): editor select / copy / paste / flip / rotate
+// Keys: hold Shift + drag = select; Ctrl/Cmd+C copy; Ctrl/Cmd+V paste (preview follows the pointer, click places it, Shift+click keeps stamping, Esc / right-click cancels);
+// H flip left-right, V flip up-down, T rotate 90° clockwise (Shift+T anticlockwise); Ctrl/Cmd+Z undoes the last paste / flip / rotate; Esc clears.
+// Buttons (touch): Select toggle, Copy, Paste (then drag the preview, tick to place), Flip X, Flip Y, Rotate, Undo, Cancel.
+function edsRect(){const s=EDS.sel;if(!s||!G.grid||!G.grid.length)return null;
+  const x0=clamp(Math.min(s.x0,s.x1),0,W-1),x1=clamp(Math.max(s.x0,s.x1),0,W-1),y0=clamp(Math.min(s.y0,s.y1),SKY,H-2),y1=clamp(Math.max(s.y0,s.y1),SKY,H-2);
+  return (x1<x0||y1<y0)?null:{x0,y0,x1,y1,w:x1-x0+1,h:y1-y0+1};}
+function edsLevel(){return JSON.parse(JSON.stringify(serializeLevel()));}
+const eds_bw=sh=>sh==='2x1'?2:1,eds_bh=sh=>sh==='1x2'?2:1;
+function edsGround(c){return c==='B'?'#':c==='b'?'.':c;}   // a boulder that loses its second half becomes plain ground
+// copy a rectangle of level data (r inclusive) into a buffer; start / exit are never part of a buffer
+function edsExtract(d,r){const w=r.x1-r.x0+1,h=r.y1-r.y0+1,cells=[];
+  for(let y=r.y0;y<=r.y1;y++){const row=d.rows[y-SKY];for(let x=r.x0;x<=r.x1;x++)cells.push(row[x]);}
+  const inR=(x,y)=>x>=r.x0&&x<=r.x1&&y>=r.y0&&y<=r.y1;
+  const sub=(L,f)=>(L||[]).filter(q=>inR(q[0],q[1])).map(f);
+  const big=[];for(const q of d.big||[]){if(!inR(q[0],q[1]))continue;
+    if(inR(q[0]+eds_bw(q[2])-1,q[1]+eds_bh(q[2])-1))big.push([q[0]-r.x0,q[1]-r.y0,q[2]]);
+    else{const i=(q[1]-r.y0)*w+(q[0]-r.x0);cells[i]=edsGround(cells[i]);}}   // a big boulder cut by the edge of the area is left out
+  return {w,h,cells,big,pumps:sub(d.pumps,q=>[q[0]-r.x0,q[1]-r.y0,q[2]&3]),brians:sub(d.brians,q=>[q[0]-r.x0,q[1]-r.y0,q[2]<0?-1:1]),
+    canaries:sub(d.canaries,q=>[q[0]-r.x0,q[1]-r.y0,q[2]<0?-1:1]),gas:sub(d.gas,q=>[q[0]-r.x0,q[1]-r.y0])};}
+function edsFill(w,h,ch){return {w,h,cells:new Array(w*h).fill(ch),big:[],pumps:[],brians:[],canaries:[],gas:[]};}
+// where a cell of a w x h buffer lands after a transform
+function edsPt(kind,w,h,x,y){return kind==='fx'?[w-1-x,y]:kind==='fy'?[x,h-1-y]:kind==='cw'?[h-1-y,x]:[y,w-1-x];}
+// flip X ('fx'), flip Y ('fy'), rotate 90° clockwise ('cw') / anticlockwise ('ccw'): cells, directional entities and big boulders all move together
+function edsXform(b,kind){const w=b.w,h=b.h,rot=kind==='cw'||kind==='ccw',nw=rot?h:w,nh=rot?w:h,P=(x,y)=>edsPt(kind,w,h,x,y),cells=new Array(nw*nh);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const q=P(x,y);cells[q[1]*nw+q[0]]=b.cells[y*w+x];}
+  const pd=d=>kind==='fx'?(d===1?3:d===3?1:d):kind==='fy'?(d===0?2:d===2?0:d):kind==='cw'?(d+1)&3:(d+3)&3;   // pump arrow: 0 up, 1 right, 2 down, 3 left
+  const hd=d=>kind==='fx'?-d:d;   // Brian / Contrary patrol sideways: a left-right flip turns them round; up-down flips and quarter turns keep their heading (they re-find the floor)
+  const big=b.big.map(([x,y,sh])=>{const a=P(x,y),c=P(x+eds_bw(sh)-1,y+eds_bh(sh)-1),nx=Math.min(a[0],c[0]),ny=Math.min(a[1],c[1]),ns=a[0]!==c[0]?'2x1':'1x2',ch=b.cells[y*w+x];
+    cells[ny*nw+nx]=ch;cells[(ny+(ns==='1x2'?1:0))*nw+nx+(ns==='2x1'?1:0)]=edsGround(ch);   // the boulder letter sits on the new anchor (top-left), plain ground on its other half
+    return [nx,ny,ns];});
+  return {w:nw,h:nh,cells,big,pumps:b.pumps.map(([x,y,d])=>{const q=P(x,y);return [q[0],q[1],pd(d)];}),brians:b.brians.map(([x,y,d])=>{const q=P(x,y);return [q[0],q[1],hd(d)];}),
+    canaries:b.canaries.map(([x,y,d])=>{const q=P(x,y);return [q[0],q[1],hd(d)];}),gas:b.gas.map(([x,y])=>P(x,y))};}
+// stamp a buffer into level data d with its top-left at (ox,oy). Clipped to the underground area; with protect (default) the start and exit cells are left alone
+// (nothing is duplicated). Everything under the footprint is replaced, including sidecars and big boulders. Returns the number of cells written.
+function edsPaste(d,b,ox,oy,opt){const prot=new Set();if(!opt||opt.protect!==false){prot.add(d.start[0]+','+d.start[1]);prot.add(d.exit[0]+','+d.exit[1]);}
+  const wr=(x,y)=>x>=ox&&x<ox+b.w&&y>=oy&&y<oy+b.h&&x>=0&&x<d.w&&y>=SKY&&y<=d.h-2&&!prot.has(x+','+y);
+  const rows=d.rows.map(r=>r.split('')),keep=[];
+  for(const q of d.big||[]){let hit=false;for(let j=0;j<eds_bh(q[2]);j++)for(let i=0;i<eds_bw(q[2]);i++)if(wr(q[0]+i,q[1]+j))hit=true;
+    if(!hit){keep.push(q);continue;}const row=rows[q[1]-SKY];if(!wr(q[0],q[1]))row[q[0]]=edsGround(row[q[0]]);}   // overwritten big boulder: gone
+  const gone=L=>(L||[]).filter(q=>!wr(q[0],q[1]));
+  d.pumps=gone(d.pumps);d.brians=gone(d.brians);d.canaries=gone(d.canaries);d.gas=gone(d.gas);
+  const anchors=new Set(),okBig=new Set();
+  for(const q of b.big){anchors.add(q[0]+','+q[1]);let all=true;for(let j=0;j<eds_bh(q[2]);j++)for(let i=0;i<eds_bw(q[2]);i++)if(!wr(ox+q[0]+i,oy+q[1]+j))all=false;
+    if(all){keep.push([ox+q[0],oy+q[1],q[2]]);okBig.add(q[0]+','+q[1]);}}
+  let n=0;for(let by=0;by<b.h;by++)for(let bx=0;bx<b.w;bx++){const x=ox+bx,y=oy+by;if(!wr(x,y))continue;let ch=b.cells[by*b.w+bx];
+    if(anchors.has(bx+','+by)&&!okBig.has(bx+','+by))ch=edsGround(ch);   // big boulder clipped at the level edge / start / exit: plain ground instead
+    rows[y-SKY][x]=ch;n++;}
+  const add=(L,key,m)=>{for(const q of L){const x=ox+q[0],y=oy+q[1];if(wr(x,y)){if(!d[key])d[key]=[];d[key].push(m(x,y,q));}}};
+  add(b.pumps,'pumps',(x,y,q)=>[x,y,q[2]]);add(b.brians,'brians',(x,y,q)=>[x,y,q[2]]);add(b.canaries,'canaries',(x,y,q)=>[x,y,q[2]]);add(b.gas,'gas',(x,y)=>[x,y]);
+  d.rows=rows.map(r=>r.join(''));d.big=keep.sort((a,c)=>a[1]-c[1]||a[0]-c[0]);
+  for(const k of ['pumps','big','brians','canaries','gas'])if(d[k]&&!d[k].length)delete d[k];
+  return n;}
+// flip / rotate the selected area in place (start / exit inside it travel with it); a non-square rotation turns the area around its centre
+function edsInPlace(d,r,kind){const b=edsExtract(d,r),nb=edsXform(b,kind),rot=kind==='cw'||kind==='ccw';let ox=r.x0,oy=r.y0;
+  if(rot){if(nb.w>d.w||nb.h>d.h-1-SKY)return null;ox=clamp(Math.round(r.x0+(r.w-nb.w)/2),0,d.w-nb.w);oy=clamp(Math.round(r.y0+(r.h-nb.h)/2),SKY,d.h-1-nb.h);}
+  const mv=p=>p&&p[0]>=r.x0&&p[0]<=r.x1&&p[1]>=r.y0&&p[1]<=r.y1?(q=>[ox+q[0],oy+q[1]])(edsPt(kind,r.w,r.h,p[0]-r.x0,p[1]-r.y0)):null;
+  const ns=mv(d.start),ne=mv(d.exit);
+  edsPaste(d,edsFill(r.w,r.h,'#'),r.x0,r.y0,{protect:false});edsPaste(d,nb,ox,oy,{protect:false});
+  if(ns)d.start=ns;if(ne)d.exit=ne;
+  return {x0:ox,y0:oy,x1:ox+nb.w-1,y1:oy+nb.h-1};}
+// load modified level data back into the editor (camera and zoom stay where they are)
+function edsLoad(d){const cam={x:G.cam.x,y:G.cam.y},nm=$e('edName').value;let nd;try{nd=normalizeLevel(d);}catch(e){toast('Could not apply that change');return false;}
+  nd.name=String(d.name||nm||'').slice(0,40);ED.data=nd;loadLevel(nd);G.state='edit';G.cam.x=cam.x;G.cam.y=cam.y;clampEditorCam();saveWork();return true;}
+function edsRecord(label,before){const after=JSON.stringify(serializeLevel());if(after===before)return;EDS.undo.push({label,before,after});if(EDS.undo.length>20)EDS.undo.shift();EDS.ops++;}
+function edsUndo(){const u=EDS.undo[EDS.undo.length-1];if(!u){toast('Nothing to undo');return false;}
+  if(JSON.stringify(serializeLevel())!==u.after){EDS.undo=[];toast('The level has changed since: nothing to undo');return false;}   // only undoes the very last paste / flip / rotate, never later painting
+  if(edsLoad(JSON.parse(u.before))){EDS.undo.pop();toast('Undid: '+u.label);return true;}return false;}
+function edsCopy(){const r=edsRect();if(!r){toast('Select an area first: hold Shift and drag (or tap Select)');return false;}
+  EDS.buf=edsExtract(edsLevel(),r);EDS.copies=(EDS.copies||0)+1;toast('Copied '+r.w+'×'+r.h+' - Ctrl/Cmd+V (or Paste) to place it');edsSync();return true;}
+function edsView(){return [Math.floor(G.cam.x+viewW()/2),Math.floor(G.cam.y+viewH()/2)];}
+function edsAt(){return EDS.touchAt||(ED.hover&&inB(ED.hover[0],ED.hover[1])?ED.hover:null)||EDS.lastAt||edsView();}
+function edsPasteStart(){if(!EDS.buf){toast('Nothing copied yet: select an area and press Ctrl/Cmd+C');return false;}
+  EDS.paste={buf:EDS.buf};EDS.drag=null;if(!ED.hover)EDS.touchAt=edsView();toast('Move the pointer and click to place ('+EDS.buf.w+'×'+EDS.buf.h+') - H V T flip / rotate, Esc cancels');edsSync();return true;}
+function edsPasteCancel(){if(!EDS.paste)return false;EDS.paste=null;EDS.touchAt=null;edsSync();return true;}
+function edsPasteCommit(keep){if(!EDS.paste)return false;const b=EDS.paste.buf,a=edsAt(),ox=a[0]-(b.w>>1),oy=a[1]-(b.h>>1),before=JSON.stringify(serializeLevel()),d=edsLevel();
+  const n=edsPaste(d,b,ox,oy);if(!n){toast('Nothing to paste there (outside the level)');return false;}
+  if(!edsLoad(d))return false;edsRecord('paste',before);EDS.pastes++;
+  EDS.sel={x0:Math.max(0,ox),y0:Math.max(SKY,oy),x1:Math.min(W-1,ox+b.w-1),y1:Math.min(H-2,oy+b.h-1)};
+  if(!keep){EDS.paste=null;EDS.touchAt=null;}toast('Pasted '+b.w+'×'+b.h+(n<b.w*b.h?' (clipped to the level)':''));edsSync();return true;}
+const EDS_NAMES={fx:'flip left-right',fy:'flip up-down',cw:'rotate clockwise',ccw:'rotate anticlockwise'};
+function edsDo(kind){if(G.mode!=='editor')return false;
+  if(EDS.paste){EDS.paste.buf=edsXform(EDS.paste.buf,kind);EDS.xforms=(EDS.xforms||0)+1;edsSync();return true;}   // transforms the floating copy
+  const r=edsRect();if(!r){toast('Select an area first: hold Shift and drag (or tap Select)');return false;}
+  const before=JSON.stringify(serializeLevel()),d=edsLevel(),nr=edsInPlace(d,r,kind);if(!nr){toast('The rotated area does not fit in the level');return false;}
+  if(!edsLoad(d))return false;edsRecord(EDS_NAMES[kind],before);EDS.sel=nr;EDS.xforms=(EDS.xforms||0)+1;toast(EDS_NAMES[kind][0].toUpperCase()+EDS_NAMES[kind].slice(1)+' ('+(nr.x1-nr.x0+1)+'×'+(nr.y1-nr.y0+1)+')');edsSync();return true;}
+function edsReset(){EDS.sel=null;EDS.drag=null;EDS.paste=null;EDS.touchAt=null;EDS.toggle=false;EDS.undo=[];edsSync();}
+// ---- input
+function edsKey(e){   // editor keydown; true = handled
+  if(e.key==='Shift'){EDS.shift=true;return false;}
+  if(e.ctrlKey||e.metaKey){const k=e.key.toLowerCase();
+    if(k==='c'){e.preventDefault();edsCopy();return true;}
+    if(k==='v'){e.preventDefault();edsPasteStart();return true;}
+    if(k==='z'){e.preventDefault();edsUndo();return true;}
+    return false;}
+  if(e.altKey)return false;
+  const k=e.key;
+  if(k==='h'||k==='H'){e.preventDefault();edsDo('fx');return true;}
+  if(k==='v'||k==='V'){e.preventDefault();edsDo('fy');return true;}
+  if(k==='t'||k==='T'){e.preventDefault();edsDo(k==='T'||e.shiftKey?'ccw':'cw');return true;}
+  if(k==='Escape'&&(EDS.paste||EDS.sel||EDS.drag)){if(EDS.paste)edsPasteCancel();else{EDS.sel=null;EDS.drag=null;edsSync();}return true;}
+  return false;}
+function edsSelecting(e){return !!(e&&e.shiftKey)||EDS.shift||EDS.toggle;}
+function edsMouseDown(e){if(e.button===2&&EDS.paste){edsPasteCancel();return true;}
+  if(e.button!==0)return false;const c=cellAt(e.clientX,e.clientY);
+  if(EDS.paste){EDS.touchAt=null;ED.hover=c;edsPasteCommit(e.shiftKey);return true;}
+  if(edsSelecting(e)){EDS.sel={x0:c[0],y0:c[1],x1:c[0],y1:c[1]};EDS.drag=true;edsSync();return true;}
+  return false;}
+function edsMouseMove(c){EDS.lastAt=c;if(EDS.drag&&EDS.sel){EDS.sel.x1=c[0];EDS.sel.y1=c[1];}EDS.touchAt=null;}
+function edsMouseUp(){if(!EDS.drag)return false;EDS.drag=null;edsSync();return true;}
+function edsTouch(e,ph){   // editor touch: true = consumed (paste preview follows the finger, or Select mode drags a rectangle)
+  if(!EDS.paste&&!EDS.toggle)return false;
+  const t=ph==='e'?(e.changedTouches&&e.changedTouches[0]):e.touches[0];if(!t)return true;const c=cellAt(t.clientX,t.clientY);
+  if(EDS.paste){if(ph!=='e')EDS.touchAt=c;return true;}
+  if(ph==='s'){EDS.sel={x0:c[0],y0:c[1],x1:c[0],y1:c[1]};EDS.drag=true;}
+  else if(EDS.drag&&EDS.sel){EDS.sel.x1=c[0];EDS.sel.y1=c[1];if(ph==='e'){EDS.drag=null;edsSync();}}
+  return true;}
+// ---- drawing (overlay): selection rectangle + paste preview
+function edsCol(ch){switch(ch){case '#':return [0.62,0.4,0.22,0.85];case '.':return [0.1,0.06,0.04,0.85];case 'X':return [0.7,0.28,0.22,0.95];case 'C':return [0.14,0.14,0.16,0.95];
+  case 'W':return [0.58,0.4,0.2,0.95];case '~':return [0.2,0.5,0.95,0.85];case 'L':return [1,0.5,0.1,0.9];case 'U':return [0.62,0.4,0.22,0.85];case 'u':return [0.1,0.06,0.04,0.85];
+  case 'B':case 'G':case 'M':case 'N':return [0.62,0.4,0.22,0.85];default:return [0.1,0.06,0.04,0.85];}}
+function edsObj(ch){switch(ch){case 'B':case 'b':return [0.7,0.68,0.65,1];case 'G':case 'g':return [0.4,0.92,1,1];case 'M':case 'm':return [0.9,0.25,0.2,1];case 'N':case 'n':return [0.55,1,0.3,1];
+  case 'T':return [1,0.55,0.15,1];case 'w':return [1,0.62,0.72,1];case 'U':case 'u':return [0.85,0.8,0.7,1];default:return null;}}
+function edsRender(X,Y,C,lw){
+  const r=edsRect(),ew=2*lw;
+  if(r){const dr=EDS.drag,c=dr?[0.5,0.95,1,1]:[0.45,0.9,1,0.95];rect(X(r.x0),Y(r.y0),r.w*C,r.h*C,[0.3,0.8,1,dr?0.2:0.14]);
+    rect(X(r.x0),Y(r.y0),r.w*C,ew,c);rect(X(r.x0),Y(r.y1+1)-ew,r.w*C,ew,c);rect(X(r.x0),Y(r.y0),ew,r.h*C,c);rect(X(r.x1+1)-ew,Y(r.y0),ew,r.h*C,c);}
+  if(!EDS.paste)return;
+  const b=EDS.paste.buf,a=edsAt(),ox=a[0]-(b.w>>1),oy=a[1]-(b.h>>1),ins=Math.max(2,Math.round(C*0.2)),inB2=(x,y)=>x>=0&&x<W&&y>=SKY&&y<=H-2;
+  for(let by=0;by<b.h;by++)for(let bx=0;bx<b.w;bx++){const x=ox+bx,y=oy+by;if(!inB2(x,y))continue;const ch=b.cells[by*b.w+bx];
+    rect(X(x),Y(y),C,C,edsCol(ch));const oc=edsObj(ch);if(oc)rect(X(x)+ins,Y(y)+ins,C-2*ins,C-2*ins,oc);}
+  for(const [bx,by,sh] of b.big){const x=ox+bx,y=oy+by,w=eds_bw(sh),h=eds_bh(sh);if(inB2(x,y)&&inB2(x+w-1,y+h-1))rect(X(x)+ins,Y(y)+ins,w*C-2*ins,h*C-2*ins,[0.72,0.7,0.67,1]);}
+  for(const [bx,by] of b.gas){const x=ox+bx,y=oy+by;if(inB2(x,y))rect(X(x),Y(y),C,C,[0.4,0.9,0.3,0.5]);}
+  const dirTick=(x,y,d,col)=>{const t=Math.max(2,Math.round(C*0.18)),m=Math.round(C*0.12);rect(d>0?X(x)+C-t-m:X(x)+m,Y(y)+m,t,C-2*m,col);};
+  for(const [bx,by,d] of b.brians){const x=ox+bx,y=oy+by;if(!inB2(x,y))continue;rect(X(x)+ins,Y(y)+ins,C-2*ins,C-2*ins,[0.72,0.45,1,1]);dirTick(x,y,d,[1,1,1,1]);}
+  for(const [bx,by,d] of b.canaries){const x=ox+bx,y=oy+by;if(!inB2(x,y))continue;rect(X(x)+ins,Y(y)+ins,C-2*ins,C-2*ins,[1,0.9,0.2,1]);dirTick(x,y,d,[0.2,0.2,0.2,1]);}
+  if(b.pumps.length&&pumpTex){flush();for(const [bx,by,d] of b.pumps){const x=ox+bx,y=oy+by;if(!inB2(x,y))continue;useTex(pumpTex);quadRot(X(x)+C/2,Y(y)+C/2,C,C,d*Math.PI/2,0,0,1,1,[1,1,1,1]);}flush();curTex=null;}
+  const x0=Math.max(0,ox),y0=Math.max(SKY,oy),x1=Math.min(W-1,ox+b.w-1),y1=Math.min(H-2,oy+b.h-1);
+  if(x1>=x0&&y1>=y0){const w=(x1-x0+1)*C,h=(y1-y0+1)*C,c=[1,0.95,0.5,1];rect(X(x0),Y(y0),w,ew,c);rect(X(x0),Y(y1+1)-ew,w,ew,c);rect(X(x0),Y(y0),ew,h,c);rect(X(x1+1)-ew,Y(y0),ew,h,c);}
+}
+// ---- toolbar buttons (also the only way on touch screens)
+function edsPlace(){const bar=$e('edBar'),sb=$e('edSelBar'),w=document.getElementById('wrap');if(!bar||!sb||!w)return;
+  const br=bar.getBoundingClientRect(),wr=w.getBoundingClientRect();sb.style.top=Math.max(8,Math.round(br.bottom-wr.top+6))+'px';}
+function edsSync(){if(G.mode==='editor')edsPlace();const k=[!!EDS.sel,!!EDS.buf,!!EDS.paste,EDS.toggle,EDS.undo.length,EDS.sel?[EDS.sel.x0,EDS.sel.y0,EDS.sel.x1,EDS.sel.y1,W,H].join():''].join('|');
+  if(edsSync.k===k)return;edsSync.k=k;const r=edsRect(),has=!!r,pst=!!EDS.paste;
+  const set=(id,dis)=>{const b=$e(id);if(b)b.disabled=!!dis;};
+  set('edsCopy',!has||pst);set('edsPaste',!EDS.buf&&!pst);set('edsFx',!has&&!pst);set('edsFy',!has&&!pst);set('edsCw',!has&&!pst);set('edsCcw',!has&&!pst);set('edsUndo',!EDS.undo.length||pst);set('edsEsc',!has&&!pst);
+  const sb=$e('edsSel');sb.classList.toggle('on',!!EDS.toggle);sb.setAttribute('aria-pressed',EDS.toggle?'true':'false');
+  const pb=$e('edsPaste');pb.textContent=pst?'✔ Place':'📋 Paste';pb.classList.toggle('go',pst);pb.title=pst?'Place the pasted area here (or click on the level)':'Paste the copied area: it follows the pointer, click to place (Ctrl/Cmd+V)';
+  $e('edsInfo').textContent=pst?EDS.paste.buf.w+'×'+EDS.paste.buf.h:has?r.w+'×'+r.h:'';}
+(function(){const on=(id,f)=>$e(id).addEventListener('click',e=>{e.stopPropagation();e.currentTarget.blur();f();});
+  on('edsSel',()=>{EDS.toggle=!EDS.toggle;if(EDS.toggle)edsPasteCancel();edsSync();toast(EDS.toggle?'Select mode: drag a rectangle on the level':'Select mode off');});
+  on('edsCopy',edsCopy);on('edsPaste',()=>{if(EDS.paste)edsPasteCommit(false);else edsPasteStart();});
+  on('edsFx',()=>edsDo('fx'));on('edsFy',()=>edsDo('fy'));on('edsCw',()=>edsDo('cw'));on('edsCcw',()=>edsDo('ccw'));on('edsUndo',edsUndo);
+  on('edsEsc',()=>{if(EDS.paste)edsPasteCancel();else{EDS.sel=null;EDS.drag=null;edsSync();}});
+  for(const id of ['edSelBar']){$e(id).addEventListener('mousedown',e=>e.stopPropagation());$e(id).addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});}
+  addEventListener('keyup',e=>{if(e.key==='Shift')EDS.shift=false;});addEventListener('blur',()=>{EDS.shift=false;});})();
 function editorStep(dt){
+  edsSync();{const want=EDS.paste?'copy':(EDS.shift||EDS.toggle)?'cell':'crosshair';if(G.mode==='editor'&&canvas.style.cursor!==want)canvas.style.cursor=want;}
   const kx=(keys.ArrowRight||keys.d||keys.D?1:0)-(keys.ArrowLeft||keys.a||keys.A?1:0),ky=(keys.ArrowDown||keys.s||keys.S?1:0)-(keys.ArrowUp||keys.w||keys.W?1:0);
   const sp=16/ED.zoom;G.cam.x+=kx*sp*dt;G.cam.y+=ky*sp*dt;clampEditorCam();
 }
@@ -5142,6 +5360,7 @@ function renderEditorOverlay(X,Y){
   if(ED.hover){const [hx,hy]=ED.hover;if(inB(hx,hy)){const tw=ED.tool==='rock2x1'?2:1,th=ED.tool==='rock1x2'?2:1,c=[1,1,1,0.95];
     rect(X(hx),Y(hy),C*tw,C*th,[1,1,1,0.12]);
     rect(X(hx),Y(hy),C*tw,2*lw,c);rect(X(hx),Y(hy+th)-2*lw,C*tw,2*lw,c);rect(X(hx),Y(hy),2*lw,C*th,c);rect(X(hx+tw)-2*lw,Y(hy),2*lw,C*th,c);}}
+  edsRender(X,Y,C,lw);
 }
 // toolbar
 function paintBoulderIcon(x,shape){
@@ -5199,7 +5418,7 @@ function buildToolbar(){
 const LS_PAL='holymoley.edPalettePos',PAL={margin:10,bottom:34,drag:null};
 function edCompact(){return wrap.clientWidth<ED_SMALL[0]||wrap.clientHeight<ED_SMALL[1];}
 const ED_SMALL=[900,500];   // CSS px: narrower or lower than this = compact editor (settings sheet + tile carousel)
-function edLayout(){const c=edCompact(),e=$e('editor');e.classList.toggle('compact',c);if(!c)setSheet(false);return c;}
+function edLayout(){const c=edCompact(),e=$e('editor');e.classList.toggle('compact',c);if(!c)setSheet(false);edsPlace();return c;}
 function setSheet(open){const st=$e('edSet');if(!st)return;st.classList.toggle('open',!!open);$e('edScrim').classList.toggle('open',!!open);ED.sheet=!!open;$e('editor').classList.toggle('sheetOpen',!!open);
   if(open){G.sheetOpens=(G.sheetOpens||0)+1;}}
 function palFit(){   // strip on wide screens (as many tiles as fit in 75% of the width, all when possible), carousel on small screens
@@ -5608,7 +5827,13 @@ function packRemove(name){packsSave(packsLoad().filter(q=>q.name!==name));packPr
 function packProgAll(){try{const o=JSON.parse(lsGet(LS_PACKPROG)||'{}');return o&&typeof o==='object'?o:{};}catch(e){return {};}}
 function packProg(name){const a=packProgAll()[name];return Array.isArray(a)?[...new Set(a.map(n=>n|0))].sort((x,y)=>x-y):[];}
 function packProgDone(name,i){const o=packProgAll(),a=packProg(name);if(a.indexOf(i)<0)a.push(i);o[name]=a.sort((x,y)=>x-y);lsSet(LS_PACKPROG,JSON.stringify(o));}
-function packProgClear(name){const o=packProgAll();if(name in o){delete o[name];lsSet(LS_PACKPROG,JSON.stringify(o));}}
+function packProgClear(name){const o=packProgAll();if(name in o){delete o[name];lsSet(LS_PACKPROG,JSON.stringify(o));}
+  const w=packPwAll();if(name in w){delete w[name];lsSet(LS_PACKPW,JSON.stringify(w));}}
+// v76 (pt173): levels of a pack opened with a password (0-based indices), separate from completion
+const LS_PACKPW='holymoley.packpw';
+function packPwAll(){try{const o=JSON.parse(lsGet(LS_PACKPW)||'{}');return o&&typeof o==='object'?o:{};}catch(e){return {};}}
+function packPw(name){const a=packPwAll()[name];return Array.isArray(a)?[...new Set(a.map(n=>n|0))].sort((x,y)=>x-y):[];}
+function packPwAdd(name,i){const o=packPwAll(),a=packPw(name);if(a.indexOf(i)<0)a.push(i);o[name]=a.sort((x,y)=>x-y);lsSet(LS_PACKPW,JSON.stringify(o));}
 function packStored(){const L=packsLoad();return L.length?L[L.length-1]:null;}
 function gToast(t){const el=$e('gToast');if(!el)return;el.textContent=t;el.style.opacity=1;G.lastToast=t;clearTimeout(gToast.h);gToast.h=setTimeout(()=>el.style.opacity=0,2200);}
 function packImportDialog(){const d=document.createElement('div');d.id='packDlg';
@@ -5629,11 +5854,16 @@ function packEnd(){PACK.on=false;}
 // level number only by default (every RNG stream in genLevel is mulberry(level*7919+k)); an optional seed mixes in as mulberry(seed*104729+level*7919+k). Campaign replay stays identical.
 const LS_PROG='holymoley.progress',LS_CAMP='holymoley.campaign';   // pt90: campaign progress (built-in then random) lives on LS_CAMP; LS_PROG stays for ?randcamp=1 / old tests
 function progKey(){return randomCampaign()?LS_PROG:LS_CAMP;}
+// v76 (pt173): p.pw = levels opened with a password. They stay playable without raising p.max (so the levels before them stay locked): a level beyond p.max+1 that gets
+// completed / reached is recorded in pw, and p.max is only derived from completed levels that are contiguous with it.
 function progLoad(){try{const p=JSON.parse(localStorage.getItem(progKey())||'null');if(p&&typeof p==='object'){const done=[...new Set((p.done||[]).map(n=>n|0).filter(n=>n>=1))].sort((a,b)=>a-b);
-  return {max:Math.max(1,p.max|0,done.length?done[done.length-1]+1:1),done};}}catch(e){}return {max:1,done:[]};}
-function progSave(p){try{localStorage.setItem(progKey(),JSON.stringify({max:p.max,done:p.done}));}catch(e){}}
-function progReach(n){if(G.mode!=='game')return;const p=progLoad();if(n>p.max){p.max=n;progSave(p);}}
-function progComplete(n){if(G.mode!=='game')return;const p=progLoad();if(p.done.indexOf(n)<0)p.done.push(n);p.done.sort((a,b)=>a-b);p.max=Math.max(p.max,n+1);progSave(p);}
+  let m=Math.max(1,p.max|0);for(const d of done)if(d<=m)m=Math.max(m,d+1);
+  const pw=[...new Set((Array.isArray(p.pw)?p.pw:[]).map(n=>n|0).filter(n=>n>=1))].sort((a,b)=>a-b);
+  return {max:m,done,pw};}}catch(e){}return {max:1,done:[],pw:[]};}
+function progSave(p){try{localStorage.setItem(progKey(),JSON.stringify({max:p.max,done:p.done,pw:p.pw||[]}));}catch(e){}}
+function progReach(n){if(G.mode!=='game')return;const p=progLoad();if(n>p.max){if(n<=p.max+1)p.max=n;else if(p.pw.indexOf(n)<0)p.pw.push(n);progSave(p);}}
+function progComplete(n){if(G.mode!=='game')return;const p=progLoad();if(p.done.indexOf(n)<0)p.done.push(n);p.done.sort((a,b)=>a-b);if(n<=p.max)p.max=Math.max(p.max,n+1);else if(p.pw.indexOf(n)<0)p.pw.push(n);progSave(p);}
+function progPwAdd(n){const p=progLoad();if(p.pw.indexOf(n)<0)p.pw.push(n);progSave(p);}
 function progReset(){try{localStorage.removeItem(progKey());}catch(e){}LSEL.thumbs={};}
 // v54: fastest completion times (elapsed play seconds). Separate from campaign/progress keys.
 // Keys: b:<n> built-in campaign index (1-based), r:<n> random campaign level (seed stored on the record), p:<packName>:<idx> imported pack (0-based).
@@ -5749,6 +5979,34 @@ function syncLselGo(){const b=$e('lselGo');if(!b)return;b.hidden=!LSEL.fromOver;
   const it=LSEL.items[LSEL.sel],pr=LSEL.pref;const same=it&&pr&&((it.pack&&pr.pack===it.pack.name&&it.idx===pr.idx)||(!it.pack&&it.n===pr.n));
   b.textContent=(same||(it&&it.cont))?'▶ CONTINUE':'▶ PLAY';}
 function lselBack(){const from=LSEL.fromOver;lselClose();if(from)showIntro();}
+// v76 (pt173): level passwords. Password = the first letter (or digit) of each word of the level name, upper-cased, followed by the level's total cell count (w*h as stored,
+// sky rows included): "Unary" 24x28 -> U672. Words are runs of letters/digits; an apostrophe inside a word does not split it ("Brian's Lair" -> BL..., not BSL...);
+// other punctuation and symbols are separators and ignored. Entry ignores case, spaces and punctuation.
+function lvlPassword(name,w,h){const words=String(name==null?'':name).replace(/['\u2019`\u00b4]/g,'').split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  return words.map(x=>Array.from(x)[0].toUpperCase()).join('')+((w|0)*(h|0));}
+function pwNorm(t){return String(t==null?'':t).replace(/[^\p{L}\p{N}]+/gu,'').toUpperCase();}
+// try a typed password against the levels of the carousel that is showing; unlocks every locked level it matches and returns {ok,msg,item}
+function lselPwTry(text){const q=pwNorm(text);if(!q)return {ok:false,msg:'Type a password first.'};
+  const hit=LSEL.items.filter(it=>it.pw&&pwNorm(it.pw)===q);
+  if(!hit.length)return {ok:false,msg:'That isn’t a password for a level here. Check it and try again.'};
+  const lk=hit.filter(it=>it.lock);if(!lk.length)return {ok:false,already:true,msg:'“'+hit[0].title+'” is already unlocked.',item:hit[0]};
+  for(const it of lk){if(it.pack)packPwAdd(it.pack.name,it.idx);else progPwAdd(it.n);}
+  const t=lk[0],old=LSEL.pref;LSEL.pref=t.pack?{pack:t.pack.name,idx:t.idx}:{n:t.n};lselOpen();LSEL.pref=old;LSEL.pwUnlocked=(LSEL.pwUnlocked||0)+lk.length;
+  return {ok:true,msg:'Unlocked “'+t.title+'”',item:t};}
+function lselPwOpen(){if(modalOpen())return;const d=document.createElement('div');
+  const it0=LSEL.items[LSEL.sel];
+  d.innerHTML='<p>Enter a level password to unlock its level. Each completed level shows its password under its picture.</p>';
+  const inp=document.createElement('input');inp.type='text';inp.id='lselPwIn';inp.setAttribute('autocomplete','off');inp.setAttribute('autocapitalize','characters');inp.setAttribute('autocorrect','off');inp.spellcheck=false;
+  inp.maxLength=24;inp.placeholder='Password';inp.setAttribute('aria-label','Level password');inp.setAttribute('enterkeyhint','go');d.appendChild(inp);
+  const err=document.createElement('div');err.id='lselPwErr';err.setAttribute('role','status');d.appendChild(err);
+  const shut=()=>{closeModal();};
+  const go=()=>{const r=lselPwTry(inp.value);LSEL.pwLast=r;
+    if(r.ok){shut();gToast(r.msg);return;}
+    err.textContent=r.msg;inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');inp.select();};
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go();}else if(e.key==='Escape'){e.preventDefault();shut();}});
+  inp.addEventListener('input',()=>{err.textContent='';});
+  openModal('🔑 Enter password',d,[['Unlock',go,'play'],['Cancel',shut]]);
+  setTimeout(()=>{try{inp.focus();}catch(e){}},0);}
 function lselOpen(src){const p=progLoad(),packs=packsLoad();const row=$e('lselRow');row.innerHTML='';LSEL.items=[];
   if(src!==undefined)LSEL.src=src;if(LSEL.src&&!packs.some(q=>q.name===LSEL.src))LSEL.src=null;
   const pk=LSEL.src?packs.find(q=>q.name===LSEL.src):null;LSEL.pack=pk;
@@ -5764,28 +6022,33 @@ function lselOpen(src){const p=progLoad(),packs=packsLoad();const row=$e('lselRo
   const mk=(n,kind,o)=>{o=o||{};const b=document.createElement('button');b.className='lcard'+(kind==='cont'?' cont':'')+(kind==='lock'?' lock':'');b.dataset.level=n;b.setAttribute('role','option');
     const key=o.key||n;let th=LSEL.thumbs[key];if(!th){const cv=document.createElement('canvas');const sn=drawLevelThumb(cv,n,o.data);th=LSEL.thumbs[key]={cv,gems:sn.gems};LSEL.thumbBuilds=(LSEL.thumbBuilds||0)+1;}
     const cv=th.cv,sn={gems:th.gems};b.appendChild(cv);   // pt41: thumbnails are cached per level (campaign levels are fixed by their number); cleared on progress reset
-    const lb=kind==='cont'?(o.first?'▶ PLAY':'▶ CONTINUE'):kind==='lock'?'🔒 LOCKED':'✓ COMPLETED';
-    b.insertAdjacentHTML('beforeend','<div class="lb">'+lb+'</div><div class="ln"></div><div class="lt"></div><div class="lbest"></div>');
+    const lb=kind==='cont'?(o.first?'▶ PLAY':o.pwu?'🔓 UNLOCKED':'▶ CONTINUE'):kind==='lock'?'🔒 LOCKED':'✓ COMPLETED';
+    const pwd=o.data?lvlPassword(o.data.name||o.pwName||('Level '+n),o.data.w,o.data.h):'';   // v76: this level's password (shown under completed levels, asked for on locked ones)
+    b.insertAdjacentHTML('beforeend','<div class="lb">'+lb+'</div><div class="ln"></div><div class="lt"></div><div class="lbest"></div>'+(kind==='done'&&pwd?'<div class="lpw" title="Level password">🔑 <span class="pwv"></span></div>':kind==='lock'?'<div class="lpw ask">🔑 Enter password</div>':''));
+    {const pv=b.querySelector('.pwv');if(pv)pv.textContent=pwd;}
     b.querySelector('.ln').textContent=o.title||('Level '+n);b.querySelector('.lt').textContent=(o.sub||levelName(n))+' · '+sn.gems+' crystals';
     const bk=o.pack?bestTimeKey(null,o.pack.name,o.idx):bestTimeKey(n),br=bestTimeGet(bk);
     b.querySelector('.lbest').textContent=br?fmtBest(br.t):'—';b.dataset.best=bk;
     if(kind==='lock')b.setAttribute('aria-disabled','true');
-    b.addEventListener('click',e=>{if(LSEL.drag&&LSEL.drag.moved)return;if(kind==='lock'){gToast(o.pack?'Finish the earlier levels of this pack first':'Finish the earlier levels first');return;}lselPickItem(LSEL.items.find(it=>it.el===b));});
-    row.appendChild(b);LSEL.items.push({n,el:b,cont:kind==='cont',lock:kind==='lock',pack:o.pack||null,idx:o.idx});};
-  if(pk){const done=packProg(pk.name);let next=-1;for(let i=0;i<pk.levels.length;i++)if(done.indexOf(i)<0){next=i;break;}   // per-pack sequential unlock
-    for(let i=0;i<pk.levels.length;i++){const lv=pk.levels[i],kind=i===next?'cont':done.indexOf(i)>=0?'done':'lock';
-      mk(i+1,kind,{key:'p:'+pk.name+':'+i,data:lv,pack:pk,idx:i,first:!done.length,title:(i+1)+'/'+pk.levels.length+' · '+(lv.name||'Pack level '+(i+1)),sub:pk.name});}
+    {const rw=document.createElement('div'),rf=document.createElement('div');rw.className='lrw';rw.setAttribute('aria-hidden','true');rf.className=b.className.replace('lcard','lcm');rf.innerHTML=b.innerHTML;   // v76: mirror copy (static, drawn once)
+      const c2=rf.querySelector('canvas');if(c2){c2.width=cv.width;c2.height=cv.height;c2.style.setProperty('--ar',cv.style.getPropertyValue('--ar'));c2.getContext('2d').drawImage(cv,0,0);}
+      rf.querySelectorAll('[title]').forEach(x=>x.removeAttribute('title'));rw.appendChild(rf);b.appendChild(rw);}
+    b.addEventListener('click',e=>{if(LSEL.drag&&LSEL.drag.moved)return;const it=LSEL.items.find(q=>q.el===b);if(kind==='lock'){if(it)lselSelect(LSEL.items.indexOf(it));lselPwOpen();return;}lselPickItem(it);});
+    row.appendChild(b);LSEL.items.push({n,el:b,cont:kind==='cont',lock:kind==='lock',pack:o.pack||null,idx:o.idx,pw:pwd,title:o.title||('Level '+n)});};
+  if(pk){const done=packProg(pk.name),pwl=packPw(pk.name);let next=-1;for(let i=0;i<pk.levels.length;i++)if(done.indexOf(i)<0){next=i;break;}   // per-pack sequential unlock (+ v76: levels opened by password)
+    for(let i=0;i<pk.levels.length;i++){const lv=pk.levels[i],kind=i===next?'cont':done.indexOf(i)>=0?'done':pwl.indexOf(i)>=0?'cont':'lock';
+      mk(i+1,kind,{key:'p:'+pk.name+':'+i,data:lv,pack:pk,idx:i,first:!done.length,pwu:kind==='cont'&&i!==next,pwName:'Pack level '+(i+1),title:(i+1)+'/'+pk.levels.length+' · '+(lv.name||'Pack level '+(i+1)),sub:pk.name});}
     $e('lselTitle').textContent=pk.name;}
   else{const N=builtinCount();
     if(N){let next=N+1;for(let i=1;i<=N;i++)if(p.done.indexOf(i)<0){next=i;break;}
-      for(let i=1;i<=N;i++){const lv=builtinPack().levels[i-1],kind=i===next?'cont':p.done.indexOf(i)>=0?'done':i<=p.max?'cont':'lock';
-        mk(i,kind,{key:'b:'+i,data:lv,first:!p.done.length&&i===1,title:lv.name||('Level '+i),sub:'Level '+i});}
+      for(let i=1;i<=N;i++){const lv=builtinPack().levels[i-1],kind=i===next?'cont':p.done.indexOf(i)>=0?'done':i<=p.max?'cont':p.pw.indexOf(i)>=0?'cont':'lock';
+        mk(i,kind,{key:'b:'+i,data:lv,first:!p.done.length&&i===1,pwu:kind==='cont'&&i!==next&&i>p.max,title:lv.name||('Level '+i),sub:'Level '+i});}
       if(p.max>N||p.done.some(n=>n>N)){if(p.max>N)mk(p.max,p.done.indexOf(p.max)>=0?'done':'cont');for(const n of p.done)if(n>N&&n!==p.max)mk(n,'done');}}
     else if(p.done.length){mk(p.max,'cont');for(const n of p.done)if(n!==p.max)mk(n,'done');}
     else mk(1,'cont',{first:true});
     $e('lselTitle').textContent=LSEL.fromOver?'Game Over':'Choose a level';}
   LSEL.on=true;$e('lsel').hidden=false;lselConfirm(false);$e('lselReset').hidden=pk?!packProg(pk.name).length:!p.done.length;   // nothing to reset = no button
-  $e('lselHint').textContent=LSEL.fromOver?'Enter / Space or Continue to play this level  •  pick another unlocked level or pack  •  Esc: title':'← → or swipe to browse  •  Enter / tap to play  •  Tab: next pack  •  Esc: back';
+  $e('lselHint').textContent=LSEL.fromOver?'Enter / Space or Continue to play this level  •  pick another unlocked level or pack  •  Esc: title':'← → or swipe to browse  •  Enter / tap to play (locked: enter its password)  •  Tab: next pack  •  Esc: back';
   let s0=-1;const pr=LSEL.pref;
   if(pr){if(pk&&pr.pack===pk.name&&pr.idx!=null)s0=LSEL.items.findIndex(it=>it.idx===pr.idx);else if(!pk&&pr.n!=null)s0=LSEL.items.findIndex(it=>!it.pack&&it.n===pr.n);}
   if(s0<0)s0=LSEL.items.findIndex(it=>it.cont);lselSelect(s0<0?0:s0,false);LSEL.opened=(LSEL.opened||0)+1;return true;}
@@ -5805,7 +6068,7 @@ function lselKey(e){
   if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key==='d'||e.key==='D'){e.preventDefault();lselSelect(LSEL.sel+1);}
   else if(e.key==='ArrowLeft'||e.key==='ArrowUp'||e.key==='a'||e.key==='A'){e.preventDefault();lselSelect(LSEL.sel-1);}
   else if(e.key==='Home'){e.preventDefault();lselSelect(0);}else if(e.key==='End'){e.preventDefault();lselSelect(LSEL.items.length-1);}
-  else if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!$e('lselConfirm').hidden)return;const it=LSEL.items[LSEL.sel];if(it)lselPickItem(it);}
+  else if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!$e('lselConfirm').hidden)return;const it=LSEL.items[LSEL.sel];if(it&&it.lock){lselPwOpen();return;}if(it)lselPickItem(it);}
   else if(e.key==='Tab'&&!$e('lselSrc').hidden){e.preventDefault();const L=[null,...packsLoad().map(q=>q.name).reverse()],i=L.indexOf(LSEL.src||null);lselOpen(L[(i+(e.shiftKey?L.length-1:1))%L.length]);}
   else if(e.key==='Escape'){e.preventDefault();if(!$e('lselConfirm').hidden){lselConfirm(false);return;}lselBack();}
   else if(e.key==='f'||e.key==='F')toggleFS();}
