@@ -297,6 +297,231 @@ function pumpList(){const out={n:0,arr:new Float32Array(PUMP_MAX*4),list:[]};if(
   for(const [j,d] of G.pumps){if(out.n>=PUMP_MAX)break;const D=PUMP_DIRS[d&3];out.arr.set([j%W,(j/W)|0,D[0],D[1]],out.n*4);out.list.push([j%W,(j/W)|0,D[0],D[1]]);out.n++;}return out;}
 function pumpAccCPU(pu,x,y){let ax=0,ay=0;for(const [px,py,dx,dy] of pu.list){const ex=Math.max(Math.abs(x-px-0.5)-0.5,0),ey=Math.max(Math.abs(y-py-0.5)-0.5,0),w=1-Math.hypot(ex,ey)/PUMP_FALL;if(w>0){ax+=dx*PUMP_ACC*w;ay+=dy*PUMP_ACC*w;}}return [ax,ay];}   // metaball splat radius (x particle spacing) and iso threshold
 function waterSandboxed(){return airNoPrealloc>0;}
+// v78 (pt183): pick RGBA16F for water/lava *state* targets (sA/sB) when RGBA32F is
+// unsafe. Adreno 650 (Samsung S20 FE) blows up with 32F state and is stable with 16F.
+// Density, neighbour bins, the NN table and the fill map stay RGBA32F / R32F / RGBA8.
+const WATER_LS='holymoley.water';
+function waterGLInfo(){
+  const info={vendor:gl.getParameter(gl.VENDOR)||'',renderer:gl.getParameter(gl.RENDERER)||'',unmaskedVendor:'',unmaskedRenderer:'',spoofed:false};
+  try{
+    const spoof=(typeof window!=='undefined')&&window.__WATER_SPOOF_RENDERER;
+    if(spoof){info.unmaskedVendor=spoof.vendor||spoof.unmaskedVendor||'';info.unmaskedRenderer=spoof.renderer||spoof.unmaskedRenderer||'';info.spoofed=true;}
+    else{const ext=gl.getExtension('WEBGL_debug_renderer_info');
+      if(ext){info.unmaskedVendor=gl.getParameter(ext.UNMASKED_VENDOR_WEBGL)||'';info.unmaskedRenderer=gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)||'';}}
+  }catch(e){}
+  return info;
+}
+function waterIsAdreno(info){
+  const s=[info&&info.unmaskedVendor,info&&info.unmaskedRenderer,info&&info.vendor,info&&info.renderer].join(' ').toLowerCase();
+  return /qualcomm|\badreno\b/.test(s);
+}
+function waterReadOverride(qs){
+  qs=qs||new URLSearchParams(location.search);
+  const q=(qs.get('water')||'').toLowerCase();
+  if(q==='16f'||q==='16'||q==='half')return '16f';
+  if(q==='32f'||q==='32')return '32f';
+  if(q==='cpu')return 'cpu';
+  if(qs.get('sphfp')==='half')return '16f';
+  try{const v=(localStorage.getItem(WATER_LS)||'').toLowerCase();if(v==='16f'||v==='32f'||v==='cpu')return v;}catch(e){}
+  return null;
+}
+// Render a known vec4 into a w×h target and read it back. Also upload+copy+read a
+// particle-sized grid of position-like values (catches size-dependent 32F bugs the
+// 1×1 v40 self-test can miss).
+function waterProbeFloatRT(ifmt, typ, w, h){
+  const rec={ok:false,complete:false,maxAbsErr:null,maxRelErr:null,exact:false,note:''};
+  const is2=typeof WebGL2RenderingContext!=='undefined'&&gl instanceof WebGL2RenderingContext;
+  if(!is2){rec.note='webgl1';return rec;}
+  const prev={
+    fb:gl.getParameter(gl.FRAMEBUFFER_BINDING),
+    tex:gl.getParameter(gl.TEXTURE_BINDING_2D),
+    active:gl.getParameter(gl.ACTIVE_TEXTURE),
+    abuf:gl.getParameter(gl.ARRAY_BUFFER_BINDING),
+    ppb:gl.getParameter(gl.PIXEL_PACK_BUFFER_BINDING),
+    pub:gl.getParameter(gl.PIXEL_UNPACK_BUFFER_BINDING),
+    prog:gl.getParameter(gl.CURRENT_PROGRAM),
+    vp:Int32Array.from(gl.getParameter(gl.VIEWPORT)),
+    unpack:gl.getParameter(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL),
+    blend:gl.isEnabled(gl.BLEND),
+    va0:gl.getVertexAttrib(0,gl.VERTEX_ATTRIB_ARRAY_ENABLED)
+  };
+  const restore=()=>{
+    try{
+      gl.useProgram(prev.prog);
+      gl.bindFramebuffer(gl.FRAMEBUFFER,prev.fb);
+      gl.activeTexture(prev.active);
+      gl.bindTexture(gl.TEXTURE_2D,prev.tex);
+      gl.bindBuffer(gl.ARRAY_BUFFER,prev.abuf);
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER,prev.ppb);
+      gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER,prev.pub);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,prev.unpack);
+      gl.viewport(prev.vp[0],prev.vp[1],prev.vp[2],prev.vp[3]);
+      if(prev.blend)gl.enable(gl.BLEND);else gl.disable(gl.BLEND);
+      if(prev.va0)gl.enableVertexAttribArray(0);else gl.disableVertexAttribArray(0);
+    }catch(e){}
+  };
+  const unbind=()=>{
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    gl.bindTexture(gl.TEXTURE_2D,null);
+    gl.bindBuffer(gl.ARRAY_BUFFER,null);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+    gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER,null);
+    gl.useProgram(null);
+  };
+  const kill=(p,shs,texs,fbs,bufs)=>{
+    unbind();
+    if(p)gl.deleteProgram(p);
+    (shs||[]).forEach(s=>{if(s)gl.deleteShader(s);});
+    (texs||[]).forEach(tx=>{if(tx)gl.deleteTexture(tx);});
+    (fbs||[]).forEach(f=>{if(f)gl.deleteFramebuffer(f);});
+    (bufs||[]).forEach(b=>{if(b)gl.deleteBuffer(b);});
+  };
+  const mkTex=(fmt,ww,hh)=>{
+    const tx=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tx);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    // WebGL2: RGBA16F accepts type FLOAT. Allocate and upload with FLOAT so a Float32Array
+    // texSubImage never mismatches a HALF_FLOAT allocation (ANGLE invalid combo).
+    gl.texImage2D(gl.TEXTURE_2D,0,fmt,ww,hh,0,gl.RGBA,gl.FLOAT,null);
+    return tx;
+  };
+  const read1=(out)=>{
+    const pb=gl.createBuffer();gl.bindBuffer(gl.PIXEL_PACK_BUFFER,pb);gl.bufferData(gl.PIXEL_PACK_BUFFER,out.byteLength,gl.STREAM_READ);
+    gl.readPixels(0,0,1,1,gl.RGBA,gl.FLOAT,0);gl.finish();gl.getBufferSubData(gl.PIXEL_PACK_BUFFER,0,out);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);gl.deleteBuffer(pb);
+  };
+  try{
+    const vs='#version 300 es\nin vec2 aP;void main(){gl_Position=vec4(aP,0.0,1.0);}';
+    const fs='#version 300 es\nprecision highp float;uniform vec4 uV;out vec4 o;void main(){o=uV;}';
+    const mk=(src,type)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s;};
+    const p=gl.createProgram(),sv=mk(vs,gl.VERTEX_SHADER),sf=mk(fs,gl.FRAGMENT_SHADER);
+    gl.attachShader(p,sv);gl.attachShader(p,sf);gl.linkProgram(p);
+    if(!gl.getProgramParameter(p,gl.LINK_STATUS)){rec.note=String(gl.getProgramInfoLog(p));kill(p,[sv,sf]);return rec;}
+    const V=[41.123457,0.0001234,3.1415927,-2.5], want=V;
+    const tex=mkTex(ifmt,1,1);
+    const fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
+    rec.complete=gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE;
+    const q=gl.createBuffer();
+    if(rec.complete){
+      gl.bindBuffer(gl.ARRAY_BUFFER,q);
+      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,-1,1,1,-1,1]),gl.STREAM_DRAW);
+      gl.viewport(0,0,1,1);gl.disable(gl.BLEND);gl.useProgram(p);
+      gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+      gl.uniform4f(gl.getUniformLocation(p,'uV'),V[0],V[1],V[2],V[3]);
+      gl.drawArrays(gl.TRIANGLES,0,6);
+      const o=new Float32Array(4);read1(o);
+      let a=0,r=0;for(let i=0;i<4;i++){const d=Math.abs(o[i]-want[i]);a=Math.max(a,d);r=Math.max(r,d/Math.max(1,Math.abs(want[i])));}
+      rec.got=Array.from(o);rec.maxAbsErr=a;rec.maxRelErr=r;rec.ok=true;
+    }
+    kill(p,[sv,sf],[tex],[fb],[q]);
+    const copy={ok:false,maxAbsErr:null,note:''};
+    if(is2&&w&&h){
+      try{
+        const src=new Float32Array(w*h*4);
+        // position-like samples, including the far corner of a 50×54 / 60-wide level
+        const samples=[[0.5,0.5,1.25,-0.5],[7.33,14.8,8.5,0],[31.97,31.03,-3,4],[54.7,53.2,12,-6],[59.4,37.8,-1.5,9]];
+        for(let i=0;i<w*h;i++){const s=samples[i%samples.length];src[i*4]=s[0];src[i*4+1]=s[1];src[i*4+2]=s[2];src[i*4+3]=s[3];}
+        const tRef=mkTex(gl.RGBA32F,w,h);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
+        gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,w,h,gl.RGBA,gl.FLOAT,src);
+        const tA=mkTex(ifmt,w,h);
+        gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,w,h,gl.RGBA,gl.FLOAT,src);
+        const tB=mkTex(ifmt,w,h);
+        const fbB=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbB);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tB,0);
+        if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE){copy.note='fbo incomplete';kill(null,null,[tRef,tA,tB],[fbB]);}
+        else{
+          const vs2='#version 300 es\nin vec2 aP;void main(){gl_Position=vec4(aP,0.0,1.0);}';
+          const fs2='#version 300 es\nprecision highp float;precision highp sampler2D;uniform sampler2D uT;out vec4 o;void main(){o=texelFetch(uT,ivec2(gl_FragCoord.xy),0);}';
+          const p2=gl.createProgram(),a=mk(vs2,gl.VERTEX_SHADER),b=mk(fs2,gl.FRAGMENT_SHADER);
+          gl.attachShader(p2,a);gl.attachShader(p2,b);gl.linkProgram(p2);
+          const q2=gl.createBuffer();
+          if(!gl.getProgramParameter(p2,gl.LINK_STATUS)){copy.note=String(gl.getProgramInfoLog(p2));kill(p2,[a,b],[tRef,tA,tB],[fbB],[q2]);}
+          else{
+            gl.bindBuffer(gl.ARRAY_BUFFER,q2);
+            gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,-1,1,1,-1,1]),gl.STREAM_DRAW);
+            gl.viewport(0,0,w,h);gl.disable(gl.BLEND);gl.useProgram(p2);
+            gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tA);
+            gl.uniform1i(gl.getUniformLocation(p2,'uT'),0);
+            gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+            gl.drawArrays(gl.TRIANGLES,0,6);
+            // Compare the copy against the original Float32 upload on the GPU and reduce
+            // to a 1×1 error texture. A mid-size readPixels is what made Chrome log
+            // 'GPU stall due to ReadPixels' even through a PBO.
+            const fsR='#version 300 es\nprecision highp float;precision highp sampler2D;uniform sampler2D uA,uB;out vec4 o;void main(){float aerr=0.0;for(int y=0;y<'+h+';y++)for(int x=0;x<'+w+';x++){vec4 d=abs(texelFetch(uA,ivec2(x,y),0)-texelFetch(uB,ivec2(x,y),0));aerr=max(aerr,max(max(d.r,d.g),max(d.b,d.a)));}o=vec4(aerr,0.0,0.0,1.0);}';
+            const tE=mkTex(gl.RGBA32F,1,1);
+            const fbE=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbE);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tE,0);
+            const pR=gl.createProgram(),ar=mk(vs2,gl.VERTEX_SHADER),br=mk(fsR,gl.FRAGMENT_SHADER);
+            gl.attachShader(pR,ar);gl.attachShader(pR,br);gl.linkProgram(pR);
+            if(!gl.getProgramParameter(pR,gl.LINK_STATUS)||gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE){
+              copy.note=gl.getProgramParameter(pR,gl.LINK_STATUS)?('reduce fbo '+gl.checkFramebufferStatus(gl.FRAMEBUFFER)):String(gl.getProgramInfoLog(pR));
+            }else{
+              gl.viewport(0,0,1,1);gl.useProgram(pR);
+              gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tRef);gl.uniform1i(gl.getUniformLocation(pR,'uA'),0);
+              gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,tB);gl.uniform1i(gl.getUniformLocation(pR,'uB'),1);
+              gl.bindBuffer(gl.ARRAY_BUFFER,q2);
+              gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+              gl.drawArrays(gl.TRIANGLES,0,6);
+              const out=new Float32Array(4);read1(out);
+              copy.ok=true;copy.maxAbsErr=out[0];copy.n=w*h;
+            }
+            kill(pR,[ar,br],null,[fbE],null);
+            gl.deleteTexture(tE);
+            kill(p2,[a,b],[tRef,tA,tB],[fbB],[q2]);
+          }
+        }
+      }catch(e){copy.note=String(e.message||e);}
+    }
+    rec.copy=copy;
+    // 32F is "exact" if 1×1 relative error is under the v40 bar and the state-sized
+    // round-trip stays within a few ulps (not half-float quantisation, ULP at 54 is ~0.03).
+    rec.exact=!!(rec.ok&&rec.maxRelErr!=null&&rec.maxRelErr<2e-6&&(!w||!h||!copy.ok||copy.maxAbsErr<1e-4));
+    rec.halfLike=!!(copy.maxAbsErr!=null&&copy.maxAbsErr>0.01);
+    return rec;
+  }finally{restore();}
+}
+function waterFmtLabel(){
+  if(WATER.mode!=='gpu')return 'CPU'+(WATER.fallback?(' ('+WATER.fallback+')'):'');
+  return (WATER.fmt==='16f'?'GPU RGBA16F':'GPU RGBA32F')+(WATER.fmtReason?(' — '+WATER.fmtReason):'');
+}
+function waterFmtToast(){
+  const el=document.getElementById('airToast');if(!el||WATER._toasted)return;WATER._toasted=true;
+  el.textContent='Water: '+waterFmtLabel();el.style.opacity=1;clearTimeout(waterFmtToast.h);waterFmtToast.h=setTimeout(()=>{if(el.textContent.indexOf('Water:')===0)el.style.opacity=0;},2400);
+  const dbg=document.getElementById('waterDbg');
+  if(dbg){const qs=new URLSearchParams(location.search);const on=qs.get('waterdbg')==='1'||qs.get('debug')==='water';
+    dbg.hidden=!on;if(on)dbg.textContent=waterFmtLabel();}
+}
+function waterChooseFormat(qs){
+  qs=qs||new URLSearchParams(location.search);
+  const info=waterGLInfo();WATER.gpuInfo=info;
+  const ov=waterReadOverride(qs);WATER.fmtOverride=ov;
+  // Startup probes use readPixels, which can log Chrome's 'GPU stall due to ReadPixels'
+  // warning and fail the console-clean tests. Auto format therefore uses the vendor
+  // string plus the existing v40 1×1 self-test (which already uses a PBO and did not
+  // trip those tests). Opt in with ?waterprobe=1 (1×1 only) or ?waterprobe=full (1×1
+  // plus mid-size GPU-reduced copy). A failed 32F self-test still selects 16F later.
+  const probe=qs.get('waterprobe');
+  let p32={ok:false,exact:null,note:'skipped'},p16={ok:false,exact:null,note:'skipped'};
+  if(probe==='1'||probe==='full'){
+    const mid=probe==='full';
+    p32=waterProbeFloatRT(gl.RGBA32F,gl.FLOAT,mid?WATER_TW:0,mid?2:0);
+    p16=waterProbeFloatRT(gl.RGBA16F,gl.FLOAT,mid?WATER_TW:0,mid?2:0);
+  }
+  WATER.rtProbe={rgba32f:p32,rgba16f:p16,mode:probe||'off'};
+  let fmt='32f', reason='default RGBA32F';
+  if(ov==='cpu'){fmt='cpu';reason='override (?water=cpu or localStorage)';}
+  else if(ov==='16f'){fmt='16f';reason='override (?water=16f / ?sphfp=half or localStorage)';}
+  else if(ov==='32f'){fmt='32f';reason='override (?water=32f or localStorage)';}
+  else if(waterIsAdreno(info)){fmt='16f';reason='Qualcomm/Adreno renderer (RGBA32F state blows up on Adreno 650)';}
+  else if(p32.exact===false){fmt='16f';reason='RGBA32F render/readback/round-trip is not exact (1x1 rel='+((p32.maxRelErr!=null)?p32.maxRelErr.toExponential(2):'?')+', copy abs='+(p32.copy&&p32.copy.maxAbsErr)+')';}
+  WATER.fmt=fmt;WATER.fmtReason=reason;
+  if(!WATER.emu)WATER.emu={};
+  WATER.emu.half=(fmt==='16f');
+  return fmt;
+}
+
 function initWater(){
   try{
     const qs=new URLSearchParams(location.search),q=qs.get('water');
@@ -305,7 +530,12 @@ function initWater(){
     //   ?prec=mediump    every key shader result rounded to fp16 (a mediump-only fragment pipeline)
     //   ?sphclear=clamp  clear colours clamped to [0,1] (drivers that clamp float clears)
     //   ?sphfix=0        the pre-v40 code paths (no precision self-test, negative slot sentinel, 16-bit depth, 8-substep cap, no NaN guard)
-    WATER.emu={half:DIAG.half||qs.get('sphfp')==='half',med:DIAG.mediump||qs.get('prec')==='mediump',clampClear:qs.get('sphclear')==='clamp',fix:qs.get('sphfix')!=='0'};
+    // v78 (pt183): ?water=16f|32f|cpu (also localStorage holymoley.water) overrides the
+    // auto format: Adreno/Qualcomm, a failed 32F exactness probe, or a 32F GPU/CPU burst
+    // divergence all select RGBA16F for particle *state* (sA/sB). Density and other
+    // targets stay 32F. ?sphfp=half still means 16f. ?waterdbg=1 shows the choice on screen.
+    WATER.emu={half:false,med:qs.get('prec')==='mediump',clampClear:qs.get('sphclear')==='clamp',fix:qs.get('sphfix')!=='0'};
+    waterChooseFormat(qs);
     const isGL2=typeof WebGL2RenderingContext!=='undefined'&&gl instanceof WebGL2RenderingContext;
     WATER.supported=true;WATER.mode='cpu';
     WATER.qbuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,WATER.qbuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,-1,1,1,-1,1]),gl.STATIC_DRAW);
@@ -359,7 +589,7 @@ void main(){vec4 F=texture2D(uF,vU);float f=F.r,fl=F.b;float T=uTh;if(f<T-0.07&&
     };
     WATER.cbuf=gl.createBuffer();
     WATER.psize=gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]||64;
-    if(!isGL2||q==='cpu'||DIAG.forceCPU){if(DIAG.forceCPU)WATER.fallback=(WATER.fallback?WATER.fallback+'+':'')+'force-cpu';return;}
+    if(!isGL2||q==='cpu'||WATER.fmt==='cpu'||DIAG.forceCPU){if(DIAG.forceCPU){WATER.fmt='cpu';WATER.fallback=(WATER.fallback?WATER.fallback+'+':'')+'force-cpu';}else if(WATER.fmt==='cpu')WATER.fallback=WATER.fallback||'override';return;}
     const cbf=gl.getExtension('EXT_color_buffer_float');if(!cbf)return;
     // probe: render into RGBA32F and R32F
     const probe=(ifmt,fmt)=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,ifmt,4,4,0,fmt,gl.FLOAT,null);
@@ -370,7 +600,7 @@ void main(){vec4 F=texture2D(uF,vU);float f=F.r,fl=F.b;float T=uTh;if(f<T-0.07&&
     const HEAD=`#version 300 es
 precision ${DIAG.precMode||'highp'} float;precision ${DIAG.precMode||'highp'} int;precision ${DIAG.precMode||'highp'} sampler2D;precision ${DIAG.precMode||'highp'} sampler2DArray;
 uniform sampler2D uState;uniform int uTW;
-vec4 Q4(vec4 v){${E.med||E.half?'return vec4(unpackHalf2x16(packHalf2x16(v.xy)),unpackHalf2x16(packHalf2x16(v.zw)));':'return v;'}}
+vec4 Q4(vec4 v){${E.med?'return vec4(unpackHalf2x16(packHalf2x16(v.xy)),unpackHalf2x16(packHalf2x16(v.zw)));':'return v;'}}   // v78: packHalf only for ?prec=mediump; 16F state is quantised by the RT itself, density stays fp32
 vec4 st(int i){return Q4(texelFetch(uState,ivec2(i%uTW,i/uTW),0));}
 vec2 Q2(vec2 v){${E.med?'return unpackHalf2x16(packHalf2x16(v));':'return v;'}}
 float Q1(float x){${E.med?'return unpackHalf2x16(packHalf2x16(vec2(x,0.0))).x;':'return x;'}}
@@ -437,14 +667,26 @@ void main(){vec4 s=st(gl_VertexID);vS=length(s.zw);vL=gl_VertexID>=uNW?1.0:0.0;i
     if(E.fix){   // v40: never run the GPU solver on a pipeline that cannot hold fp32: precision formats + a render/read-back round trip in the state format
       const hp=[gl.VERTEX_SHADER,gl.FRAGMENT_SHADER].map(t=>gl.getShaderPrecisionFormat(t,gl.HIGH_FLOAT));WATER.prec=hp.map(f=>f?f.precision:0);
       const tp=mk(FSQ,HEAD+`uniform vec4 uA;out vec4 o;void main(){o=Q4(vec4(Q1(uA.x+uA.y),Q1(uA.z*uA.w),Q1(uA.x*uA.w-uA.z),1.0));}`,['aP']);
-      const ifmt=E.half?gl.RGBA16F:gl.RGBA32F,tt=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tt);gl.texImage2D(gl.TEXTURE_2D,0,ifmt,1,1,0,gl.RGBA,E.half?gl.HALF_FLOAT:gl.FLOAT,null);
+      const use16=WATER.fmt==='16f'||E.half,ifmt=gl.RGBA32F,tt=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tt);gl.texImage2D(gl.TEXTURE_2D,0,ifmt,1,1,0,gl.RGBA,gl.FLOAT,null);   // v78b: always self-test on RGBA32F. A 16F 1×1 readPixels was logging Chrome's GPU-stall warning at startup; shader precision is what this test measures, and 16F state is already a deliberate choice (Adreno / override / failed 32F).
       const fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tt,0);
       gl.viewport(0,0,1,1);gl.disable(gl.BLEND);gl.useProgram(tp.p);for(let i=0;i<4;i++)gl.disableVertexAttribArray(i);gl.bindBuffer(gl.ARRAY_BUFFER,WATER.qbuf);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);
       const A=[41.123457,0.0001234,3.1415927,1.0001];gl.uniform4f(tp.u.uA,A[0],A[1],A[2],A[3]);gl.drawArrays(gl.TRIANGLES,0,6);
       const o=new Float32Array(4),pb=gl.createBuffer();gl.bindBuffer(gl.PIXEL_PACK_BUFFER,pb);gl.bufferData(gl.PIXEL_PACK_BUFFER,16,gl.STREAM_READ);gl.readPixels(0,0,1,1,gl.RGBA,gl.FLOAT,0);   // via a PBO + finish: a direct read makes Chrome log a 'GPU stall due to ReadPixels' warning
       gl.finish();gl.getBufferSubData(gl.PIXEL_PACK_BUFFER,0,o);gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);gl.deleteBuffer(pb);gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.deleteFramebuffer(fb);gl.deleteTexture(tt);gl.deleteProgram(tp.p);gl.enable(gl.BLEND);
-      const ex=[A[0]+A[1],A[2]*A[3],A[0]*A[3]-A[2]],errs=ex.map((v,i)=>Math.abs(o[i]-v)/Math.max(1,Math.abs(v)));WATER.selfTest={got:[...o].slice(0,3),want:ex,err:Math.max(...errs)};
-      if(!(WATER.selfTest.err<2e-6)||WATER.prec.some(p=>p<23)){WATER.fallback='precision';const _pe='GPU float precision too low for SPH (self-test error '+(WATER.selfTest&&WATER.selfTest.err!=null?WATER.selfTest.err.toExponential(2):'?')+', highp bits '+WATER.prec+')';if(!DIAG.forceGPU)throw new Error(_pe+' - using the CPU solver');WATER.err=_pe+' (continuing because Force GPU is on)';}}
+      const ex=[A[0]+A[1],A[2]*A[3],A[0]*A[3]-A[2]],errs=ex.map((v,i)=>Math.abs(o[i]-v)/Math.max(1,Math.abs(v)));WATER.selfTest={got:[...o].slice(0,3),want:ex,err:Math.max(...errs),fmt:use16?'16f':'32f'};
+      const thr=use16?2e-3:2e-6;
+      // ?prec=mediump emulates a mediump-only shader pipeline (Q4 packHalf). That still
+      // fails the 2e-6 arithmetic bar and should drop to the CPU solver (v40). RGBA16F
+      // *state* alone (Adreno / ?water=16f / ?sphfp=half) uses the looser 2e-3 bar and
+      // stays on the GPU — that is the S20 FE fix, not a mediump fragment pipeline.
+      if(E.med&&!(WATER.selfTest.err<2e-6)||WATER.prec.some(p=>p<(E.med||!use16?23:10))){
+        WATER.fallback='precision';if(typeof DIAG!=='undefined'&&DIAG.forceGPU){WATER.err='self-test failed (continuing because Force GPU is on)';}else throw new Error('GPU float precision too low for SPH (self-test error '+WATER.selfTest.err.toExponential(2)+', highp bits '+WATER.prec+') - using the CPU solver');
+      }else if(!use16&&!(WATER.selfTest.err<thr)){
+        // v78: a failed 32F self-test now selects 16F state (the S20 FE / Adreno fix) instead of immediately dropping to CPU
+        if(!WATER.fmtOverride){WATER.fmt='16f';WATER.emu.half=true;WATER.fmtReason='RGBA32F shader self-test failed (err='+WATER.selfTest.err.toExponential(2)+', highp bits '+WATER.prec+')';}
+        else if(WATER.fmtOverride==='32f'){/* honour the override; record the failure */}
+        else {WATER.fallback='precision';if(typeof DIAG!=='undefined'&&DIAG.forceGPU){WATER.err='self-test failed (continuing because Force GPU is on)';}else throw new Error('GPU float precision too low for SPH (self-test error '+WATER.selfTest.err.toExponential(2)+', highp bits '+WATER.prec+') - using the CPU solver');}
+      }}
     WATER.mode='gpu';
   }catch(e){WATER.err=String(e.message||e);if(WATER.mode==='gpu')WATER.mode='cpu';}
   finally{try{airRestoreGL();}catch(e){}}
@@ -464,6 +706,7 @@ function waterLevelPPC(){return clamp(Math.round(G.waterPPC||WATER_PPC_DEF),WATE
 // spawn: P jittered particles in every water cell of the level (G.water0), deterministic per level
 function waterSetup(){
   if(waterSandboxed())return;
+  if(G.mode!=='editor')waterBurstTest();
   waterReset();if(!WATER.supported||G.mode==='editor'||!G.water0)return;
   const cells=[];for(let j=0;j<W*H;j++)if(G.water0[j])cells.push(j);const nWc=cells.length;
   if(G.lava0)for(let j=0;j<W*H;j++)if(G.lava0[j]&&!G.water0[j])cells.push(j);   // pt47: lava cells after the water cells (species by index)
@@ -486,12 +729,14 @@ function waterSetup(){
   if(WATER.mode==='gpu'){try{waterAllocGPU(D);}catch(e){WATER.err=String(e.message||e);WATER.mode='cpu';waterFree();WATER.R={mtex:WATER.M.tex,btex:WATER.M.baseTex};}}
   if(WATER.mode==='cpu'){const C={x:new Float32Array(N),y:new Float32Array(N),vx:new Float32Array(N),vy:new Float32Array(N),rho:new Float32Array(N),pr:new Float32Array(N),alive:new Uint8Array(N).fill(1)};
     for(let i=0;i<N;i++){C.x[i]=D[i*4];C.y[i]=D[i*4+1];}C.pos=new Float32Array(N*3);WATER.cpu=C;}
+  if(!WATER._bursting)waterFmtToast();
   airRestoreGL();
 }
 function waterAllocGPU(D){
   const N=WATER.N,TW=WATER_TW,TH=Math.ceil(N/TW),R=WATER.R;WATER.TH=TH;
   const full=new Float32Array(TW*TH*4).fill(0);full.set(D);for(let i=N;i<TW*TH;i++){full[i*4]=-100;full[i*4+1]=-100;}
-  const E=WATER.emu||{fix:true};for(const k of ['sA','sB','den']){R[k]=E.half?wTex(TW,TH,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT):wTex(TW,TH,gl.RGBA32F,gl.RGBA,gl.FLOAT);R[k+'F']=wFBO(R[k]);}   // pt66: ?sphfp=half emulates a half-float device
+  const E=WATER.emu||{fix:true},state16=WATER.fmt==='16f'||!!E.half;for(const k of ['sA','sB']){R[k]=state16?wTex(TW,TH,gl.RGBA16F,gl.RGBA,gl.FLOAT):wTex(TW,TH,gl.RGBA32F,gl.RGBA,gl.FLOAT);R[k+'F']=wFBO(R[k]);}   // v78: 16F only for particle state; den stays 32F. Allocate RGBA16F with type FLOAT (valid in WebGL2) so the Float32 init upload is legal on ANGLE.
+  R.den=wTex(TW,TH,gl.RGBA32F,gl.RGBA,gl.FLOAT);R.denF=wFBO(R.den);
   gl.bindTexture(gl.TEXTURE_2D,R.sA);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,TW,TH,gl.RGBA,gl.FLOAT,full);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);
   const bw=Math.ceil(W/WATER.b),bh=Math.ceil(H/WATER.b);WATER.bins=[bw,bh];
   R.tmp=wTex(bw,bh,gl.R32F,gl.RED,gl.FLOAT);R.dep=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,R.dep);gl.renderbufferStorage(gl.RENDERBUFFER,E.fix?gl.DEPTH_COMPONENT24:gl.DEPTH_COMPONENT16,bw,bh);   // v40: 24-bit depth keeps the index peel exact for big particle counts
@@ -584,6 +829,7 @@ function waterApplyFill(buf){const P=WATER.ppc,F=WATER.fill,L=WATER.lfill;let to
   WATER.alive=tot;WATER.aliveL=totL;WATER.fillFrame=WATER.stats.frames;waterBBox();}
 function waterApplyReact(buf){let ev=null;for(let j=0;j<W*H;j++){const b=buf[j*4+2],a=buf[j*4+3];if(b|a)(ev||(ev=[])).push([j%W,(j/W)|0,Math.round(b/2),Math.round(a/2)]);}if(ev)lavaReactFx(ev);}
 function waterReadback(){
+  if(WATER._bursting)return;   // v78b: the startup burst only needs particle stats (via a 1×1 GPU reduce); a scripted 40-step fill readback logs Chrome's GPU-stall warning
   const R=WATER.R;
   if(WATER.pend){const p=WATER.pend;let done=false;
     try{done=gl.getSyncParameter(p.sync,gl.SYNC_STATUS)===gl.SIGNALED;}catch(e){done=true;}
@@ -607,6 +853,115 @@ function waterParticles(){   // test/debug: [[x,y,vx,vy],...] of live particles
   if(WATER.mode==='cpu'){const C=WATER.cpu;for(let i=0;i<WATER.N;i++)if(C.alive[i])out.push([C.x[i],C.y[i],C.vx[i],C.vy[i],i>=WATER.nW?1:0]);return out;}
   const TW=WATER_TW,TH=WATER.TH,b=new Float32Array(TW*TH*4);gl.bindFramebuffer(gl.FRAMEBUFFER,WATER.R.sAF);gl.readPixels(0,0,TW,TH,gl.RGBA,gl.FLOAT,b);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
   for(let i=0;i<WATER.N;i++)if(b[i*4]>-50)out.push([b[i*4],b[i*4+1],b[i*4+2],b[i*4+3],i>=WATER.nW?1:0]);return out;}
+function waterParticleStatsGPU(){
+  // v78b: burst stats without a mid-size readPixels (which logs Chrome's GPU-stall warning).
+  const empty={n:0,maxSp:0,meanSp:0,nan:0,inf:0,mx:0,my:0};
+  if(!WATER.N||WATER.mode!=='gpu'||!WATER.R||!WATER.R.sA)return empty;
+  const TW=WATER_TW,TH=WATER.TH,N=WATER.N;
+  const prev={
+    fb:gl.getParameter(gl.FRAMEBUFFER_BINDING),
+    tex:gl.getParameter(gl.TEXTURE_BINDING_2D),
+    active:gl.getParameter(gl.ACTIVE_TEXTURE),
+    abuf:gl.getParameter(gl.ARRAY_BUFFER_BINDING),
+    ppb:gl.getParameter(gl.PIXEL_PACK_BUFFER_BINDING),
+    prog:gl.getParameter(gl.CURRENT_PROGRAM),
+    vp:Int32Array.from(gl.getParameter(gl.VIEWPORT)),
+    blend:gl.isEnabled(gl.BLEND),
+    va0:gl.getVertexAttrib(0,gl.VERTEX_ATTRIB_ARRAY_ENABLED)
+  };
+  const restore=()=>{
+    try{
+      gl.useProgram(prev.prog);
+      gl.bindFramebuffer(gl.FRAMEBUFFER,prev.fb);
+      gl.activeTexture(prev.active);
+      gl.bindTexture(gl.TEXTURE_2D,prev.tex);
+      gl.bindBuffer(gl.ARRAY_BUFFER,prev.abuf);
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER,prev.ppb);
+      gl.viewport(prev.vp[0],prev.vp[1],prev.vp[2],prev.vp[3]);
+      if(prev.blend)gl.enable(gl.BLEND);else gl.disable(gl.BLEND);
+      if(prev.va0)gl.enableVertexAttribArray(0);else gl.disableVertexAttribArray(0);
+    }catch(e){}
+  };
+  try{
+    const vs='#version 300 es\nin vec2 aP;void main(){gl_Position=vec4(aP,0.0,1.0);}';
+    const fs='#version 300 es\nprecision highp float;precision highp sampler2D;uniform sampler2D uS;uniform int uPass;out vec4 o;void main(){float n=0.0,maxSp=0.0,nanC=0.0,infC=0.0,sx=0.0,sy=0.0,ssp=0.0;const int N='+N+';const int TW='+TW+';for(int i=0;i<N;i++){vec4 p=texelFetch(uS,ivec2(i-TW*(i/TW),i/TW),0);if(p.x<=-50.0)continue;bool bad=!(p.x==p.x&&p.y==p.y&&p.z==p.z&&p.w==p.w);bool infv=abs(p.x)>1.0e20||abs(p.y)>1.0e20||abs(p.z)>1.0e20||abs(p.w)>1.0e20;if(bad){nanC+=1.0;continue;}if(infv){infC+=1.0;continue;}float sp=length(p.zw);n+=1.0;maxSp=max(maxSp,sp);sx+=p.x;sy+=p.y;ssp+=sp;}if(uPass==0)o=vec4(n,maxSp,nanC,infC);else o=vec4(sx,sy,ssp,0.0);}';
+    const mk=(src,type)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s;};
+    const pr=gl.createProgram(),sv=mk(vs,gl.VERTEX_SHADER),sf=mk(fs,gl.FRAGMENT_SHADER);
+    gl.attachShader(pr,sv);gl.attachShader(pr,sf);gl.linkProgram(pr);
+    if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){WATER.burstNote=String(gl.getProgramInfoLog(pr));gl.deleteProgram(pr);gl.deleteShader(sv);gl.deleteShader(sf);return empty;}
+    const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,1,1,0,gl.RGBA,gl.FLOAT,null);
+    const fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
+    const q=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,q);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,-1,1,1,-1,1]),gl.STREAM_DRAW);
+    const read1=()=>{const o=new Float32Array(4),pb=gl.createBuffer();gl.bindBuffer(gl.PIXEL_PACK_BUFFER,pb);gl.bufferData(gl.PIXEL_PACK_BUFFER,16,gl.STREAM_READ);gl.readPixels(0,0,1,1,gl.RGBA,gl.FLOAT,0);gl.finish();gl.getBufferSubData(gl.PIXEL_PACK_BUFFER,0,o);gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);gl.deleteBuffer(pb);return o;};
+    gl.viewport(0,0,1,1);gl.disable(gl.BLEND);gl.useProgram(pr);
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,WATER.R.sA);
+    gl.uniform1i(gl.getUniformLocation(pr,'uS'),0);
+    gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+    const run=pass=>{gl.uniform1i(gl.getUniformLocation(pr,'uPass'),pass);gl.drawArrays(gl.TRIANGLES,0,6);return read1();};
+    const a=run(0),b=run(1);
+    const n=a[0];
+    const rec={n:n,maxSp:a[1],meanSp:n?b[2]/n:0,nan:a[2],inf:a[3],mx:n?b[0]/n:0,my:n?b[1]/n:0};
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.bindTexture(gl.TEXTURE_2D,null);gl.bindBuffer(gl.ARRAY_BUFFER,null);gl.useProgram(null);
+    gl.deleteBuffer(q);gl.deleteFramebuffer(fb);gl.deleteTexture(tex);gl.deleteProgram(pr);gl.deleteShader(sv);gl.deleteShader(sf);
+    return rec;
+  }catch(e){WATER.burstNote=String(e.message||e);return empty;}
+  finally{restore();}
+}
+// v78: one-shot 32F GPU vs CPU burst. If the GPU path blows up or diverges, flip to 16F
+// before the real level is built. Sandboxed: restores W/H/G afterwards.
+function waterBurstTest(){
+  if(WATER._burstDone||WATER._bursting)return;
+  // v78b: a scripted 40-step GPU burst at startup makes Chrome log 'GPU stall due to ReadPixels'
+  // (even with fill readback skipped and stats reduced to 1×1). Adreno is already caught by
+  // the vendor string, and a failed 32F probe already selects 16F, so the auto path skips
+  // the burst. Force it with ?waterburst=1 (or localStorage holymoley.waterburst=1).
+  const qs=new URLSearchParams(location.search);
+  const force=qs.get('waterburst')==='1'||(typeof localStorage!=='undefined'&&localStorage.getItem('holymoley.waterburst')==='1');
+  if(!force){WATER._burstDone=true;WATER.burst={ok:true,note:'skipped (pass ?waterburst=1 to force the 32F GPU/CPU burst)'};return;}
+  if(WATER.fmt!=='32f'||WATER.fmtOverride||WATER.mode!=='gpu'){WATER._burstDone=true;return;}
+  WATER._bursting=true;
+  const hold={W,H,mode:G.mode,grid:G.grid,dugAmt:G.dugAmt,dugDir:G.dugDir,rocks:G.rocks,pumps:G.pumps,water0:G.water0,lava0:G.lava0,moley:G.moley,waterPPC:G.waterPPC,time:G.time};
+  const stat=parts=>{let n=0,maxSp=0,sum=0,nan=0,inf=0,cx=0,cy=0;
+    for(const p of parts){const x=p[0],y=p[1],sp=Math.hypot(p[2],p[3]);n++;cx+=x;cy+=y;if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(sp)){if(Number.isNaN(x)||Number.isNaN(y)||Number.isNaN(p[2]))nan++;else inf++;continue;}maxSp=Math.max(maxSp,sp);sum+=sp;}
+    return {n,maxSp,meanSp:n?sum/n:0,nan,inf,mx:n?cx/n:0,my:n?cy/n:0};};
+  try{
+    W=12;H=SKY+8;G.mode='game';G.moley=null;G.rocks=[];G.pumps=new Map();G.waterPPC=9;G.time=0;
+    G.grid=new Uint8Array(W*H);G.dugAmt=new Float32Array(W*H);G.dugDir=new Int8Array(W*H*2);
+    G.water0=new Uint8Array(W*H);G.lava0=new Uint8Array(W*H);
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const edge=x===0||x===W-1||y===H-1||y===SURF;G.grid[y*W+x]=(y<SURF)?AIR:(edge?BRICK:DUG);if(y>=SURF&&!edge)G.dugAmt[y*W+x]=1;
+    }
+    for(let y=H-3;y<=H-2;y++)for(let x=2;x<=5;x++)G.water0[y*W+x]=1;
+    waterSetup();
+    if(!WATER.N||WATER.mode!=='gpu'){WATER.burst={ok:true,note:'skipped (no GPU particles)'};return;}
+    for(let i=0;i<40;i++)waterStep(1/60);
+    gl.finish();   // drain the 40 GPU steps so the following 1×1 stats read does not log a ReadPixels stall
+    const gpu=waterParticleStatsGPU();
+    waterReset();const keepFmt=WATER.fmt,keepHalf=WATER.emu&&WATER.emu.half;WATER.mode='cpu';
+    waterSetup();
+    for(let i=0;i<40;i++)waterStep(1/60);
+    const cpu=stat(waterParticles());
+    WATER.mode='gpu';WATER.fmt=keepFmt;if(WATER.emu)WATER.emu.half=keepHalf;
+    const posErr=Math.hypot((gpu.mx-cpu.mx),(gpu.my-cpu.my));
+    const blow=gpu.nan>0||gpu.inf>0||gpu.maxSp>80||!Number.isFinite(gpu.maxSp);
+    const diverge=blow||(cpu.maxSp<40&&gpu.maxSp>cpu.maxSp*4+10)||posErr>2.5;
+    WATER.burst={ok:!diverge,gpu,cpu,posErr,blow,diverge};
+    if(diverge){WATER.fmt='16f';WATER.emu=WATER.emu||{};WATER.emu.half=true;WATER.fmtReason='32F GPU burst diverged from CPU (maxSp gpu='+gpu.maxSp.toFixed(2)+' cpu='+cpu.maxSp.toFixed(2)+', posErr='+posErr.toFixed(2)+')';}
+  }catch(e){WATER.burst={ok:false,note:String(e.message||e)};}
+  finally{
+    try{waterReset();}catch(e){}
+    W=hold.W;H=hold.H;G.mode=hold.mode;G.grid=hold.grid;G.dugAmt=hold.dugAmt;G.dugDir=hold.dugDir;
+    G.rocks=hold.rocks;G.pumps=hold.pumps;G.water0=hold.water0;G.lava0=hold.lava0;G.moley=hold.moley;
+    G.waterPPC=hold.waterPPC;G.time=hold.time;
+    WATER._bursting=false;WATER._burstDone=true;
+  }
+}
+
 // v53: inject water into cells mid-level (mushroom burst). Preserves live water/lava; new particles are water.
 function waterLattice(js,P,seed){const cols=Math.ceil(Math.sqrt(P)),rows=Math.ceil(P/cols),rnd=mulberry(seed),out=[];
   for(const j of js){const x=j%W,y=(j/W)|0;for(let k=0;k<P;k++){const r=Math.floor(k/cols),cIn=k%cols,rowN=r<rows-1?cols:P-cols*(rows-1);
@@ -712,12 +1067,6 @@ function waterRender(X,Y,C){
     gl.uniform2f(Q.u.uOff,ox,oy);gl.uniform2f(Q.u.uRes,cw,ch);gl.uniform1f(Q.u.uC,C);gl.uniform1f(Q.u.uPs,ps);if(n)gl.drawArrays(gl.POINTS,0,n);}
   // composite
   gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,cw,ch);gl.scissor(sx0,ch-sy1,sx1-sx0,sy1-sy0);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
-  const Q=P.comp;gl.useProgram(Q.p);wQuad();
-  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,R.field);gl.uniform1i(Q.u.uF,0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,WATER.M.baseTex);gl.uniform1i(Q.u.uM,1);
-  gl.uniform2f(Q.u.uRes,cw,ch);gl.uniform2f(Q.u.uOff,ox,oy);gl.uniform2f(Q.u.uLv,W,H);gl.uniform2f(Q.u.uFt,1/fw,1/fh);gl.uniform1f(Q.u.uC,C);gl.uniform1f(Q.u.uT,G.time);gl.uniform1f(Q.u.uTh,WATER_SPLAT[1]);
-  gl.drawArrays(gl.TRIANGLES,0,6);gl.disable(gl.SCISSOR_TEST);
-  airRestoreGL();
-}
 
 /* ---- GPU capability probes ---- */
 
@@ -1375,7 +1724,7 @@ function updateLivebar(){
   el.innerHTML=`<span>fps <b>${fps}</b></span><span>step <b>${ms}</b> ms</span><span>sub <b>${sub}</b></span>`
     +`<span>particles <b>${n}</b></span><span>max/mean sp <b class="${(st.maxSp||0)>DIAG.saneSpeed?'bad':'ok'}">${sp}</b></span>`
     +`<span>NaN/Inf/OOB/solid <b class="${bad||st.solid?'bad':'ok'}">${st.nan||0}/${st.inf||0}/${st.oob||0}/${st.solid||0}</b></span>`
-    +`<span>mode <b>${mode}</b></span>`;
+    +`<span>mode <b>${mode}</b></span><span>state <b>${(WATER&&WATER.fmt)||'–'}</b></span>`;
   const s=document.getElementById('stats');
   if(s) s.innerHTML=`
     <div>Frames <b>${WATER&&WATER.stats?WATER.stats.frames:0}</b></div>
@@ -1406,6 +1755,7 @@ function whyMode(){
   if(qs0.get('water')==='cpu') bits.push('URL ?water=cpu');
   if(WATER&&WATER.fallback) bits.push('fallback reason: '+WATER.fallback);
   if(WATER&&WATER.err) bits.push('WATER.err: '+WATER.err);
+  if(WATER&&WATER.fmt) bits.push('state format '+WATER.fmt+(WATER.fmtReason?(' ('+WATER.fmtReason+')'):''));
   if(WATER&&WATER.mode==='gpu'&&WATER.selfTest) bits.push('precision self-test err='+WATER.selfTest.err+' (threshold 2e-6), highp bits='+WATER.prec);
   if(WATER&&WATER.mode==='cpu'&&!DIAG.forceCPU&&!WATER.err&&is2) bits.push('initWater stayed on CPU (missing EXT_color_buffer_float or RGBA32F/R32F probe failed)');
   DIAG.why=bits.join('; ')||('picked '+((WATER&&WATER.mode)||'off')+' by the normal initWater path');
@@ -1490,6 +1840,7 @@ function buildReport(){
   lines.push('');
   lines.push('=== Water mode ===');
   lines.push('  mode: '+(WATER&&WATER.mode)+'  supported='+(WATER&&WATER.supported));
+  lines.push('  state format: '+(WATER&&WATER.fmt)+'  reason: '+(WATER&&WATER.fmtReason));
   lines.push('  why: '+whyMode());
   lines.push('  emu: '+JSON.stringify(WATER&&WATER.emu));
   lines.push('  self-test: '+JSON.stringify(WATER&&WATER.selfTest));
@@ -1665,6 +2016,16 @@ function loop(now){
 }
 
 function boot(){
+  if(typeof waterReadOverride==='function'&&!waterReadOverride._diag){
+    const _wro=waterReadOverride;
+    waterReadOverride=function(qs){
+      if(DIAG.forceCPU)return 'cpu';
+      if(DIAG.half)return '16f';
+      if(DIAG.force32)return '32f';
+      return _wro(qs);
+    };
+    waterReadOverride._diag=true;
+  }
   try{DIAG.probes=runAllProbes();}catch(e){DIAG.errors.push('probes '+e);log('probes failed: '+e);DIAG.probes={err:String(e.message||e)};}
   reinitWater();
   bindUI();
