@@ -206,10 +206,11 @@
       overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;box-sizing:border-box;
       padding:12px calc(50% - var(--cw) / 2);scrollbar-width:thin;scrollbar-color:#c7862f transparent;cursor:grab;touch-action:pan-x}
   #lselRow.drag{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
-  .lcard,.lcm{position:relative;transform:translateY(calc(var(--rf) * -50%));flex:0 0 auto;width:var(--cw);max-height:calc((100% - 8px) / (1 + var(--rf)));min-height:0;scroll-snap-align:center;font-family:inherit;color:#fbe9cf;background:rgba(40,22,10,.9);border:3px solid #7a4a1e;border-radius:16px;
+  .lcard,.lcm{position:relative;transform:translateY(calc(var(--rf) * -50%));flex:0 0 auto;width:var(--cw);height:calc((100% - 8px) / (1 + var(--rf)));max-height:calc((100% - 8px) / (1 + var(--rf)));min-height:0;scroll-snap-align:center;font-family:inherit;color:#fbe9cf;background:rgba(40,22,10,.9);border:3px solid #7a4a1e;border-radius:16px;
       padding:clamp(4px,1vh,12px);box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:clamp(1px,.6vh,4px);transition:transform .15s,border-color .15s,box-shadow .15s;touch-action:pan-x}
-  .lcard canvas,.lcm canvas{width:100%;height:auto;min-height:0;flex:0 1 auto;aspect-ratio:var(--ar,1.16);display:block;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:8px;background:#21140b;pointer-events:none}
-  .lcard .ln,.lcm .ln{font-weight:900;font-size:clamp(15px,min(2.6vw,3.6vh),26px);color:#ffcf7a;letter-spacing:.04em}
+  .lcard canvas,.lcm canvas{width:100%;height:auto;min-height:0;flex:1 1 auto;aspect-ratio:var(--ar,1.16);display:block;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:8px;background:#21140b;pointer-events:none}
+  .lcard .lfoot,.lcm .lfoot{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:inherit;width:100%;margin-top:auto;min-height:0;text-align:center}
+  .lcard .ln,.lcm .ln{font-weight:900;font-size:clamp(15px,min(2.6vw,3.6vh),26px);color:#ffcf7a;letter-spacing:.04em;line-height:1.15;min-height:2.3em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-align:center;width:100%}
   .lcard .lt,.lcm .lt{font-size:clamp(12px,min(1.9vw,2.8vh),18px);opacity:.9}
   .lcard .lbest,.lcm .lbest{font-size:clamp(12px,min(2vw,3vh),20px);font-weight:900;color:#ffd166;letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
   .lcard.lock .lbest,.lcm.lock .lbest{color:#c9b59a;font-weight:bold;opacity:.85}
@@ -224,6 +225,7 @@
   .lcm.lock{opacity:1;filter:none}
   .lcard .lpw,.lcm .lpw{font-size:clamp(11px,min(1.7vw,2.5vh),16px);font-weight:900;letter-spacing:.12em;color:#ffd166;font-variant-numeric:tabular-nums;white-space:nowrap}
   .lcard .lpw.ask,.lcm .lpw.ask{color:#e8d2b0;font-weight:bold;letter-spacing:.06em;opacity:.9}
+  .lcard .lpw.ph,.lcm .lpw.ph{visibility:hidden}   /* v81: reserve the password row so every card's footer is the same height */
   .lcard.lock .lpw.ask,.lcm.lock .lpw.ask{color:#f0dcb8}
   @media (max-height:560px){#lselRow{--rf:.28;--cw:min(80vw,calc(40vh * 1.16),470px)}}
   #modal #lselPwIn{width:100%;box-sizing:border-box;background:#120a05;color:#ffe9b8;border:1px solid #c7862f;border-radius:8px;font:800 22px/1.2 inherit;letter-spacing:.14em;text-transform:uppercase;padding:10px 12px;margin:4px 0 6px;text-align:center}
@@ -288,6 +290,8 @@
   #settings fieldset{border:1px solid rgba(255,214,150,.35);border-radius:8px;margin:0;padding:8px 10px 10px}
   #settings legend{padding:0 .4em;color:#ffcf7a;font-weight:bold;font-size:13px}
   #settings label{display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer;font-weight:bold;font-size:14px;touch-action:manipulation}
+  #settings fieldset+fieldset{margin-top:8px}
+  #settings #setWaterNow{font-size:12px;font-weight:normal;color:#e8cfa6;margin-top:4px;line-height:1.3}
   #settings input{accent-color:#e08a1e;width:18px;height:18px;margin:0;flex:0 0 auto}
 </style>
 </head>
@@ -355,46 +359,246 @@
       <fieldset><legend>Graphics</legend>
         <label><input type="checkbox" id="setPx" checked> Background depth</label>
       </fieldset>
+      <fieldset id="setWaterBox"><legend>Water physics</legend>
+        <label><input type="radio" name="waterPhys" id="watAuto" value="auto"> Auto</label>
+        <label><input type="radio" name="waterPhys" id="watGpu" value="gpu"> GPU</label>
+        <label><input type="radio" name="waterPhys" id="watCpu" value="cpu"> CPU</label>
+        <div id="setWaterNow" aria-live="polite"></div>
+      </fieldset>
     </div>
     <h1 id="introTitle">Holy Moley</h1><div id="introStage"><canvas id="chase"></canvas><div id="introReel" hidden aria-hidden="true"><div id="introReelIn"></div></div></div>
     <div id="introBtns"><button id="mPlay" class="play">▶ Start Game</button><button id="mPack" title="Play a level pack (JSON)">📦 Load level pack</button><button id="mEditor">✎ Level Editor</button></div>
     <div id="howto"><div id="howtoIn"><div class="ht"><h3>HOW TO PLAY</h3>
-<p>Dig for crystals deep underground and reach the exit before the clock runs out.</p>
+<p>Dig deep, collect every crystal and find your way to the exit before time runs out.</p>
+<p>The earth is full of surprises. Dig tunnels, move boulders, dodge creatures, survive fire and water — and try not to get yourself squashed along the way.</p>
 <h3>CONTROLS</h3>
-<p><b>Arrow keys / WASD</b> — walk and dig</p><p><b>Touch</b> — swipe to move one cell; keep your finger down to keep walking that way; a tap repeats your last swipe</p>
-<p><b>G</b> or the 🎮 button — on-screen arrow pad (hold to keep moving)</p>
-<p><b>P</b> pause &nbsp;•&nbsp; <b>V</b> air-flow effect &nbsp;•&nbsp; <b>F</b> full screen &nbsp;•&nbsp; <b>H / Esc</b> this menu &nbsp;•&nbsp; <b>E</b> level editor</p>
-<h3>DIGGING</h3><p>Moley digs through earth; tunnels stay open. Brick, coal, wood, mushrooms and bedrock can't be dug.</p>
-<h3>BOULDERS</h3><p>Don't dig under rocks for long — they wobble, then fall and squash you.</p><p>Push a 1×1 boulder sideways into open space. 2×1 and 1×2 boulders are too heavy for Moley to push. Boulders roll off other boulders.</p><p>Wide (2×1) boulders only fall when both cells under them are empty. Tall (1×2) boulders fall when the cell under their bottom half is empty. Big boulders don't roll sideways, and Moley can't push them.</p>
-<h3>CRYSTALS &amp; THE EXIT</h3><p>Collect every crystal. The exit stays dark and locked until the last one is gone —</p><p>then it lights up: walk in to clear the level and earn a bonus.</p>
-<h3>BOMBS &amp; NUKES</h3><p>Bombs explode when they land after a fall or get caught in a blast (3 × 3). Push against one to light its fuse — then run (3 s)!</p><p>☢ Nukes blast everything within 5 cells.</p>
-<h3>COAL</h3><p>Coal burns! It is solid like brick, but explosions set it alight. Fire spreads along a seam</p><p>and burnt coal crumbles into a gap — whatever rests on it falls.</p>
-<h3>WOOD</h3><p>Wood burns like coal but twice as fast, and fire jumps between wood and coal.</p><p>Termites chew through wood, leaving a tunnel — watch out for what was resting on it.</p><h3>MUSHROOMS</h3><p>Mushrooms grow, then spread spores — fast along tunnels, slower into wood, slowest into earth. They're solid, fireproof and only termites eat them.</p><p>When a mushroom patch reaches 128 cells it bursts into water. If it is still alive and has no room left to grow before then, it turns into crystals (the exit locks again).</p>
-<h3>TERMITES</h3><p>Termites crawl along tunnel floors and up and down shaft walls. Touching one costs a life.</p><p>Drop a boulder on a termite to blow it up like a bomb — or drop a crystal on it to squash it quietly.</p>
-<h3>WORMY</h3><p>Wormy is a friendly worm. He crawls along floors, walls and ceilings — even upside down — and just turns round when he bumps into Moley. They can't pass through each other: Wormy blocks Moley like a wall until he crawls away.</p><p>Now and then he digs up to a boulder above him and veers off underneath it. He can crawl out onto the grass and along the surface, and very rarely, when he is within four cells of it, he digs straight up and pops out. If he gets stuck going round the same patrol more than 10 times he digs one earth cell to extend the tunnel. A boulder that crushes him bursts him into 9 crystals; lava burns him, water doesn't bother him, and too many mushrooms make him pop.</p>
-<h3>BRIAN</h3><p>Brian is an electro-snail who creeps very slowly along tunnel floors, turning when he meets a wall, a drop or a blocker. Touching him is harmless — he just blocks the way like Wormy — but if he has a straight 8-cell gap of open tunnel in front of him he may charge up and fire a white-blue plasma bolt. The bolt launches upward at a random angle, bounces off tunnel walls, rocks and brick, and kills Moley on contact. It fizzles out after about 10 seconds, or sooner in water (with steam), lava, or if it reaches the surface. Wood and coal catch fire when a bolt hits them. Another Brian can absorb a bolt (even his own, after it has left him) and plays his firing animation in reverse. He only keeps one bolt in play at a time. A falling boulder or a blast crushes him.</p>
-<h3>CONTRARY THE CANARY</h3><p>Contrary is a canary in a gas mask who patrols the tunnel floors like Brian, turning at walls, drops and blockers. Touching him is harmless — he just blocks the way — but every few seconds he puffs out a small cloud of toxic gas that hangs in the tunnel and kills Moley (and anything else alive) that walks into it. Gas can't hurt him, but water and lava can, a falling boulder or a blast crushes him, and one of Brian's plasma bolts finishes him off.</p><h3>BIRDY</h3><p>Birdy is a grumpy crow who only flies in the sky. If Moley stays on the grass too long, Birdy appears far away as a tiny speck, swoops closer and closer, then dives to snatch him — duck underground when you hear the screech! Going below the surface makes Birdy patrol for a moment and then fly off. If he is already close and Wormy is on the grass, he will swoop down and eat him.</p><h3>WATER</h3><p>Water flows through tunnels and pours into anything you dig open. Moley can swim, but fully under water an air bar drains — surface before it runs out!</p><p>Termites drown, boulders sink slowly and blasts boil water into steam.</p>
-<h3>LAVA</h3><p>Glowing lava flows like water but burns anything alive — Moley, termites, Brian and mushrooms. It lights coal, wood, bombs and nukes.</p><p>Where lava meets water, both turn into steam.</p>
-<h3>TIME &amp; LIVES</h3><p>Each level has a time limit (3:00). A warning sounds at 0:30 and the last 10 s tick away.</p><p>Run out of time and it's game over. You have 3 lives; losing one restarts the level.</p>
-<h3>LEVEL EDITOR</h3><p>Paint your own levels with earth, tunnels, boulders, crystals, bombs, nukes, brick, coal, wood, mushrooms, water, lava and termites — plus the friendly Wormy, Brian the electro-snail and Contrary the Canary,</p><p>set the size and time limit, save, export / import and play-test them.</p><p><b>Pumps</b> are invisible in the game: place one in an open, water or lava cell and it starts pointing up. Tap / click it (or press R) to cycle the four arrow directions; a fifth time removes it and puts back what was underneath. It pushes water, lava and air the way the arrow points — enough to lift water up a shaft.</p><p>On a phone, tap ✋ in the tile palette to scroll and pinch-zoom without painting; pick a tile to paint again.</p></div><div class="ht" aria-hidden="true"><h3>HOW TO PLAY</h3>
-<p>Dig for crystals deep underground and reach the exit before the clock runs out.</p>
+<p><b>Arrow keys / WASD</b> — Move and dig</p>
+<p><b>Touch</b> — Swipe to move one cell. Keep your finger down to keep going. Tap to repeat your last swipe.</p>
+<p><b>G / 🎮</b> — Show the on-screen arrow pad. Hold to keep moving.</p>
+<p><b>P</b> — Pause</p>
+<p><b>V</b> — Toggle air-flow effect</p>
+<p><b>F</b> — Full screen</p>
+<p><b>H / Esc</b> — This menu</p>
+<p><b>E</b> — Level editor</p>
+<h3>DIGGING</h3>
+<p>Moley can dig through earth, leaving tunnels behind.</p>
+<p>But some things are best left alone: brick, coal, wood, mushrooms and bedrock cannot be dug.</p>
+<h3>BOULDERS</h3>
+<p>Careful beneath those rocks! Leave a boulder hanging for too long and it will wobble... then fall.</p>
+<p>A falling boulder can squash Moley, creatures — or anything else unlucky enough to be underneath.</p>
+<p>Small 1×1 boulders can be pushed sideways into open space. Larger 2×1 and 1×2 boulders are far too heavy for Moley to push.</p>
+<p>Boulders can roll off other boulders, but big boulders don't roll sideways.</p>
+<p>A wide 2×1 boulder only falls when both cells beneath it are empty. A tall 1×2 boulder falls when the cell beneath its bottom half is empty.</p>
+<h3>CRYSTALS &amp; THE EXIT</h3>
+<p>Every crystal counts.</p>
+<p>Collect them all and the exit will wake up, light up and unlock.</p>
+<p>Then get Moley through the exit to clear the level — and earn a bonus for getting out in time.</p>
+<h3>BOMBS &amp; NUKES</h3>
+<p>Some things are best pushed from a safe distance.</p>
+<p>A bomb explodes when it lands after a fall, or when it gets caught in another explosion. Its blast reaches a 3×3 area.</p>
+<p>Push against a bomb to light the fuse — then run! You have 3 seconds.</p>
+<p>☢ Nukes are considerably less subtle. Their blast reaches everything within 5 cells.</p>
+<h3>COAL</h3>
+<p>Coal looks solid and harmless. It isn't.</p>
+<p>Explosions can set it alight, and fire can travel along a coal seam. Burnt coal crumbles away into empty space — and anything sitting on top comes down with it.</p>
+<h3>WOOD</h3>
+<p>Wood burns like coal, only twice as fast.</p>
+<p>Fire can leap between wood and coal, turning a quiet tunnel into a very bad place to be.</p>
+<p>And watch out for termites: they can chew through wood and leave a tunnel behind. Anything resting on that wood may suddenly find itself without a floor.</p>
+<h3>MUSHROOMS</h3>
+<p>Mushrooms don't just sit there. They grow.</p>
+<p>They spread spores quickly through tunnels, more slowly through wood and slowest of all through earth.</p>
+<p>They're solid, fireproof and only termites can eat them.</p>
+<p>When a mushroom patch reaches 128 cells, it bursts into water.</p>
+<p>But if the mushrooms are still alive and have nowhere left to grow before reaching that point, they turn into crystals — and the exit locks again.</p>
+<h3>TERMITES</h3>
+<p>Termites are always on the move.</p>
+<p>They crawl along tunnel floors and climb up and down shaft walls. Touch one and Moley loses a life.</p>
+<p>A boulder dropped on a termite will blow it up like a bomb.</p>
+<p>Or, if you're feeling less explosive, drop a crystal on it and squash it quietly.</p>
+<h3>WORMY</h3>
+<p>Wormy is a friendly worm.</p>
+<p>He wanders along floors, walls and ceilings — even upside down — and turns around whenever he bumps into Moley.</p>
+<p>Wormy and Moley can't pass through each other. Until Wormy moves on, he's as solid as a wall.</p>
+<p>Every so often, Wormy digs up towards a boulder above him, then veers away underneath it.</p>
+<p>He can also crawl out onto the grass and explore the surface. Very rarely, if he gets within four cells of the surface, he'll dig straight up and pop out.</p>
+<p>If Wormy finds himself stuck making the same patrol more than ten times, he'll dig one earth cell to extend his tunnel.</p>
+<p>A falling boulder turns Wormy into 9 crystals.</p>
+<p>Lava burns him. Water doesn't bother him.</p>
+<p>And if there are too many mushrooms around, Wormy may simply... pop.</p>
+<h3>BRIAN</h3>
+<p>Brian is an electro-snail.</p>
+<p>He's very slow, but don't let that fool you.</p>
+<p>Brian creeps along tunnel floors, turning whenever he reaches a wall, drop or other obstacle. Touching him is harmless — he simply blocks the way, much like Wormy.</p>
+<p>But give Brian a straight 8-cell stretch of open tunnel and he may charge up and fire.</p>
+<p>His white-blue plasma bolt launches upward at a random angle, bouncing from tunnel walls, rocks and brick. If it hits Moley, you're done.</p>
+<p>A bolt fizzles out after about 10 seconds, or sooner if it reaches water, lava or the surface. Water produces steam.</p>
+<p>Wood and coal catch fire when struck.</p>
+<p>Another Brian can absorb a plasma bolt — even one fired by himself — and plays his firing animation backwards.</p>
+<p>Brian can only keep one bolt in play at a time.</p>
+<p>A falling boulder or explosion will crush him.</p>
+<h3>CONTRARY THE CANARY</h3>
+<p>Contrary is a canary in a gas mask.</p>
+<p>He patrols the tunnel floors like Brian, turning at walls, drops and obstacles.</p>
+<p>Touching him is harmless. He'll simply get in the way.</p>
+<p>Every few seconds, though, Contrary puffs out a cloud of toxic gas.</p>
+<p>The gas hangs in the tunnel and kills Moley — and anything else alive — that wanders into it.</p>
+<p>Contrary himself is immune to his own gas.</p>
+<p>Water and lava aren't so forgiving, though. Neither are falling boulders or explosions.</p>
+<p>And one of Brian's plasma bolts will finish him off.</p>
+<h3>BIRDY</h3>
+<p>Birdy is a grumpy crow who belongs in the sky.</p>
+<p>Stay on the grass for too long and you'll eventually spot him: first as a tiny speck in the distance, then closer... and closer...</p>
+<p>Then comes the screech.</p>
+<p><b>DIG!</b></p>
+<p>Dive underground before Birdy swoops down and snatches Moley.</p>
+<p>Once you're safely below ground, Birdy will patrol for a while before flying away.</p>
+<p>But if Birdy is already close and Wormy happens to be wandering around on the grass, Wormy may become lunch instead.</p>
+<h3>WATER</h3>
+<p>Water flows through tunnels and pours into any space you dig open.</p>
+<p>Moley can swim, but staying completely underwater drains his air.</p>
+<p>Find the surface before the air runs out.</p>
+<p>Water drowns termites and makes boulders sink slowly.</p>
+<p>Explosions turn water into steam.</p>
+<h3>LAVA</h3>
+<p>Lava flows much like water — but it is considerably less friendly.</p>
+<p>It burns anything alive: Moley, termites, Brian and mushrooms.</p>
+<p>It can also set coal, wood, bombs and nukes alight.</p>
+<p>When lava meets water, they both turn into steam.</p>
+<h3>TIME &amp; LIVES</h3>
+<p>Every level has a strict time limit. Try and compete to complete the level fastest.</p>
+<p>At 30 seconds, you'll hear the warning.</p>
+<p>The final 10 seconds tick away.</p>
+<p>Run out of time and it's game over.</p>
+<p>Moley has 3 lives. Lose one and the level starts again.</p>
+<h3>LEVEL EDITOR</h3>
+<p>Want to make Moley's life even harder?</p>
+<p>Build your own levels with earth, tunnels, boulders, crystals, bombs, nukes, brick, coal, wood, mushrooms, water, lava and termites — plus Wormy, Brian and Contrary.</p>
+<p>Choose the level size and time limit, then save, export, import and play-test your creations.</p>
+<h3>PUMPS</h3>
+<p><b>Pumps</b> are invisible during normal play.</p>
+<p>Place one in an open, water or lava cell and it starts by pointing upwards.</p>
+<p>Tap or click it — or press R — to rotate it through the four directions.</p>
+<p>A fifth press removes it and restores whatever was underneath.</p>
+<p><b>Pumps</b> push water, lava and air in the direction they point. With clever placement, you can even use them to lift water up a shaft.</p>
+<h3>TOUCH EDITING</h3>
+<p>On a phone, tap ✋ in the tile palette to scroll and pinch-zoom without painting.</p>
+<p>Choose a tile when you're ready to start painting again.</p></div><div class="ht" aria-hidden="true"><h3>HOW TO PLAY</h3>
+<p>Dig deep, collect every crystal and find your way to the exit before time runs out.</p>
+<p>The earth is full of surprises. Dig tunnels, move boulders, dodge creatures, survive fire and water — and try not to get yourself squashed along the way.</p>
 <h3>CONTROLS</h3>
-<p><b>Arrow keys / WASD</b> — walk and dig</p><p><b>Touch</b> — swipe to move one cell; keep your finger down to keep walking that way; a tap repeats your last swipe</p>
-<p><b>G</b> or the 🎮 button — on-screen arrow pad (hold to keep moving)</p>
-<p><b>P</b> pause &nbsp;•&nbsp; <b>V</b> air-flow effect &nbsp;•&nbsp; <b>F</b> full screen &nbsp;•&nbsp; <b>H / Esc</b> this menu &nbsp;•&nbsp; <b>E</b> level editor</p>
-<h3>DIGGING</h3><p>Moley digs through earth; tunnels stay open. Brick, coal, wood, mushrooms and bedrock can't be dug.</p>
-<h3>BOULDERS</h3><p>Don't dig under rocks for long — they wobble, then fall and squash you.</p><p>Push a 1×1 boulder sideways into open space. 2×1 and 1×2 boulders are too heavy for Moley to push. Boulders roll off other boulders.</p><p>Wide (2×1) boulders only fall when both cells under them are empty. Tall (1×2) boulders fall when the cell under their bottom half is empty. Big boulders don't roll sideways, and Moley can't push them.</p>
-<h3>CRYSTALS &amp; THE EXIT</h3><p>Collect every crystal. The exit stays dark and locked until the last one is gone —</p><p>then it lights up: walk in to clear the level and earn a bonus.</p>
-<h3>BOMBS &amp; NUKES</h3><p>Bombs explode when they land after a fall or get caught in a blast (3 × 3). Push against one to light its fuse — then run (3 s)!</p><p>☢ Nukes blast everything within 5 cells.</p>
-<h3>COAL</h3><p>Coal burns! It is solid like brick, but explosions set it alight. Fire spreads along a seam</p><p>and burnt coal crumbles into a gap — whatever rests on it falls.</p>
-<h3>WOOD</h3><p>Wood burns like coal but twice as fast, and fire jumps between wood and coal.</p><p>Termites chew through wood, leaving a tunnel — watch out for what was resting on it.</p><h3>MUSHROOMS</h3><p>Mushrooms grow, then spread spores — fast along tunnels, slower into wood, slowest into earth. They're solid, fireproof and only termites eat them.</p><p>When a mushroom patch reaches 128 cells it bursts into water. If it is still alive and has no room left to grow before then, it turns into crystals (the exit locks again).</p>
-<h3>TERMITES</h3><p>Termites crawl along tunnel floors and up and down shaft walls. Touching one costs a life.</p><p>Drop a boulder on a termite to blow it up like a bomb — or drop a crystal on it to squash it quietly.</p>
-<h3>WORMY</h3><p>Wormy is a friendly worm. He crawls along floors, walls and ceilings — even upside down — and just turns round when he bumps into Moley. They can't pass through each other: Wormy blocks Moley like a wall until he crawls away.</p><p>Now and then he digs up to a boulder above him and veers off underneath it. He can crawl out onto the grass and along the surface, and very rarely, when he is within four cells of it, he digs straight up and pops out. If he gets stuck going round the same patrol more than 10 times he digs one earth cell to extend the tunnel. A boulder that crushes him bursts him into 9 crystals; lava burns him, water doesn't bother him, and too many mushrooms make him pop.</p>
-<h3>BRIAN</h3><p>Brian is an electro-snail who creeps very slowly along tunnel floors, turning when he meets a wall, a drop or a blocker. Touching him is harmless — he just blocks the way like Wormy — but if he has a straight 8-cell gap of open tunnel in front of him he may charge up and fire a white-blue plasma bolt. The bolt launches upward at a random angle, bounces off tunnel walls, rocks and brick, and kills Moley on contact. It fizzles out after about 10 seconds, or sooner in water (with steam), lava, or if it reaches the surface. Wood and coal catch fire when a bolt hits them. Another Brian can absorb a bolt (even his own, after it has left him) and plays his firing animation in reverse. He only keeps one bolt in play at a time. A falling boulder or a blast crushes him.</p>
-<h3>CONTRARY THE CANARY</h3><p>Contrary is a canary in a gas mask who patrols the tunnel floors like Brian, turning at walls, drops and blockers. Touching him is harmless — he just blocks the way — but every few seconds he puffs out a small cloud of toxic gas that hangs in the tunnel and kills Moley (and anything else alive) that walks into it. Gas can't hurt him, but water and lava can, a falling boulder or a blast crushes him, and one of Brian's plasma bolts finishes him off.</p><h3>BIRDY</h3><p>Birdy is a grumpy crow who only flies in the sky. If Moley stays on the grass too long, Birdy appears far away as a tiny speck, swoops closer and closer, then dives to snatch him — duck underground when you hear the screech! Going below the surface makes Birdy patrol for a moment and then fly off. If he is already close and Wormy is on the grass, he will swoop down and eat him.</p><h3>WATER</h3><p>Water flows through tunnels and pours into anything you dig open. Moley can swim, but fully under water an air bar drains — surface before it runs out!</p><p>Termites drown, boulders sink slowly and blasts boil water into steam.</p>
-<h3>LAVA</h3><p>Glowing lava flows like water but burns anything alive — Moley, termites, Brian and mushrooms. It lights coal, wood, bombs and nukes.</p><p>Where lava meets water, both turn into steam.</p>
-<h3>TIME &amp; LIVES</h3><p>Each level has a time limit (3:00). A warning sounds at 0:30 and the last 10 s tick away.</p><p>Run out of time and it's game over. You have 3 lives; losing one restarts the level.</p>
-<h3>LEVEL EDITOR</h3><p>Paint your own levels with earth, tunnels, boulders, crystals, bombs, nukes, brick, coal, wood, mushrooms, water, lava and termites — plus the friendly Wormy, Brian the electro-snail and Contrary the Canary,</p><p>set the size and time limit, save, export / import and play-test them.</p><p><b>Pumps</b> are invisible in the game: place one in an open, water or lava cell and it starts pointing up. Tap / click it (or press R) to cycle the four arrow directions; a fifth time removes it and puts back what was underneath. It pushes water, lava and air the way the arrow points — enough to lift water up a shaft.</p><p>On a phone, tap ✋ in the tile palette to scroll and pinch-zoom without painting; pick a tile to paint again.</p></div></div></div></div>
+<p><b>Arrow keys / WASD</b> — Move and dig</p>
+<p><b>Touch</b> — Swipe to move one cell. Keep your finger down to keep going. Tap to repeat your last swipe.</p>
+<p><b>G / 🎮</b> — Show the on-screen arrow pad. Hold to keep moving.</p>
+<p><b>P</b> — Pause</p>
+<p><b>V</b> — Toggle air-flow effect</p>
+<p><b>F</b> — Full screen</p>
+<p><b>H / Esc</b> — This menu</p>
+<p><b>E</b> — Level editor</p>
+<h3>DIGGING</h3>
+<p>Moley can dig through earth, leaving tunnels behind.</p>
+<p>But some things are best left alone: brick, coal, wood, mushrooms and bedrock cannot be dug.</p>
+<h3>BOULDERS</h3>
+<p>Careful beneath those rocks! Leave a boulder hanging for too long and it will wobble... then fall.</p>
+<p>A falling boulder can squash Moley, creatures — or anything else unlucky enough to be underneath.</p>
+<p>Small 1×1 boulders can be pushed sideways into open space. Larger 2×1 and 1×2 boulders are far too heavy for Moley to push.</p>
+<p>Boulders can roll off other boulders, but big boulders don't roll sideways.</p>
+<p>A wide 2×1 boulder only falls when both cells beneath it are empty. A tall 1×2 boulder falls when the cell beneath its bottom half is empty.</p>
+<h3>CRYSTALS &amp; THE EXIT</h3>
+<p>Every crystal counts.</p>
+<p>Collect them all and the exit will wake up, light up and unlock.</p>
+<p>Then get Moley through the exit to clear the level — and earn a bonus for getting out in time.</p>
+<h3>BOMBS &amp; NUKES</h3>
+<p>Some things are best pushed from a safe distance.</p>
+<p>A bomb explodes when it lands after a fall, or when it gets caught in another explosion. Its blast reaches a 3×3 area.</p>
+<p>Push against a bomb to light the fuse — then run! You have 3 seconds.</p>
+<p>☢ Nukes are considerably less subtle. Their blast reaches everything within 5 cells.</p>
+<h3>COAL</h3>
+<p>Coal looks solid and harmless. It isn't.</p>
+<p>Explosions can set it alight, and fire can travel along a coal seam. Burnt coal crumbles away into empty space — and anything sitting on top comes down with it.</p>
+<h3>WOOD</h3>
+<p>Wood burns like coal, only twice as fast.</p>
+<p>Fire can leap between wood and coal, turning a quiet tunnel into a very bad place to be.</p>
+<p>And watch out for termites: they can chew through wood and leave a tunnel behind. Anything resting on that wood may suddenly find itself without a floor.</p>
+<h3>MUSHROOMS</h3>
+<p>Mushrooms don't just sit there. They grow.</p>
+<p>They spread spores quickly through tunnels, more slowly through wood and slowest of all through earth.</p>
+<p>They're solid, fireproof and only termites can eat them.</p>
+<p>When a mushroom patch reaches 128 cells, it bursts into water.</p>
+<p>But if the mushrooms are still alive and have nowhere left to grow before reaching that point, they turn into crystals — and the exit locks again.</p>
+<h3>TERMITES</h3>
+<p>Termites are always on the move.</p>
+<p>They crawl along tunnel floors and climb up and down shaft walls. Touch one and Moley loses a life.</p>
+<p>A boulder dropped on a termite will blow it up like a bomb.</p>
+<p>Or, if you're feeling less explosive, drop a crystal on it and squash it quietly.</p>
+<h3>WORMY</h3>
+<p>Wormy is a friendly worm.</p>
+<p>He wanders along floors, walls and ceilings — even upside down — and turns around whenever he bumps into Moley.</p>
+<p>Wormy and Moley can't pass through each other. Until Wormy moves on, he's as solid as a wall.</p>
+<p>Every so often, Wormy digs up towards a boulder above him, then veers away underneath it.</p>
+<p>He can also crawl out onto the grass and explore the surface. Very rarely, if he gets within four cells of the surface, he'll dig straight up and pop out.</p>
+<p>If Wormy finds himself stuck making the same patrol more than ten times, he'll dig one earth cell to extend his tunnel.</p>
+<p>A falling boulder turns Wormy into 9 crystals.</p>
+<p>Lava burns him. Water doesn't bother him.</p>
+<p>And if there are too many mushrooms around, Wormy may simply... pop.</p>
+<h3>BRIAN</h3>
+<p>Brian is an electro-snail.</p>
+<p>He's very slow, but don't let that fool you.</p>
+<p>Brian creeps along tunnel floors, turning whenever he reaches a wall, drop or other obstacle. Touching him is harmless — he simply blocks the way, much like Wormy.</p>
+<p>But give Brian a straight 8-cell stretch of open tunnel and he may charge up and fire.</p>
+<p>His white-blue plasma bolt launches upward at a random angle, bouncing from tunnel walls, rocks and brick. If it hits Moley, you're done.</p>
+<p>A bolt fizzles out after about 10 seconds, or sooner if it reaches water, lava or the surface. Water produces steam.</p>
+<p>Wood and coal catch fire when struck.</p>
+<p>Another Brian can absorb a plasma bolt — even one fired by himself — and plays his firing animation backwards.</p>
+<p>Brian can only keep one bolt in play at a time.</p>
+<p>A falling boulder or explosion will crush him.</p>
+<h3>CONTRARY THE CANARY</h3>
+<p>Contrary is a canary in a gas mask.</p>
+<p>He patrols the tunnel floors like Brian, turning at walls, drops and obstacles.</p>
+<p>Touching him is harmless. He'll simply get in the way.</p>
+<p>Every few seconds, though, Contrary puffs out a cloud of toxic gas.</p>
+<p>The gas hangs in the tunnel and kills Moley — and anything else alive — that wanders into it.</p>
+<p>Contrary himself is immune to his own gas.</p>
+<p>Water and lava aren't so forgiving, though. Neither are falling boulders or explosions.</p>
+<p>And one of Brian's plasma bolts will finish him off.</p>
+<h3>BIRDY</h3>
+<p>Birdy is a grumpy crow who belongs in the sky.</p>
+<p>Stay on the grass for too long and you'll eventually spot him: first as a tiny speck in the distance, then closer... and closer...</p>
+<p>Then comes the screech.</p>
+<p><b>DIG!</b></p>
+<p>Dive underground before Birdy swoops down and snatches Moley.</p>
+<p>Once you're safely below ground, Birdy will patrol for a while before flying away.</p>
+<p>But if Birdy is already close and Wormy happens to be wandering around on the grass, Wormy may become lunch instead.</p>
+<h3>WATER</h3>
+<p>Water flows through tunnels and pours into any space you dig open.</p>
+<p>Moley can swim, but staying completely underwater drains his air.</p>
+<p>Find the surface before the air runs out.</p>
+<p>Water drowns termites and makes boulders sink slowly.</p>
+<p>Explosions turn water into steam.</p>
+<h3>LAVA</h3>
+<p>Lava flows much like water — but it is considerably less friendly.</p>
+<p>It burns anything alive: Moley, termites, Brian and mushrooms.</p>
+<p>It can also set coal, wood, bombs and nukes alight.</p>
+<p>When lava meets water, they both turn into steam.</p>
+<h3>TIME &amp; LIVES</h3>
+<p>Every level has a strict time limit. Try and compete to complete the level fastest.</p>
+<p>At 30 seconds, you'll hear the warning.</p>
+<p>The final 10 seconds tick away.</p>
+<p>Run out of time and it's game over.</p>
+<p>Moley has 3 lives. Lose one and the level starts again.</p>
+<h3>LEVEL EDITOR</h3>
+<p>Want to make Moley's life even harder?</p>
+<p>Build your own levels with earth, tunnels, boulders, crystals, bombs, nukes, brick, coal, wood, mushrooms, water, lava and termites — plus Wormy, Brian and Contrary.</p>
+<p>Choose the level size and time limit, then save, export, import and play-test your creations.</p>
+<h3>PUMPS</h3>
+<p><b>Pumps</b> are invisible during normal play.</p>
+<p>Place one in an open, water or lava cell and it starts by pointing upwards.</p>
+<p>Tap or click it — or press R — to rotate it through the four directions.</p>
+<p>A fifth press removes it and restores whatever was underneath.</p>
+<p><b>Pumps</b> push water, lava and air in the direction they point. With clever placement, you can even use them to lift water up a shaft.</p>
+<h3>TOUCH EDITING</h3>
+<p>On a phone, tap ✋ in the tile palette to scroll and pinch-zoom without painting.</p>
+<p>Choose a tile when you're ready to start painting again.</p></div></div></div></div>
   <div id="modal" hidden><div class="box"><h2 id="mTitle"></h2><div id="mBody"></div><div class="row" id="mBtns"></div></div></div>
   <div id="overFade" hidden></div>
   <div id="msg"></div>
@@ -501,6 +705,23 @@ const canvas=document.getElementById('gl');
 const GL_OPTS={alpha:false,antialias:false,premultipliedAlpha:true,stencil:true};
 // WebGL2 preferred (float render targets for the air simulation); WebGL1 fallback; ?gl=1 forces WebGL1
 const gl=(new URLSearchParams(location.search).get('gl')!=='1'&&canvas.getContext('webgl2',GL_OPTS))||canvas.getContext('webgl',GL_OPTS);
+// v80: a getError() drain loop spins forever after a context loss (getError keeps returning CONTEXT_LOST_WEBGL). Bounded, and stops on loss.
+function glDrain(){let n=0;try{if(gl.isContextLost&&gl.isContextLost())return 0;for(;n<32;n++){const e=gl.getError();if(e===gl.NO_ERROR||e===gl.CONTEXT_LOST_WEBGL)break;}}catch(e){}return n;}
+// v80: WebGL context loss (driver reset / GPU watchdog). Pause the sim and rendering, say so, and offer a reload once the browser restores the context.
+const GLLOST={lost:false,restored:false,count:0,at:0,el:null};
+function glLostBanner(msg,btn){
+  let el=GLLOST.el;
+  if(!el){el=GLLOST.el=document.createElement('div');el.id='glLost';el.setAttribute('role','alert');
+    el.style.cssText='position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:99;max-width:min(420px,90vw);background:rgba(40,12,8,.95);color:#ffe9d0;border:2px solid #e0662a;border-radius:12px;padding:14px 18px;font:bold 15px/1.35 system-ui,sans-serif;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.6)';
+    document.body.appendChild(el);}
+  el.innerHTML='';const t=document.createElement('div');t.textContent=msg;el.appendChild(t);
+  if(btn){const b=document.createElement('button');b.id='glLostReload';b.textContent='Reload game';b.style.cssText='margin-top:10px;padding:8px 16px;font:bold 15px system-ui;border-radius:8px;border:0;background:#e08a1e;color:#fff;cursor:pointer';b.onclick=()=>location.reload();el.appendChild(b);}
+  el.hidden=false;
+}
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();GLLOST.lost=true;GLLOST.restored=false;GLLOST.count++;GLLOST.at=Date.now();
+  glLostBanner('Graphics were reset by your device, so the game is paused. Waiting for the browser to restore them…',false);},false);
+canvas.addEventListener('webglcontextrestored',()=>{GLLOST.restored=true;
+  glLostBanner('Graphics are back, but the game needs to reload to use them. Your campaign progress is saved.',true);},false);
 const stencilOK=!!(gl&&gl.getContextAttributes().stencil);
 if(!gl){document.getElementById('msg').innerHTML='<h1>No WebGL</h1><p>Your browser does not support WebGL.</p>';throw new Error('no webgl');}
 const VS=`attribute vec2 aPos;attribute vec2 aUV;attribute vec4 aCol;uniform vec2 uRes;varying vec2 vUV;varying vec4 vCol;
@@ -584,7 +805,7 @@ const AIRFX={supported:false,fmt:'none',on:true,active:0,w:0,h:0,splats:[],sourc
       const fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);
       const ok=gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE;
       gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.deleteFramebuffer(fb);gl.deleteTexture(t);
-      while(gl.getError()!==gl.NO_ERROR){}
+      glDrain();
       if(ok){AIRFX.F=c;AIRFX.fmt=c.name;break;}
     }
     if(!AIRFX.F)throw new Error('no renderable float format');
@@ -806,7 +1027,7 @@ function airRender(X,Y,C){
 function airRead(cx,cy){   // debug/test: [vx,vy,pressure,dust] at a cell position (cell units), or null
   if(!AIRFX.T)return null;const x=Math.floor(cx*AIR_RES),y=Math.floor(cy*AIR_RES),out=[],buf=new Float32Array(4);
   for(const k of ['vel','pre','den']){gl.bindFramebuffer(gl.FRAMEBUFFER,AIRFX.T[k].r.fb);try{gl.readPixels(x,y,1,1,gl.RGBA,gl.FLOAT,buf);}catch(e){gl.bindFramebuffer(gl.FRAMEBUFFER,null);return null;}out.push(buf[0],buf[1]);}
-  gl.bindFramebuffer(gl.FRAMEBUFFER,null);while(gl.getError()!==gl.NO_ERROR){}return [out[0],out[1],out[2],out[4]];
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);glDrain();return [out[0],out[1],out[2],out[4]];
 }
 function airToggle(on){
   AIRFX.on=on===undefined?!AIRFX.on:!!on;try{localStorage.setItem('holymoley.air',AIRFX.on?'1':'0');}catch(e){}
@@ -870,9 +1091,24 @@ function waterReadOverride(qs){
   if(q==='32f'||q==='32')return '32f';
   if(q==='cpu')return 'cpu';
   if(qs.get('sphfp')==='half')return '16f';
-  try{const v=(localStorage.getItem(WATER_LS)||'').toLowerCase();if(v==='16f'||v==='32f'||v==='cpu')return v;}catch(e){}
+  const v=waterPref();if(v==='cpu')return 'cpu';if(v==='gpu')return '32f';if(v==='16f'||v==='32f')return v;
   return null;
 }
+// v80: Settings > Water physics (Auto / GPU / CPU), stored in localStorage holymoley.water. Auto = CPU on Qualcomm/Adreno, GPU elsewhere.
+// (16f / 32f remain valid stored values for diagnostics.) ?water=... in the URL still wins.
+function waterPref(){try{const v=(localStorage.getItem(WATER_LS)||'').toLowerCase();return (v==='gpu'||v==='cpu'||v==='16f'||v==='32f')?v:'auto';}catch(e){return 'auto';}}
+function waterSetPref(v){v=(v==='gpu'||v==='cpu')?v:'auto';try{if(v==='auto')localStorage.removeItem(WATER_LS);else localStorage.setItem(WATER_LS,v);}catch(e){}return waterApplyPref();}
+// re-run the solver choice (title screen: no level is running). Returns the resulting WATER.mode.
+function waterApplyPref(){
+  if(waterSandboxed())return WATER.mode;
+  try{waterReset();}catch(e){}
+  try{const P=WATER.P;if(P)for(const k in P){if(P[k]&&P[k].p)gl.deleteProgram(P[k].p);}
+    for(const k of ['qbuf','pbuf','cbuf']){if(WATER[k]){gl.deleteBuffer(WATER[k]);WATER[k]=null;}}}catch(e){}
+  WATER.P=null;WATER.err=null;WATER.fallback=null;WATER.fmtReason='';WATER.selfTest=null;WATER._toasted=false;WATER._burstDone=false;
+  try{initWater();}catch(e){WATER.err=String(e.message||e);WATER.mode='cpu';}
+  return WATER.mode;
+}
+function waterNowLabel(){return waterFmtLabel();}
 // Render a known vec4 into a w×h target and read it back. Also upload+copy+read a
 // particle-sized grid of position-like values (catches size-dependent 32F bugs the
 // 1×1 v40 self-test can miss).
@@ -1031,7 +1267,7 @@ function waterProbeFloatRT(ifmt, typ, w, h){
   }finally{restore();}
 }
 function waterFmtLabel(){
-  if(WATER.mode!=='gpu')return 'CPU'+(WATER.fallback?(' ('+WATER.fallback+')'):'');
+  if(WATER.mode!=='gpu')return 'CPU'+(WATER.fmtReason&&WATER.fmt==='cpu'?(' — '+WATER.fmtReason):WATER.fallback?(' ('+WATER.fallback+')'):'');
   return (WATER.fmt==='16f'?'GPU RGBA16F':'GPU RGBA32F')+(WATER.fmtReason?(' — '+WATER.fmtReason):'');
 }
 function waterFmtToast(){
@@ -1058,19 +1294,19 @@ function waterChooseFormat(qs){
     p16=waterProbeFloatRT(gl.RGBA16F,gl.FLOAT,mid?WATER_TW:0,mid?2:0);
   }
   WATER.rtProbe={rgba32f:p32,rgba16f:p16,mode:probe||'off'};
-  let fmt='32f', reason='default RGBA32F';
-  if(ov==='cpu'){fmt='cpu';reason='override (?water=cpu or localStorage)';}
+  let fmt='32f', reason='default RGBA32F';WATER.fallback=null;
+  if(ov==='cpu'){fmt='cpu';reason=waterPref()==='cpu'&&!qs.get('water')&&qs.get('sphfp')!=='half'?'Settings: CPU water':'override (?water=cpu)';}
   else if(ov==='16f'){fmt='16f';reason='override (?water=16f / ?sphfp=half or localStorage)';}
-  else if(ov==='32f'){fmt='32f';reason='override (?water=32f or localStorage)';}
-  else if(waterIsAdreno(info)){fmt='16f';reason='Qualcomm/Adreno renderer (RGBA32F state blows up on Adreno 650)';}
-  else if(p32.exact===false){fmt='16f';reason='RGBA32F render/readback/round-trip is not exact (1x1 rel='+((p32.maxRelErr!=null)?p32.maxRelErr.toExponential(2):'?')+', copy abs='+(p32.copy&&p32.copy.maxAbsErr)+')';}
-  WATER.fmt=fmt;WATER.fmtReason=reason;
+  else if(ov==='32f'){fmt='32f';reason=waterPref()==='gpu'&&!qs.get('water')?'Settings: GPU water':'override (?water=32f or localStorage)';}
+  else if(waterIsAdreno(info)){fmt='cpu';reason='Qualcomm/Adreno: CPU water';}   // v80: GPU water (32F and 16F) is unstable on the S20 FE / Adreno 650; CPU is stable
+  else if(p32.exact===false){fmt='cpu';reason='RGBA32F render/readback/round-trip is not exact (1x1 rel='+((p32.maxRelErr!=null)?p32.maxRelErr.toExponential(2):'?')+', copy abs='+(p32.copy&&p32.copy.maxAbsErr)+')';}
+  WATER.fmt=fmt;WATER.fmtReason=reason;if(fmt==='cpu')WATER.fallback=waterIsAdreno(info)&&!ov?'adreno':'override';
   if(!WATER.emu)WATER.emu={};
   WATER.emu.half=(fmt==='16f');
   return fmt;
 }
 
-(function initWater(){
+function initWater(){
   try{
     const qs=new URLSearchParams(location.search),q=qs.get('water');
     // pt66 (v40): mobile-GPU emulation / robustness switches (debug URL flags):
@@ -1137,7 +1373,7 @@ void main(){vec4 F=texture2D(uF,vU);float f=F.r,fl=F.b;float T=uTh;if(f<T-0.07&&
     };
     WATER.cbuf=gl.createBuffer();
     WATER.psize=gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]||64;
-    if(!isGL2||q==='cpu'||WATER.fmt==='cpu'){if(WATER.fmt==='cpu')WATER.fallback=WATER.fallback||'override';return;}
+    if(!isGL2||q==='cpu'||WATER.fmt==='cpu'){return;}
     const cbf=gl.getExtension('EXT_color_buffer_float');if(!cbf)return;
     // probe: render into RGBA32F and R32F
     const probe=(ifmt,fmt)=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,ifmt,4,4,0,fmt,gl.FLOAT,null);
@@ -1231,14 +1467,15 @@ void main(){vec4 s=st(gl_VertexID);vS=length(s.zw);vL=gl_VertexID>=uNW?1.0:0.0;i
         WATER.fallback='precision';throw new Error('GPU float precision too low for SPH (self-test error '+WATER.selfTest.err.toExponential(2)+', highp bits '+WATER.prec+') - using the CPU solver');
       }else if(!use16&&!(WATER.selfTest.err<thr)){
         // v78: a failed 32F self-test now selects 16F state (the S20 FE / Adreno fix) instead of immediately dropping to CPU
-        if(!WATER.fmtOverride){WATER.fmt='16f';WATER.emu.half=true;WATER.fmtReason='RGBA32F shader self-test failed (err='+WATER.selfTest.err.toExponential(2)+', highp bits '+WATER.prec+')';}
+        if(!WATER.fmtOverride){WATER.fallback='precision';throw new Error('GPU float precision too low for SPH (self-test error '+WATER.selfTest.err.toExponential(2)+', highp bits '+WATER.prec+') - using the CPU solver');}   // v80: no automatic 16F (v78 behaviour removed)
         else if(WATER.fmtOverride==='32f'){/* honour the override; record the failure */}
         else {WATER.fallback='precision';throw new Error('GPU float precision too low for SPH (self-test error '+WATER.selfTest.err.toExponential(2)+', highp bits '+WATER.prec+') - using the CPU solver');}
       }}
     WATER.mode='gpu';
   }catch(e){WATER.err=String(e.message||e);if(WATER.mode==='gpu')WATER.mode='cpu';}
   finally{try{airRestoreGL();}catch(e){}}
-})();
+}
+initWater();
 function wTex(w,h,ifmt,fmt,type,filter){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,ifmt,w,h,0,fmt,type,null);
   const f=filter||gl.NEAREST;gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,f);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,f);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
@@ -1496,7 +1733,7 @@ function waterBurstTest(){
     const blow=gpu.nan>0||gpu.inf>0||gpu.maxSp>80||!Number.isFinite(gpu.maxSp);
     const diverge=blow||(cpu.maxSp<40&&gpu.maxSp>cpu.maxSp*4+10)||posErr>2.5;
     WATER.burst={ok:!diverge,gpu,cpu,posErr,blow,diverge};
-    if(diverge){WATER.fmt='16f';WATER.emu=WATER.emu||{};WATER.emu.half=true;WATER.fmtReason='32F GPU burst diverged from CPU (maxSp gpu='+gpu.maxSp.toFixed(2)+' cpu='+cpu.maxSp.toFixed(2)+', posErr='+posErr.toFixed(2)+')';}
+    if(diverge){WATER.fmt='cpu';WATER.fallback='burst';WATER.mode='cpu';WATER.fmtReason='32F GPU burst diverged from CPU (maxSp gpu='+gpu.maxSp.toFixed(2)+' cpu='+cpu.maxSp.toFixed(2)+', posErr='+posErr.toFixed(2)+')';}
   }catch(e){WATER.burst={ok:false,note:String(e.message||e)};}
   finally{
     try{waterReset();}catch(e){}
@@ -3877,7 +4114,7 @@ function heldDir(){
   for(const k in keys)if(keys[k])return KEYMAP[k];
   return padDir()||swipeHeld();   // on-screen arrow pad held / finger held after a swipe = like a held cursor key
 }
-// ---- touch in play: each swipe = one cell (like a key tap, but a swipe also walks after any turn it needs); taps start / restart
+// ---- touch in play: each swipe = one cell when Moley already faces that way; a swipe that only needs a turn just turns (same as a key tap). Taps start / restart
 // Threshold in CSS px (clientX/Y are CSS px, so it is already independent of devicePixelRatio). One move per swipe direction:
 // keep dragging the same way = nothing more; change direction mid-gesture = one more move (origin reset after every move).
 const SWIPE_PX=24, SWIPE_QUEUE=2;
@@ -4083,7 +4320,7 @@ function updateMoley(dt){
       let d=queue.shift()||heldDir();
       if(!d)break;
       const res=tryMove(m,d);
-      if(res==='turn'){m.idleT=0;m.fidgetNext=0;if(d.sw)queue.unshift(d);break;}         // a key tap only turns (held: moves after the turn); a swipe / pad tap walks on after turning
+      if(res==='turn'){m.idleT=0;m.fidgetNext=0;break;}         // v81: a key tap, swipe or pad tap only turns; a held direction (key / pad / finger after SWIPE_HOLD) walks once the turn finishes
       if(!res){m.idleT=0;m.fidgetNext=0;break;}
     }
     const mv=m.move;const need=mv.dur-mv.t;
@@ -5152,6 +5389,7 @@ function worldCovered(){if(!INTRO.on)return false;const el=document.getElementBy
 const RENDER_SKIP={frames:0,drawn:0};
 function frame(now){
   let dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(GLLOST.lost){requestAnimationFrame(frame);return;}   // v80: context lost - sim and rendering paused
   if(!window.__manualStep)step(dt);
   if(RENDER_SKIP.drawn>0&&worldCovered())RENDER_SKIP.frames++;else{render();RENDER_SKIP.drawn++;}
   requestAnimationFrame(frame);
@@ -6111,13 +6349,16 @@ $e('tbBack').addEventListener('click',e=>{e.stopPropagation();$e('tbBack').blur(
 $e('mPlay').addEventListener('click',e=>{e.currentTarget.blur();startGame();});
 // pt74: title-screen settings (audio mode)
 function settingsOpen(){const el=$e('settings');return el&&!el.hidden;}
-function syncSettingsUI(){const m=getAudioMode(),h=$e('audHybrid'),sy=$e('audSynth'),b=$e('setBtn'),px=$e('setPx');if(h)h.checked=m==='hybrid';if(sy)sy.checked=m==='synth';if(px)px.checked=pxPrefOn();if(b)b.setAttribute('aria-expanded',settingsOpen()?'true':'false');}
+function syncSettingsUI(){const m=getAudioMode(),h=$e('audHybrid'),sy=$e('audSynth'),b=$e('setBtn'),px=$e('setPx');if(h)h.checked=m==='hybrid';if(sy)sy.checked=m==='synth';if(px)px.checked=pxPrefOn();
+  const wp=waterPref(),wa=$e('watAuto'),wg=$e('watGpu'),wc=$e('watCpu');if(wa)wa.checked=wp==='auto'||(wp!=='gpu'&&wp!=='cpu');if(wg)wg.checked=wp==='gpu'||wp==='32f'||wp==='16f';if(wc)wc.checked=wp==='cpu';
+  const wn=$e('setWaterNow');if(wn)wn.textContent='Now: '+waterNowLabel()+(new URLSearchParams(location.search).get('water')?' (URL override)':'');if(b)b.setAttribute('aria-expanded',settingsOpen()?'true':'false');}
 function openSettings(){const el=$e('settings');if(!el)return;el.hidden=false;syncSettingsUI();ensureAudio();const on=getAudioMode()==='hybrid'?$e('audHybrid'):$e('audSynth');if(on)try{on.focus();}catch(e){}}
 function closeSettings(){const el=$e('settings');if(!el||el.hidden)return;el.hidden=true;const b=$e('setBtn');if(b){b.setAttribute('aria-expanded','false');}}
 function toggleSettings(e){if(e){e.preventDefault();e.stopPropagation();}if(settingsOpen())closeSettings();else openSettings();}
 $e('setBtn').addEventListener('click',toggleSettings);
 $e('setClose').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();closeSettings();$e('setBtn').focus();});
 for(const id of ['audHybrid','audSynth'])$e(id).addEventListener('change',e=>{if(e.target.checked)setAudioMode(e.target.value);});
+for(const id of ['watAuto','watGpu','watCpu'])$e(id).addEventListener('change',e=>{if(!e.target.checked)return;waterSetPref(e.target.value);syncSettingsUI();gToast('Water physics: '+waterFmtLabel());});
 const setPxEl=$e('setPx');if(setPxEl)setPxEl.addEventListener('change',e=>setParallaxPref(e.target.checked));
 $e('intro').addEventListener('pointerdown',e=>{if(!settingsOpen())return;if(e.target.closest&&(e.target.closest('#settings')||e.target.closest('#setBtn')))return;closeSettings();});
 syncSettingsUI();
@@ -6381,7 +6622,8 @@ function lselOpen(src){const p=progLoad(),packs=packsLoad();const row=$e('lselRo
     const cv=th.cv,sn={gems:th.gems};b.appendChild(cv);   // pt41: thumbnails are cached per level (campaign levels are fixed by their number); cleared on progress reset
     const lb=kind==='cont'?(o.first?'▶ PLAY':o.pwu?'🔓 UNLOCKED':'▶ CONTINUE'):kind==='lock'?'🔒 LOCKED':'✓ COMPLETED';
     const pwd=o.data?lvlPassword(o.data.name||o.pwName||('Level '+n),o.data.w,o.data.h):'';   // v76: this level's password (shown under completed levels, asked for on locked ones)
-    b.insertAdjacentHTML('beforeend','<div class="lb">'+lb+'</div><div class="ln"></div><div class="lt"></div><div class="lbest"></div>'+(kind==='done'&&pwd?'<div class="lpw" title="Level password">🔑 <span class="pwv"></span></div>':kind==='lock'?'<div class="lpw ask">🔑 Enter password</div>':''));
+    const pwRow=kind==='done'&&pwd?'<div class="lpw" title="Level password">🔑 <span class="pwv"></span></div>':kind==='lock'?'<div class="lpw ask">🔑 Enter password</div>':'<div class="lpw ph" aria-hidden="true">🔑 Enter password</div>';   // v81: same footer rows on every card so bottoms line up
+    b.insertAdjacentHTML('beforeend','<div class="lfoot"><div class="lb">'+lb+'</div><div class="ln"></div><div class="lt"></div><div class="lbest"></div>'+pwRow+'</div>');
     {const pv=b.querySelector('.pwv');if(pv)pv.textContent=pwd;}
     b.querySelector('.ln').textContent=o.title||('Level '+n);b.querySelector('.lt').textContent=(o.sub||levelName(n))+' · '+sn.gems+' crystals';
     const bk=o.pack?bestTimeKey(null,o.pack.name,o.idx):bestTimeKey(n),br=bestTimeGet(bk);
